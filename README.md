@@ -14,11 +14,11 @@ $./dnsmasq-blacklist -h
 usage: dnsmasq-blacklist [-h] [--no-subdomains] output_file
 
 positional arguments:
-  output_file      File to write dnsmasq rules to
+  output_file      file to write dnsmasq rules to
 
 optional arguments:
   -h, --help       show this help message and exit
-  --no-subdomains  Do not include subdomains (legitimate domains may be
+  --no-subdomains  do not include subdomains (legitimate domains may be
                    blocked).
 
 $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
