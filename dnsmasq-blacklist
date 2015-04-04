@@ -1,0 +1,88 @@
+#!/usr/bin/env python3.3
+
+# PUBLIC DOMAIN
+# http://github.com/jkeogh/dnsmasq-blacklist
+
+# todo:
+# optional read hosts file from stdin
+
+import sys
+import os
+import requests
+import tldextract
+no_cache_extract = tldextract.TLDExtract(cache_file=False)
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("output_file", help='File to write dnsmasq rules to')
+parser.add_argument("subdomain_level", help='1 (the default) to block subdomains (if listed). 0 to block TLDs regardless of subdomain', type=int, default=1)
+args = parser.parse_args()
+
+if os.path.isfile(args.output_file):
+	print("File %s exists. Refusing to overwrite. Exiting." % args.output_file)
+	quit(1)
+
+
+def domain_extract(domain):
+	dom = no_cache_extract(domain)
+	return dom
+
+
+def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
+
+	user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
+
+	tld_list = []
+	skip_list = ['127.0.0.1', 'localhost', 'localhost.localdomain', '::1']
+
+	hosts_file_lines = requests.get(hosts_file_url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
+
+	for line in hosts_file_lines:
+		line = line.decode('UTF-8')
+		line = line.replace('\t', ' ')
+		line = " ".join(line.split())			#collapse whitespace
+		line = line.strip()
+		if len(line) == 0:
+			continue
+		if line not in skip_list:
+			if not line.startswith('#'):		#remove comments
+				line = line.split('#')[0]	#remove inline comments
+				split_line = line.split(' ')
+				split_line = list(filter(None, split_line))	#hm
+				domain = split_line[-1]
+				tld = domain_extract(domain)
+				if tld.domain == '':		#remove TLD's from block list
+					continue
+				if args.subdomain_level == 0:
+					tld_list.append(tld.domain+'.'+tld.suffix)
+				else:
+					if len(tld.subdomain) == 0:
+						tld_list.append(tld.domain+'.'+tld.suffix)
+					else:
+						tld_list.append(tld.subdomain + '.' + tld.domain+'.'+tld.suffix)
+
+#				print("tld:", tld)
+
+
+	block_set = set(tld_list)
+	dnsmasq_rules = []
+	for item in block_set:
+		dnsmasq_line = 'address=/.'+ item + '/127.0.0.1'
+		dnsmasq_rules.append(dnsmasq_line)
+	return dnsmasq_rules
+
+
+
+if __name__ == '__main__':
+
+	with open(args.output_file, 'w') as fh:
+		data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+
+		for url in data_sources:
+			dnsmasq_rules = convert_hosts_file_to_dnsmasq_format(url)
+			for item in dnsmasq_rules:
+				fh.write(item + '\n')
+
+	print("To add to dnsmasq.conf:", file=sys.stderr)
+	print('echo \"conf-file=' + os.path.abspath(args.output_file) + '"', file=sys.stderr)
+	print("and then restart the dnsmasq service: \"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"", file=sys.stderr)
