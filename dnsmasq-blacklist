@@ -17,7 +17,8 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("output_file", help='File to write dnsmasq rules to')
 parser.add_argument("subdomain_level", \
-		help='1 (the default) to block subdomains (if listed). 0 to block TLDs regardless of subdomain.', \
+		help='''1 (the default) to block subdomains (if listed).
+			0 to block TLDs regardless of subdomain (legitimate domains may be blocked).''', \
 		type=int, default=1)
 args = parser.parse_args()
 
