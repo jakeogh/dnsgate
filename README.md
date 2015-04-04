@@ -11,16 +11,15 @@ dnsmasq-blacklist reads two popular /etc/hosts blocking lists and converts to dn
 
 ```
 $./dnsmasq-blacklist -h
-usage: dnsmasq-blacklist [-h] output_file subdomain_level
+usage: dnsmasq-blacklist [-h] [--no-subdomains] output_file
 
 positional arguments:
   output_file      File to write dnsmasq rules to
-  subdomain_level  1 (the default) to block subdomains (if listed). 0 to block
-                   TLDs regardless of subdomain (legitimate domains may be
-                   blocked).
 
 optional arguments:
   -h, --help       show this help message and exit
+  --no-subdomains  No not include subdomains (legitimate domains may be
+                   blocked).
 
 $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf 1
 Done generating /etc/dnsmasq.blacklist.conf
