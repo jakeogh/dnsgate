@@ -6,6 +6,7 @@
 # todo:
 # optional read hosts file from stdin
 
+import time
 import sys
 import os
 import requests
@@ -15,7 +16,9 @@ no_cache_extract = tldextract.TLDExtract(cache_file=False)
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("output_file", help='File to write dnsmasq rules to')
-parser.add_argument("subdomain_level", help='1 (the default) to block subdomains (if listed). 0 to block TLDs regardless of subdomain', type=int, default=1)
+parser.add_argument("subdomain_level", \
+			help='1 (the default) to block subdomains (if listed). 0 to block TLDs regardless of subdomain.', \
+			type=int, default=1)
 args = parser.parse_args()
 
 if os.path.isfile(args.output_file):
@@ -35,7 +38,8 @@ def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
 	tld_list = []
 	skip_list = ['127.0.0.1', 'localhost', 'localhost.localdomain', '::1']
 
-	hosts_file_lines = requests.get(hosts_file_url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
+	hosts_file_lines = requests.get(hosts_file_url, headers={'User-Agent': user_agent}, \
+					allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
 
 	for line in hosts_file_lines:
 		line = line.decode('UTF-8')
@@ -83,6 +87,10 @@ if __name__ == '__main__':
 			for item in dnsmasq_rules:
 				fh.write(item + '\n')
 
+
+	output_file = os.path.abspath(args.output_file)
+	print("\nDone generating", output_file, file=sys.stderr)
 	print("To add to dnsmasq.conf:", file=sys.stderr)
-	print('echo \"conf-file=' + os.path.abspath(args.output_file) + '"', file=sys.stderr)
-	print("and then restart the dnsmasq service: \"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"", file=sys.stderr)
+	print('cp /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) +' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf', file=sys.stderr)
+	print('\nThen restart the dnsmasq service:')
+	print('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"', file=sys.stderr)
