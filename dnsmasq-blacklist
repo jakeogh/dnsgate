@@ -16,10 +16,9 @@ no_cache_extract = tldextract.TLDExtract(cache_file=False)
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("output_file", help='File to write dnsmasq rules to')
-parser.add_argument("subdomain_level", \
-		help='''1 (the default) to block subdomains (if listed).
-			0 to block TLDs regardless of subdomain (legitimate domains may be blocked).''', \
-		type=int, default=1)
+parser.add_argument("--no-subdomains", \
+		help='''No not include subdomains (legitimate domains may be blocked).''', \
+		action="store_true", default=False)
 args = parser.parse_args()
 
 if os.path.isfile(args.output_file):
@@ -58,7 +57,7 @@ def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
 				tld = domain_extract(domain)
 				if tld.domain == '':		#remove TLD's from block list
 					continue
-				if args.subdomain_level == 0:
+				if args.no_subdomains:
 					tld_list.append(tld.domain+'.'+tld.suffix)
 				else:
 					if len(tld.subdomain) == 0:
