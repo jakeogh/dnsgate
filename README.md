@@ -18,7 +18,7 @@ positional arguments:
 
 optional arguments:
   -h, --help       show this help message and exit
-  --no-subdomains  No not include subdomains (legitimate domains may be
+  --no-subdomains  Do not include subdomains (legitimate domains may be
                    blocked).
 
 $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
