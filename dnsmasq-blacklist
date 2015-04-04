@@ -91,5 +91,5 @@ if __name__ == '__main__':
 	print("\nTo add to dnsmasq.conf:", file=sys.stderr)
 	print('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) +
 		' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf', file=sys.stderr)
-	print('\nThen restart the dnsmasq service:')
+	print('\nThen restart the dnsmasq service:', file=sys.stderr)
 	print('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"', file=sys.stderr)
