@@ -21,7 +21,7 @@ optional arguments:
   --no-subdomains  No not include subdomains (legitimate domains may be
                    blocked).
 
-$./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf 1
+$./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
 Done generating /etc/dnsmasq.blacklist.conf
 
 To add to dnsmasq.conf:
