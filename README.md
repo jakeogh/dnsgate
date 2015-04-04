@@ -25,7 +25,8 @@ $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf 1
 Done generating /etc/dnsmasq.blacklist.conf
 
 To add to dnsmasq.conf:
-cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.1428126020.6137238 && echo "conf-file=/etc/dnsmasq.blacklist.conf" >> /etc/dnsmasq.conf
+cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.1428126020.6137238 && \
+echo "conf-file=/etc/dnsmasq.blacklist.conf" >> /etc/dnsmasq.conf
 
 Then restart the dnsmasq service:
 "/etc/init.d/dnsmasq restart" or "service dnsmasq restart"
