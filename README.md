@@ -6,11 +6,11 @@
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-dnsmasq-blacklist reads two popular /etc/hosts blocking lists and converts to dnsmasq.conf format
+dnsmasq-blacklist reads two popular /etc/hosts blocking lists and converts them to dnsmasq.conf format.
 
-Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain and therefore requires less maintenance (to keep up with ad serving subdomain changes).
+Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain and therefore requires less maintenance (to keep up with subdomain changes).
 
-Using dnsmasq has another benefit, caching repeated DNS queries decreases the time it takes to load web pages.
+Using dnsmasq has another benefit; caching repeated DNS queries decreases the time it takes to load web pages.
 
 ```
 $./dnsmasq-blacklist -h
