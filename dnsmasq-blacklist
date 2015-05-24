@@ -13,11 +13,19 @@ import requests
 import tldextract
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
+global skip_list
+skip_list = ['127.0.0.1', 'localhost', 'localhost.localdomain', '::1']
+
+
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("output_file", help='file to write dnsmasq rules to')
 parser.add_argument("--no-subdomains",
 			help='''do not include subdomains (legitimate domains may be blocked).''',
+			action="store_true", default=False)
+
+parser.add_argument("--hosts",
+			help='''generate /etc/hosts compatiable file.''',
 			action="store_true", default=False)
 
 args = parser.parse_args()
@@ -27,26 +35,45 @@ if os.path.isfile(args.output_file):
 	quit(1)
 
 
+#http://stackoverflow.com/questions/1549509/remove-duplicates-in-a-list-while-keeping-its-order-python
+def unique(seq):
+	seen = set()
+	for item in seq:
+		if item not in seen:
+			seen.add( item )
+			yield item
+
+
 def domain_extract(domain):
 	dom = no_cache_extract(domain)
 	return dom
 
 
-def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
-
+def get_hosts_list(hosts_file_url):
 	user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
+	hosts_file_lines = []
 
-	tld_list = []
-	skip_list = ['127.0.0.1', 'localhost', 'localhost.localdomain', '::1']
-
-	hosts_file_lines = requests.get(hosts_file_url, headers={'User-Agent': user_agent},
+	raw_hosts_file_lines = requests.get(hosts_file_url, headers={'User-Agent': user_agent},
 					allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
 
-	for line in hosts_file_lines:
+	for line in raw_hosts_file_lines:
 		line = line.decode('UTF-8')
 		line = line.replace('\t', ' ')
 		line = " ".join(line.split())			# collapse whitespace
 		line = line.strip()
+		line = line.replace('0.0.0.0', '127.0.0.1')
+
+		hosts_file_lines.append(line)
+
+	return hosts_file_lines
+
+
+def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
+
+	tld_list = []
+	hosts_file_lines = get_hosts_list(hosts_file_url)
+
+	for line in hosts_file_lines:
 		if len(line) == 0:
 			continue
 		if line not in skip_list:
@@ -66,7 +93,6 @@ def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
 					else:
 						tld_list.append(tld.subdomain + '.' + tld.domain + '.' + tld.suffix)
 
-#				print("tld:", tld)
 
 	block_set = set(tld_list)
 	dnsmasq_rules = []
@@ -78,18 +104,37 @@ def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
 
 if __name__ == '__main__':
 
+	result_list = []
+	output_file = os.path.abspath(args.output_file)
+
 	with open(args.output_file, 'w') as fh:
 		data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 
-		for url in data_sources:
-			dnsmasq_rules = convert_hosts_file_to_dnsmasq_format(url)
-			for item in dnsmasq_rules:
-				fh.write(item + '\n')
+		if args.hosts:
+			for url in data_sources:
+				hosts_rules = get_hosts_list(url)
+				result_list = result_list + hosts_rules
+		else:
+			for url in data_sources:
+				dnsmasq_rules = convert_hosts_file_to_dnsmasq_format(url)
+				result_list = result_list + dnsmasq_rules
+				
+		result_list = list(unique(result_list))
+		for item in result_list:
+			fh.write(item + '\n')
 
-	output_file = os.path.abspath(args.output_file)
+
 	print("Done generating", output_file, file=sys.stderr)
-	print("\nTo add to dnsmasq.conf:", file=sys.stderr)
-	print('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) +
+
+	if args.hosts:
+		print("\nTo add to /etc/hosts:", file=sys.stderr)
+		print('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) +
+		' && cat ' + output_file + '" >> /etc/hosts', file=sys.stderr)
+
+
+	else:
+		print("\nTo add to /etc/dnsmasq.conf:", file=sys.stderr)
+		print('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) +
 		' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf', file=sys.stderr)
-	print('\nThen restart the dnsmasq service:', file=sys.stderr)
-	print('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"', file=sys.stderr)
+		print('\nThen restart the dnsmasq service:', file=sys.stderr)
+		print('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"', file=sys.stderr)
