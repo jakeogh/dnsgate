@@ -31,11 +31,11 @@ parser.add_argument("--no-subdomains",
 			action="store_true", default=False)
 
 parser.add_argument("--hosts",
-			help='''R|generate /etc/hosts compatiable file (mutually exclusive with --no-subdomains since hosts files can't block wildcard subdomains)''',
+			help='''R|generate /etc/hosts compatible file (mutually exclusive with --no-subdomains since hosts files can't block wildcard subdomains)''',
 			action="store_true", default=False)
 
 parser.add_argument("--whitelist",
-			help='''R|whitelist of dns names\nExample:\n\tstackexchange.com\n\tstackoverflow.com''',
+			help='''R|whitelist of DNS names\nExample:\n\tstackexchange.com\n\tstackoverflow.com''',
 			type=str, default=False)
 
 args = parser.parse_args()
@@ -72,7 +72,7 @@ def get_hosts_list(hosts_file_url):
 			continue
 
 		if not line.startswith('#'):		# remove comments
-			line = line.split(' ')[1]		# get dns name
+			line = line.split(' ')[1]		# get DNS name
 			if args.no_subdomains:
 				line = domain_extract(line)		# get tld
 				line = line.domain + '.' + line.suffix
