@@ -10,23 +10,33 @@ import time
 import sys
 import os
 import requests
+import argparse
 import tldextract
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
-global skip_list
-skip_list = ['127.0.0.1', 'localhost', 'localhost.localdomain', '::1']
 
+# http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
+class SmartFormatter(argparse.HelpFormatter):
+	def _split_lines(self, text, width):
+		# this is the RawTextHelpFormatter._split_lines
+		if text.startswith('R|'):
+			return text[2:].splitlines()  
+		return argparse.HelpFormatter._split_lines(self, text, width)
 
-import argparse
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(formatter_class=SmartFormatter)
+
 parser.add_argument("output_file", help='file to write dnsmasq rules to')
 parser.add_argument("--no-subdomains",
-			help='''do not include subdomains (legitimate domains may be blocked).''',
+			help='''R|do not include subdomains:\nexample:\n\tanalytics.google.com will block google.com and all subdomains (see --whitelist)''',
 			action="store_true", default=False)
 
 parser.add_argument("--hosts",
-			help='''generate /etc/hosts compatiable file.''',
+			help='''R|generate /etc/hosts compatiable file (mutually exclusive with --no-subdomains since hosts files can't block wildcard subdomains)''',
 			action="store_true", default=False)
+
+parser.add_argument("--whitelist",
+			help='''R|whitelist of dns names\nExample:\n\tstackexchange.com\n\tstackoverflow.com''',
+			type=str, default=False)
 
 args = parser.parse_args()
 
@@ -34,20 +44,17 @@ if os.path.isfile(args.output_file):
 	print("File %s exists. Refusing to overwrite. Exiting." % args.output_file)
 	quit(1)
 
-
 #http://stackoverflow.com/questions/1549509/remove-duplicates-in-a-list-while-keeping-its-order-python
 def unique(seq):
 	seen = set()
 	for item in seq:
 		if item not in seen:
-			seen.add( item )
+			seen.add(item)
 			yield item
-
 
 def domain_extract(domain):
 	dom = no_cache_extract(domain)
 	return dom
-
 
 def get_hosts_list(hosts_file_url):
 	user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
@@ -59,70 +66,65 @@ def get_hosts_list(hosts_file_url):
 	for line in raw_hosts_file_lines:
 		line = line.decode('UTF-8')
 		line = line.replace('\t', ' ')
-		line = " ".join(line.split())			# collapse whitespace
+		line = " ".join(line.split())		# collapse whitespace
 		line = line.strip()
-		line = line.replace('0.0.0.0', '127.0.0.1')
+		if len(line) == 0:					# skip empty lines
+			continue
 
-		hosts_file_lines.append(line)
+		if not line.startswith('#'):		# remove comments
+			line = line.split(' ')[1]		# get dns name
+			if args.no_subdomains:
+				line = domain_extract(line)		# get tld
+				line = line.domain + '.' + line.suffix
 
+			hosts_file_lines.append(line)
+
+	hosts_file_lines = set(hosts_file_lines)
 	return hosts_file_lines
 
-
-def convert_hosts_file_to_dnsmasq_format(hosts_file_url):
-
-	tld_list = []
-	hosts_file_lines = get_hosts_list(hosts_file_url)
-
-	for line in hosts_file_lines:
-		if len(line) == 0:
-			continue
-		if line not in skip_list:
-			if not line.startswith('#'):		# remove comments
-				line = line.split('#')[0]	# remove inline comments
-				split_line = line.split(' ')
-				split_line = list(filter(None, split_line))
-				domain = split_line[-1]
-				tld = domain_extract(domain)
-				if tld.domain == '':		# remove TLD's from block list
-					continue
-				if args.no_subdomains:
-					tld_list.append(tld.domain + '.' + tld.suffix)
-				else:
-					if len(tld.subdomain) == 0:
-						tld_list.append(tld.domain + '.' + tld.suffix)
-					else:
-						tld_list.append(tld.subdomain + '.' + tld.domain + '.' + tld.suffix)
-
-
-	block_set = set(tld_list)
+def convert_hosts_file_to_dnsmasq_format(hosts_file_lines):
 	dnsmasq_rules = []
-	for item in block_set:
+	for item in hosts_file_lines:
 		dnsmasq_line = 'address=/.' + item + '/127.0.0.1'
 		dnsmasq_rules.append(dnsmasq_line)
+	dnsmasq_rules = set(dnsmasq_rules)
 	return dnsmasq_rules
 
 
 if __name__ == '__main__':
 
-	result_list = []
+	result_set = set()
 	output_file = os.path.abspath(args.output_file)
+	if args.whitelist:
+		whitelist_file = os.path.abspath(args.whitelist)
+		if os.path.isfile(whitelist_file):
+			with open(whitelist_file, 'r') as wl_fh:
+				whitelist = set(wl_fh.read().splitlines())
+		else:
+			raise FileNotFoundError("file:" + whitelist_file + " does not exist.")
+			
+	data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 
+					'http://someonewhocares.org/hosts/hosts']
 
-	with open(args.output_file, 'w') as fh:
-		data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+	for url in data_sources:
+		hosts_rules = get_hosts_list(url)
+		if args.whitelist:
+			hosts_rules = hosts_rules - whitelist
 
 		if args.hosts:
-			for url in data_sources:
-				hosts_rules = get_hosts_list(url)
-				result_list = result_list + hosts_rules
+			result_set = result_set|hosts_rules		#union
 		else:
-			for url in data_sources:
-				dnsmasq_rules = convert_hosts_file_to_dnsmasq_format(url)
-				result_list = result_list + dnsmasq_rules
-				
-		result_list = list(unique(result_list))
-		for item in result_list:
-			fh.write(item + '\n')
+			dnsmasq_rules = convert_hosts_file_to_dnsmasq_format(hosts_rules)
+			result_set = result_set|dnsmasq_rules
 
+	if args.hosts:
+		with open(args.output_file, 'w') as fh:
+			for item in result_set:
+				fh.write('127.0.0.1 ' + item + '\n')
+	else:
+		with open(args.output_file, 'w') as fh:
+			for item in result_set:
+				fh.write(item + '\n')
 
 	print("Done generating", output_file, file=sys.stderr)
 
@@ -130,7 +132,6 @@ if __name__ == '__main__':
 		print("\nTo add to /etc/hosts:", file=sys.stderr)
 		print('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) +
 		' && cat ' + output_file + '" >> /etc/hosts', file=sys.stderr)
-
 
 	else:
 		print("\nTo add to /etc/dnsmasq.conf:", file=sys.stderr)
