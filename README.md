@@ -25,8 +25,10 @@ optional arguments:
   -h, --help            show this help message and exit
   --no-subdomains       do not include subdomains:
                         example:
-                                analytics.google.com will block google.com and all subdomains (see --whitelist)
-  --hosts               generate /etc/hosts compatible file (mutually exclusive with --no-subdomains since hosts files can't block wildcard subdomains)
+                                analytics.google.com will block google.com and all 
+                                subdomains (see --whitelist)
+  --hosts               generate /etc/hosts compatible file (mutually exclusive with 
+                        --no-subdomains since hosts files can't block wildcard subdomains)
   --whitelist WHITELIST
                         whitelist of DNS names
                         example:
