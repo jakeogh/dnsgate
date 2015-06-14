@@ -42,14 +42,15 @@ optional arguments:
 						ads served until the lists are updated with the new 
 						subdomains.
   --hosts               generate /etc/hosts format file
-                        (not useful with --trim-subdomains since hosts files can't block
-						subdomains unless explicitly specified)
+                        (not useful with --trim-subdomains since hosts files can't
+						block subdomains unless explicitly specified)
   --whitelist WHITELIST
                         file containing DNS names to whitelist
                         example:
                             stackexchange.com
                             stackoverflow.com
-  --keep                save remote hosts files as hosts.timestamp in the current folder
+  --keep                save remote hosts files as hosts.timestamp in the current
+						folder
 
 
 $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
