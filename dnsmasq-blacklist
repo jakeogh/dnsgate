@@ -37,7 +37,7 @@ parser.add_argument("--trim-subdomains",
 	help='''R|do not include subdomains (see --whitelist)\nexample:\n    analytics.google.com will block google.com\
  and all subdomains\nthis option is not enabled by default, you may want to enable it if you are using dnsmasq and \
  willing to maintain a --whitelist file for domains that are inadvertently blocked, the effect is that the vast majority\
- of ad-serving domains are blocked at their top DNS name, otherwise the subdomain can be changed and ads served until\
+ of ad-serving domains are blocked at their top domain name, otherwise the subdomain can be changed and ads served until\
  the lists are updated with the new subdomains.''', action="store_true", default=False)
 
 parser.add_argument("--hosts",
