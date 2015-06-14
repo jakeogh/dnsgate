@@ -28,7 +28,8 @@ optional arguments:
                                 analytics.google.com will block google.com and all 
                                 subdomains (see --whitelist)
   --hosts               generate /etc/hosts compatible file (mutually exclusive with 
-                        --no-subdomains since hosts files can't block wildcard subdomains)
+                        --no-subdomains since hosts files can't block wildcard
+						subdomains)
   --whitelist WHITELIST
                         whitelist of DNS names
                         example:
