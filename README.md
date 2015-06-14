@@ -6,7 +6,7 @@
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-**dnsmasq-blacklist** reads two popular /etc/hosts blocking lists[1] and converts them to dnsmasq.conf format.
+**dnsmasq-blacklist** reads two popular /etc/hosts blocking lists```[1]``` and converts them to dnsmasq.conf format.
 
 Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the --trim-subdomains option is enabled subdomain changes wont subvert blocking.
 
@@ -33,19 +33,21 @@ optional arguments:
   --trim-subdomains     do not include subdomains (see --whitelist)
                         example:
                             analytics.google.com will block google.com and all subdomains
-                        this option is not enabled by default, you may want to enable it if you are using dnsmasq and are
-						willing to maintain a --whitelist file for domains that are inadvertently blocked, the effect is
-						that the vast majority of ad-serving domains are blocked at their top DNS name, otherwise the
-						subdomain can be changed and ads served until the lists are updated with the new subdomains.
+                        this option is not enabled by default, you may want to enable it
+						if you are using dnsmasq and are willing to maintain a
+						--whitelist file for domains that are inadvertently blocked, the
+						effect is the vast majority of ad-serving domains are blocked at
+						their top domain name, otherwise the subdomain can be changed and
+						ads served until the lists are updated with the new subdomains.
   --hosts               generate /etc/hosts format file
-                        (not useful with --trim-subdomains since hosts files can't block subdomains unless explicitly specified)
+                        (not useful with --trim-subdomains since hosts files can't block
+						subdomains unless explicitly specified)
   --whitelist WHITELIST
                         file containing DNS names to whitelist
                         example:
                             stackexchange.com
                             stackoverflow.com
-  --keep                save retrieved hosts files as hosts.(timestamp) in the current folder
-
+  --keep                save remote hosts files as hosts.timestamp in the current folder
 
 
 $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
@@ -72,5 +74,6 @@ address=/.images.bmnq.com/127.0.0.1
 
 ```
 
-[1]:```http://winhelp2002.mvps.org/hosts.txt
-http://someonewhocares.org/hosts/hosts'''
+`**[1]:**`
+```http://winhelp2002.mvps.org/hosts.txt
+http://someonewhocares.org/hosts/hosts```
