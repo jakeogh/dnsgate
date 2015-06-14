@@ -3,9 +3,6 @@
 # PUBLIC DOMAIN
 # http://github.com/jkeogh/dnsmasq-blacklist
 
-# todo:
-# optional read hosts file from stdin
-
 import time
 import sys
 import os
@@ -15,8 +12,7 @@ import argparse
 import tldextract
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
-default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 
-						'http://someonewhocares.org/hosts/hosts']
+default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 
 # http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
 class SmartFormatter(argparse.HelpFormatter):
@@ -29,28 +25,29 @@ class SmartFormatter(argparse.HelpFormatter):
 parser = argparse.ArgumentParser(formatter_class=SmartFormatter)
 
 parser.add_argument("urls",
-			help='R|optional url(s) to get hosts files from\ndefaults to:\nhttp://winhelp2002.mvps.org/hosts.txt\n\
-http://someonewhocares.org/hosts/hosts\n\nlocal files can be specified:\nfile://some_file', nargs='*',	default=default_data_sources)
+	help='R|optional hosts file url(s)\ndefaults to:\n' + default_data_sources[0] + '\n' + default_data_sources[1]\
+ + '\n\nlocal files can also be specified:\nfile://some_file', nargs='*',	default=default_data_sources)
 
 parser.add_argument("--output",
-			help='''R|file to write to (default is stdout)''',
-			type=str, default='/dev/stdout')
+	help='''R|write to file (default is stdout)''',
+ type=str, default='/dev/stdout')
 
-parser.add_argument("--no-subdomains",
-			help='''R|do not include subdomains:\nexample:\n\tanalytics.google.com will block google.com and all subdomains (see --whitelist)\n''',
-			action="store_true", default=False)
+parser.add_argument("--trim-subdomains",
+	help='''R|do not include subdomains (see --whitelist)\nexample:\n    analytics.google.com will block google.com and all subdomains\
+ \nthis option is not enabled by default, you may want to enable it if you are using dnsmasq and are willing to maintain a --whitelist\
+ file for domains that are inadvertently blocked, the effect is that the vast majority of ad-serving domains are blocked at their top\
+ DNS name, otherwise the subdomain can be changed and ads can be served until the lists are updated with the new subdomains.''',
+ action="store_true", default=False)
 
 parser.add_argument("--hosts",
-			help='''R|generate /etc/hosts compatible file (not particularly useful with --no-subdomains since hosts files can't block subdomains unless
- explicitly added)''', action="store_true", default=False)
+	help='''R|generate /etc/hosts format file\n(not useful with --trim-subdomains since hosts files can't block subdomains unless\
+ explicitly specified)''', action="store_true", default=False)
 
 parser.add_argument("--whitelist",
-			help='''R|file containing DNS names to whitelist\nexample:\n\tstackexchange.com\n\tstackoverflow.com''',
-			type=str, default=False)
+	help='''R|file containing DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com''', type=str, default=False)
 
 parser.add_argument("--keep",
-			help='''R|save retrieved hosts files as hosts.(timestamp) in the current folder''',
-			action="store_true", default=False)
+	help='''R|save retrieved hosts files as hosts.(timestamp) in the current folder''',	action="store_true", default=False)
 
 args = parser.parse_args()
 
@@ -59,28 +56,26 @@ if os.path.isfile(args.output) and args.output != '/dev/stdout':
 	quit(1)
 
 def domain_extract(domain):
-	dom = no_cache_extract(domain)
+	dom = no_cache_extract(domain)	#prevent tldextract cache update error when run as a normal user
 	return dom
 
-def get_hosts_list(hosts_file_url):
+def get_hosts_dns_names(url):
 	user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
-	hosts_file_lines = []
+	hosts_file_dns_names = []
 
-	if hosts_file_url.startswith('http://') or hosts_file_url.startswith('https://'):
-		raw_hosts_file_lines = requests.get(hosts_file_url, headers={'User-Agent': user_agent},
+	if url.startswith('http://') or url.startswith('https://'):
+		raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent},
 								allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
-	elif hosts_file_url.startswith('file://'):
+	elif url.startswith('file://'):
 		local_file = url.split('file://')[-1]	#eh
-		print(local_file)
 		if os.path.isfile(local_file):
 			with open(local_file, 'rb') as fh:
 				raw_hosts_file_lines = fh.read().splitlines()
 		else:
 			raise FileNotFoundError
 	else:
-		print("Unknown URI scheme:", hosts_file_url)
+		print("Unknown URI scheme:", url)
 		quit(1)
-
 
 	if args.keep:
 		with open('hosts.' + str(time.time()), 'wb') as fh:
@@ -97,18 +92,18 @@ def get_hosts_list(hosts_file_url):
 
 		if not line.startswith('#'):		# remove comments
 			line = line.split(' ')[1]		# get DNS name
-			if args.no_subdomains:
-				line = domain_extract(line)		# get tld
+			if args.trim_subdomains:
+				line = domain_extract(line)	# get tld
 				line = line.domain + '.' + line.suffix
 
-			hosts_file_lines.append(line)
+			hosts_file_dns_names.append(line)
 
-	hosts_file_lines = set(hosts_file_lines)
-	return hosts_file_lines
+	hosts_file_dns_names = set(hosts_file_dns_names)
+	return hosts_file_dns_names
 
-def convert_hosts_file_to_dnsmasq_format(hosts_file_lines):
+def convert_hosts_file_to_dnsmasq_format(hosts_file_dns_names):
 	dnsmasq_rules = []
-	for item in hosts_file_lines:
+	for item in hosts_file_dns_names:
 		dnsmasq_line = 'address=/.' + item + '/127.0.0.1'
 		dnsmasq_rules.append(dnsmasq_line)
 	dnsmasq_rules = set(dnsmasq_rules)
@@ -117,26 +112,38 @@ def convert_hosts_file_to_dnsmasq_format(hosts_file_lines):
 
 if __name__ == '__main__':
 
+	full_dns_name_set = set()
 	result_set = set()
 	output_file = os.path.abspath(args.output)
 	if args.whitelist:
 		whitelist_file = os.path.abspath(args.whitelist)
 		if os.path.isfile(whitelist_file):
 			with open(whitelist_file, 'r') as wl_fh:
-				whitelist = set(wl_fh.read().splitlines())
+				dns_name_whitelist = set(wl_fh.read().splitlines())
 		else:
 			raise FileNotFoundError("file:" + whitelist_file + " does not exist.")
 			
 	for url in args.urls:
-		hosts_rules = get_hosts_list(url)
+		dns_names = get_hosts_dns_names(url)
+		full_dns_name_set = full_dns_name_set|dns_names		# needed so that explicitly listed ad-serving subdomains
+															# of whitelisted domains can still be routed to 127.0.0.1
 		if args.whitelist:
-			hosts_rules = hosts_rules - whitelist
+			dns_names = dns_names - dns_name_whitelist
 
 		if args.hosts:
-			result_set = result_set|hosts_rules		#union
+			result_set = result_set|dns_names
 		else:
-			dnsmasq_rules = convert_hosts_file_to_dnsmasq_format(hosts_rules)
+			dnsmasq_rules = convert_hosts_file_to_dnsmasq_format(dns_names)
 			result_set = result_set|dnsmasq_rules
+
+
+	if args.whitelist:
+		for name in result_set:
+			if 'stackoverflow' in name:
+				print(name, file=sys.stderr)
+			for whitelisted_name in dns_name_whitelist:
+				if name.endswith(whitelisted_name):
+					result_set = result_set|set(name)	# blacklist ads.somedomain.com even if somedomain.com is whitelisted
 
 	if args.hosts:
 		with open(output_file, 'w') as fh:
@@ -158,4 +165,3 @@ if __name__ == '__main__':
 		' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf', file=sys.stderr)
 		print('\nThen restart the dnsmasq service:', file=sys.stderr)
 		print('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"', file=sys.stderr)
-
