@@ -6,35 +6,46 @@
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-dnsmasq-blacklist reads two popular /etc/hosts blocking lists and converts them to dnsmasq.conf format.
+**dnsmasq-blacklist** reads two popular /etc/hosts blocking lists[1] and converts them to dnsmasq.conf format.
 
-Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain and therefore requires less maintenance (to keep up with subdomain changes).
+Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the --trim-subdomains option is enabled subdomain changes wont subvert blocking.
 
 Using dnsmasq has another benefit; caching repeated DNS queries decreases the time it takes to load web pages.
 
 ```
 $./dnsmasq-blacklist -h
-usage: dnsmasq-blacklist [-h] [--no-subdomains] [--hosts]
-                         [--whitelist WHITELIST]
-                         output_file
+usage: dnsmasq-blacklist [-h] [--output OUTPUT] [--trim-subdomains] [--hosts]
+                         [--whitelist WHITELIST] [--keep]
+                         [urls [urls ...]]
 
 positional arguments:
-  output_file           file to write dnsmasq rules to
+  urls                  optional hosts file url(s)
+                        defaults to:
+                        http://winhelp2002.mvps.org/hosts.txt
+                        http://someonewhocares.org/hosts/hosts
+                        
+                        local files can also be specified:
+                        file://some_file
 
 optional arguments:
   -h, --help            show this help message and exit
-  --no-subdomains       do not include subdomains:
+  --output OUTPUT       write to file (default is stdout)
+  --trim-subdomains     do not include subdomains (see --whitelist)
                         example:
-                                analytics.google.com will block google.com and all 
-                                subdomains (see --whitelist)
-  --hosts               generate /etc/hosts compatible file (mutually exclusive with 
-                        --no-subdomains since hosts files can't block wildcard
-						subdomains)
+                            analytics.google.com will block google.com and all subdomains
+                        this option is not enabled by default, you may want to enable it if you are using dnsmasq and are
+						willing to maintain a --whitelist file for domains that are inadvertently blocked, the effect is
+						that the vast majority of ad-serving domains are blocked at their top DNS name, otherwise the
+						subdomain can be changed and ads served until the lists are updated with the new subdomains.
+  --hosts               generate /etc/hosts format file
+                        (not useful with --trim-subdomains since hosts files can't block subdomains unless explicitly specified)
   --whitelist WHITELIST
-                        whitelist of DNS names
+                        file containing DNS names to whitelist
                         example:
-                                stackexchange.com
-                                stackoverflow.com
+                            stackexchange.com
+                            stackoverflow.com
+  --keep                save retrieved hosts files as hosts.(timestamp) in the current folder
+
 
 
 $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
@@ -60,3 +71,6 @@ address=/.www.ivwbox.de/127.0.0.1
 address=/.images.bmnq.com/127.0.0.1
 
 ```
+
+[1]:```http://winhelp2002.mvps.org/hosts.txt
+http://someonewhocares.org/hosts/hosts'''
