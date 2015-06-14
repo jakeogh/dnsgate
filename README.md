@@ -32,13 +32,15 @@ optional arguments:
   --output OUTPUT       write to file (default is stdout)
   --trim-subdomains     do not include subdomains (see --whitelist)
                         example:
-                            analytics.google.com will block google.com and all subdomains
-                        this option is not enabled by default, you may want to enable it
-						if you are using dnsmasq and are willing to maintain a
-						--whitelist file for domains that are inadvertently blocked, the
-						effect is the vast majority of ad-serving domains are blocked at
-						their top domain name, otherwise the subdomain can be changed and
-						ads served until the lists are updated with the new subdomains.
+                            analytics.google.com will block google.com and all
+						subdomains. This option is not enabled by default, you
+						may want to enable it if you are using dnsmasq and are
+						willing to maintain a `--whitelist` file for domains
+						that are inadvertently blocked, the effect is the vast
+						majority of ad-serving domains are blocked at their top
+						domain name, otherwise the subdomain can be changed and
+						ads served until the lists are updated with the new 
+						subdomains.
   --hosts               generate /etc/hosts format file
                         (not useful with --trim-subdomains since hosts files can't block
 						subdomains unless explicitly specified)
@@ -74,6 +76,6 @@ address=/.images.bmnq.com/127.0.0.1
 
 ```
 
-`**[1]:**`
-```http://winhelp2002.mvps.org/hosts.txt
-http://someonewhocares.org/hosts/hosts```
+`[1]:`
+ `http://winhelp2002.mvps.org/hosts.txt`
+ `http://someonewhocares.org/hosts/hosts`
