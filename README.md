@@ -14,15 +14,25 @@ Using dnsmasq has another benefit; caching repeated DNS queries decreases the ti
 
 ```
 $./dnsmasq-blacklist -h
-usage: dnsmasq-blacklist [-h] [--no-subdomains] output_file
+usage: dnsmasq-blacklist [-h] [--no-subdomains] [--hosts]
+                         [--whitelist WHITELIST]
+                         output_file
 
 positional arguments:
-  output_file      file to write dnsmasq rules to
+  output_file           file to write dnsmasq rules to
 
 optional arguments:
-  -h, --help       show this help message and exit
-  --no-subdomains  do not include subdomains (legitimate domains may be
-                   blocked).
+  -h, --help            show this help message and exit
+  --no-subdomains       do not include subdomains:
+                        example:
+                                analytics.google.com will block google.com and all subdomains (see --whitelist)
+  --hosts               generate /etc/hosts compatible file (mutually exclusive with --no-subdomains since hosts files can't block wildcard subdomains)
+  --whitelist WHITELIST
+                        whitelist of DNS names
+                        example:
+                                stackexchange.com
+                                stackoverflow.com
+
 
 $./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
 Done generating /etc/dnsmasq.blacklist.conf
