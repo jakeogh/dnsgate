@@ -1,12 +1,14 @@
 # dnsmasq-blacklist
 
-[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) allows wildcard blocking of domains, for example, to block *.google.com:
+[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) is an alternative to /etc/hosts domain blocking.
+
+It allows wildcard blocking of domains, for example, to block *.google.com:
 
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-**dnsmasq-blacklist** reads two popular /etc/hosts blocking lists```[1]``` and converts them to dnsmasq.conf format.
+**dnsmasq-blacklist** reads two popular /etc/hosts blocking lists```[1]``` and converts them to /etc/dnsmasq.conf or /etc/hosts format.
 
 Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the --trim-subdomains option is enabled subdomain changes wont subvert blocking.
 
