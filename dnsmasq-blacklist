@@ -71,11 +71,12 @@ def get_hosts_dns_names(url):
 						allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
 	elif url.startswith('file://'):
 		local_file = url.split('file://')[-1]	#eh
+		print(local_file)
 		if os.path.isfile(local_file):
 			with open(local_file, 'rb') as fh:
 				raw_hosts_file_lines = fh.read().splitlines()
 		else:
-			raise FileNotFoundError
+			raise FileNotFoundError("local hosts file:" + local_file + " does not exist.")
 	else:
 		print("Unknown URI scheme:", url)
 		quit(1)

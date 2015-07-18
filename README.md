@@ -1,8 +1,8 @@
 # dnsmasq-blacklist
 
-[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) is an alternative to /etc/hosts domain blocking.
+[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq)'s configuration syntax provides an alternative to /etc/hosts domain blocking.
 
-It allows wildcard blocking of domains, for example, to block *.google.com:
+Unlike /etc/hosts dnsmasq allows wildcard blocking of domains, for example, to block *.google.com (and google.com):
 
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
@@ -10,7 +10,7 @@ echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 
 **dnsmasq-blacklist** reads two popular /etc/hosts blocking lists```[1]``` and converts them to /etc/dnsmasq.conf or /etc/hosts format.
 
-Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the --trim-subdomains option is enabled subdomain changes wont subvert blocking.
+Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the `--trim-subdomains` option is enabled subdomain changes wont subvert blocking (unless --hosts is also enabled).
 
 Using dnsmasq has another benefit; caching repeated DNS queries decreases the time it takes to load web pages.
 
@@ -55,8 +55,7 @@ optional arguments:
 						folder
 
 
-$./dnsmasq-blacklist /etc/dnsmasq.blacklist.conf
-Done generating /etc/dnsmasq.blacklist.conf
+$./dnsmasq-blacklist --output /etc/dnsmasq.blacklist.conf
 
 To add to dnsmasq.conf:
 cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.1428126020.6137238 && \
@@ -65,7 +64,7 @@ echo "conf-file=/etc/dnsmasq.blacklist.conf" >> /etc/dnsmasq.conf
 Then restart the dnsmasq service:
 "/etc/init.d/dnsmasq restart" or "service dnsmasq restart"
 
-$head /etc/dnsmasq.blacklist.conf
+$ head /etc/dnsmasq.blacklist.conf
 address=/.s28.sitemeter.com/127.0.0.1
 address=/.ameritradeogilvy.112.2o7.net/127.0.0.1
 address=/.xtds.info/127.0.0.1
