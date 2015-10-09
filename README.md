@@ -8,11 +8,11 @@ Unlike /etc/hosts dnsmasq allows wildcard blocking of domains, for example, to b
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-**dnsmasq-blacklist** reads two popular /etc/hosts blocking lists```[1]``` and converts them to /etc/dnsmasq.conf or /etc/hosts format.
+**dnsmasq-blacklist** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
 
 Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the `--trim-subdomains` option is enabled subdomain changes wont subvert blocking (unless --hosts is also enabled).
 
-Using dnsmasq has another benefit; caching repeated DNS queries decreases the time it takes to load web pages.
+Using dnsmasq often significantly lowers DNS latency.
 
 ```
 $./dnsmasq-blacklist -h
@@ -75,7 +75,6 @@ address=/.win-spy.com/127.0.0.1
 address=/.www.hitscreamer.com/127.0.0.1
 address=/.www.ivwbox.de/127.0.0.1
 address=/.images.bmnq.com/127.0.0.1
-
 ```
 
 `[1]:`
