@@ -1,5 +1,7 @@
 # dnsmasq-blacklist
 
+**dnsmasq-blacklist** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
+
 [dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq)'s configuration syntax provides an alternative to /etc/hosts domain blocking.
 
 Unlike /etc/hosts dnsmasq allows wildcard blocking of domains, for example, to block *.google.com (and google.com):
@@ -7,8 +9,6 @@ Unlike /etc/hosts dnsmasq allows wildcard blocking of domains, for example, to b
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
-
-**dnsmasq-blacklist** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
 
 Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the `--trim-subdomains` option is enabled subdomain changes wont subvert blocking (unless --hosts is also enabled).
 
