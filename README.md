@@ -16,46 +16,46 @@ Using dnsmasq often significantly lowers DNS latency.
 
 ```
 $./dnsmasq-blacklist -h
-usage: dnsmasq-blacklist [-h] [--output OUTPUT] [--trim-subdomains] [--hosts]
+usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--trim-subdomains]
                          [--whitelist WHITELIST] [--keep]
-                         [urls [urls ...]]
+                         {dnsmasq,hosts} output_file
 
 positional arguments:
-  urls                  optional hosts file url(s)
-                        defaults to:
-                        http://winhelp2002.mvps.org/hosts.txt
-                        http://someonewhocares.org/hosts/hosts
-                        
-                        local files can also be specified:
-                        file://some_file
+  {dnsmasq,hosts}       (required) generate /etc/dnsmasq.conf or /etc/hosts file
+  output_file           (required) output file (- for stdout)
+                         
 
 optional arguments:
   -h, --help            show this help message and exit
-  --output OUTPUT       write to file (default is stdout)
-  --trim-subdomains     do not include subdomains (see --whitelist)
+  --url [URL [URL ...]]
+                        optional hosts file url(s)
+                        defaults to:
+                            http://winhelp2002.mvps.org/hosts.txt
+                            http://someonewhocares.org/hosts/hosts
+                        local files can also be specified:
+                            file://some_file
+                         
+  --trim-subdomains     strip subdomains (see --whitelist)
                         example:
-                            analytics.google.com will block google.com and all
-						subdomains. This option is not enabled by default, you
-						may want to enable it if you are using dnsmasq and are
-						willing to maintain a `--whitelist` file for domains
-						that are inadvertently blocked, the effect is the vast
-						majority of ad-serving domains are blocked at their top
-						domain name, otherwise the subdomain can be changed and
-						ads served until the lists are updated with the new 
-						subdomains.
-  --hosts               generate /etc/hosts format file
-                        (not useful with --trim-subdomains since hosts files can't
-						block subdomains unless explicitly specified)
+                            analytics.google.com -> google.com
+                        not enabled by default. Useful for dnsmasq if you are willing to maintain a
+                        --whitelist file for inadvertently blocked domains. This causes ad-serving
+                        domains to be blocked at their TLD's. Wihout this option, the domain owner
+                        can change until the --url lists are updated. It does not make sense to use
+                        this flag if you are generateing a /etc/hosts format file since the effect
+                        would be to block google.com and not *.google.com
+                         
   --whitelist WHITELIST
                         file containing DNS names to whitelist
                         example:
                             stackexchange.com
                             stackoverflow.com
-  --keep                save remote hosts files as hosts.timestamp in the current
-						folder
+                         
+  --keep                save retrieved hosts files as hosts.(timestamp) in the current folder
+                         
 
 
-$./dnsmasq-blacklist --output /etc/dnsmasq.blacklist.conf
+$./dnsmasq-blacklist --dnsmasq /etc/dnsmasq.blacklist.conf
 
 To add to dnsmasq.conf:
 cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.1428126020.6137238 && \
