@@ -74,17 +74,16 @@ def get_hosts_dns_names(url):
 
     elif url.startswith('file://'):
         if args.cache:
-            print("Ignoring --cache for %s.", url, file=sys.stderr)
+            print("Ignoring --cache for %s." % url, file=sys.stderr)
 
         local_file = url.split('file://')[-1]   #eh
-        print(local_file)
         if os.path.isfile(local_file):
             with open(local_file, 'rb') as fh:
                 raw_hosts_file_lines = fh.read().splitlines()
         else:
             raise FileNotFoundError("local hosts file:" + local_file + " does not exist.")
     else:
-        print("Unknown URI scheme:", url)
+        print("Unknown URI scheme:", url, file=sys.stderr)
         quit(1)
 
 
@@ -126,7 +125,7 @@ if __name__ == '__main__':
         if url.startswith('http://') or url.startswith('https://') or url.startswith('file://'):
             pass
         else:
-            print("Unknown URI scheme:", url)
+            print("Unknown URI scheme:", url, file=sys.stderr)
             quit(1)
 
     if args.output_file == '-' or args.output_file == '/dev/stdout':
@@ -136,7 +135,6 @@ if __name__ == '__main__':
  
     full_dns_name_set = set()
     result_set = set()
-    print("output_file:", output_file)
     if args.whitelist:
         whitelist_file = os.path.abspath(args.whitelist)
         if os.path.isfile(whitelist_file):
@@ -165,14 +163,14 @@ if __name__ == '__main__':
 
     if args.whitelist:
         for name in result_set:
-            if 'stackoverflow' in name:
-                print(name, file=sys.stderr)
+#           if 'stackoverflow' in name:
+#               print(name, file=sys.stderr)
             for whitelisted_name in dns_name_whitelist:
                 if name.endswith(whitelisted_name):
                     # blacklist ads.somedomain.com even if somedomain.com is whitelisted
                     result_set = result_set|set(name)
     else:
-        print("No --whitelist specified, skipping whitelisting")
+        print("No --whitelist specified, skipping whitelisting", file=sys.stderr)
 
     if args.format == ['hosts']:
         with open(output_file, 'w') as fh:
@@ -187,12 +185,10 @@ if __name__ == '__main__':
 
     if args.format == ['hosts']:
         print("\nTo add to /etc/hosts:", file=sys.stderr)
-        print('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) +
-        ' && cat ' + output_file + '" >> /etc/hosts', file=sys.stderr)
+        print('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) + ' && cat ' + output_file + '" >> /etc/hosts', file=sys.stderr)
 
     else:
         print("\nTo add to /etc/dnsmasq.conf:", file=sys.stderr)
-        print('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) +
-        ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf', file=sys.stderr)
+        print('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf', file=sys.stderr)
         print('\nThen restart the dnsmasq service:', file=sys.stderr)
         print('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"', file=sys.stderr)
