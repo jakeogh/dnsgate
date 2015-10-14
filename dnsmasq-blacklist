@@ -59,61 +59,61 @@ def domain_extract(domain):
     return dom
 
 def get_hosts_dns_names(url):
-        user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
-        hosts_file_dns_names = []
+    user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
+    hosts_file_dns_names = []
 
-        if url.startswith('http://') or url.startswith('https://'):
-            raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
+    if url.startswith('http://') or url.startswith('https://'):
+        raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
 
-            if args.cache:
-                domain = urlparse(url).netloc
-                with open('dnsmasq-blacklist_cache_' + domain + '_hosts.' + str(time.time()), 'wb') as fh:
-                    for line in raw_hosts_file_lines:
-                        fh.write(line + b'\n')
+        if args.cache:
+            domain = urlparse(url).netloc
+            with open('dnsmasq-blacklist_cache_' + domain + '_hosts.' + str(time.time()), 'wb') as fh:
+                for line in raw_hosts_file_lines:
+                    fh.write(line + b'\n')
 
 
-        elif url.startswith('file://'):
-            if args.cache:
-                print("Ignoring --cache for %s.", url, file=sys.stderr)
+    elif url.startswith('file://'):
+        if args.cache:
+            print("Ignoring --cache for %s.", url, file=sys.stderr)
 
-            local_file = url.split('file://')[-1]   #eh
-            print(local_file)
-            if os.path.isfile(local_file):
-                with open(local_file, 'rb') as fh:
-                    raw_hosts_file_lines = fh.read().splitlines()
-            else:
-                raise FileNotFoundError("local hosts file:" + local_file + " does not exist.")
+        local_file = url.split('file://')[-1]   #eh
+        print(local_file)
+        if os.path.isfile(local_file):
+            with open(local_file, 'rb') as fh:
+                raw_hosts_file_lines = fh.read().splitlines()
         else:
-            print("Unknown URI scheme:", url)
-            quit(1)
+            raise FileNotFoundError("local hosts file:" + local_file + " does not exist.")
+    else:
+        print("Unknown URI scheme:", url)
+        quit(1)
 
 
-        for line in raw_hosts_file_lines:
-            line = line.decode('UTF-8')
-            line = line.replace('\t', ' ')
-            line = " ".join(line.split())           # collapse whitespace
-            line = line.strip()
-            if len(line) == 0:                      # skip empty lines
-                continue
+    for line in raw_hosts_file_lines:
+        line = line.decode('UTF-8')
+        line = line.replace('\t', ' ')
+        line = " ".join(line.split())           # collapse whitespace
+        line = line.strip()
+        if len(line) == 0:                      # skip empty lines
+            continue
 
-            if not line.startswith('#'):            # remove comments
-                line = line.split(' ')[1]       # get DNS name
-                if args.trim_subdomains:
-                    line = domain_extract(line)     # get tld
-                    line = line.domain + '.' + line.suffix
+        if not line.startswith('#'):            # remove comments
+            line = line.split(' ')[1]       # get DNS name
+            if args.trim_subdomains:
+                line = domain_extract(line)     # get tld
+                line = line.domain + '.' + line.suffix
 
-                hosts_file_dns_names.append(line)
+            hosts_file_dns_names.append(line)
 
-        hosts_file_dns_names = set(hosts_file_dns_names)
-        return hosts_file_dns_names
+    hosts_file_dns_names = set(hosts_file_dns_names)
+    return hosts_file_dns_names
 
 def convert_hosts_file_to_dnsmasq_format(hosts_file_dns_names):
-        dnsmasq_rules = []
-        for item in hosts_file_dns_names:
-                dnsmasq_line = 'address=/.' + item + '/127.0.0.1'
-                dnsmasq_rules.append(dnsmasq_line)
-        dnsmasq_rules = set(dnsmasq_rules)
-        return dnsmasq_rules
+    dnsmasq_rules = []
+    for item in hosts_file_dns_names:
+        dnsmasq_line = 'address=/.' + item + '/127.0.0.1'
+        dnsmasq_rules.append(dnsmasq_line)
+    dnsmasq_rules = set(dnsmasq_rules)
+    return dnsmasq_rules
 
 
 if __name__ == '__main__':
