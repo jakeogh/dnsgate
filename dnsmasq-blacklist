@@ -24,11 +24,11 @@ default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someone
 
 # http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
 class SmartFormatter(argparse.HelpFormatter):
-        def _split_lines(self, text, width):
-                # this is the RawTextHelpFormatter._split_lines
-                if text.startswith('R|'):
-                        return text[2:].splitlines()  
-                return argparse.HelpFormatter._split_lines(self, text, width)
+    def _split_lines(self, text, width):
+        # this is the RawTextHelpFormatter._split_lines
+        if text.startswith('R|'):
+            return text[2:].splitlines()  
+        return argparse.HelpFormatter._split_lines(self, text, width)
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
@@ -122,6 +122,12 @@ if __name__ == '__main__':
         print("File %s exists. Refusing to overwrite. Exiting." % args.output_file, file=sys.stderr)
         quit(1)
 
+    for url in args.url:
+        if url.startswith('http://') or url.startswith('https://') or url.startswith('file://'):
+            pass
+        else:
+            print("Unknown URI scheme:", url)
+            quit(1)
 
     if args.output_file == '-' or args.output_file == '/dev/stdout':
         output_file = '/dev/stdout'
