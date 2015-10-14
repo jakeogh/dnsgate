@@ -11,6 +11,7 @@ import requests
 import urllib
 import argparse
 import tldextract
+from urllib.parse import urlparse
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
 class DefaultHelpParser(argparse.ArgumentParser):
@@ -48,56 +49,60 @@ parser.add_argument("--whitelist",
         help='''R|file containing DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n ''',
  type=str, default=False)
 
-parser.add_argument("--keep",
-        help='''R|save retrieved hosts files as hosts.(timestamp) in the current folder\n ''', action="store_true", default=False)
+parser.add_argument("--cache",
+        help='''R|save retrieved hosts files (excluding file://) as domain_hosts.(timestamp) in the current folder\n ''', action="store_true", default=False)
 
 args = parser.parse_args()
 
-print(args.format)
-
 def domain_extract(domain):
-        dom = no_cache_extract(domain)  #prevent tldextract cache update error when run as a normal user
-        return dom
+    dom = no_cache_extract(domain)  #prevent tldextract cache update error when run as a normal user
+    return dom
 
 def get_hosts_dns_names(url):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
         hosts_file_dns_names = []
 
         if url.startswith('http://') or url.startswith('https://'):
-                raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent},
-                                                allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
-        elif url.startswith('file://'):
-                local_file = url.split('file://')[-1]   #eh
-                print(local_file)
-                if os.path.isfile(local_file):
-                        with open(local_file, 'rb') as fh:
-                                raw_hosts_file_lines = fh.read().splitlines()
-                else:
-                        raise FileNotFoundError("local hosts file:" + local_file + " does not exist.")
-        else:
-                print("Unknown URI scheme:", url)
-                quit(1)
+            raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=True, timeout=15.500).content.split(b'\n')
 
-        if args.keep:
-                with open('hosts.' + str(time.time()), 'wb') as fh:
-                        for line in raw_hosts_file_lines:
-                                fh.write(line + b'\n')
+            if args.cache:
+                domain = urlparse(url).netloc
+                with open('dnsmasq-blacklist_cache_' + domain + '_hosts.' + str(time.time()), 'wb') as fh:
+                    for line in raw_hosts_file_lines:
+                        fh.write(line + b'\n')
+
+
+        elif url.startswith('file://'):
+            if args.cache:
+                print("Ignoring --cache for %s.", url, file=sys.stderr)
+
+            local_file = url.split('file://')[-1]   #eh
+            print(local_file)
+            if os.path.isfile(local_file):
+                with open(local_file, 'rb') as fh:
+                    raw_hosts_file_lines = fh.read().splitlines()
+            else:
+                raise FileNotFoundError("local hosts file:" + local_file + " does not exist.")
+        else:
+            print("Unknown URI scheme:", url)
+            quit(1)
+
 
         for line in raw_hosts_file_lines:
-                line = line.decode('UTF-8')
-                line = line.replace('\t', ' ')
-                line = " ".join(line.split())           # collapse whitespace
-                line = line.strip()
-                if len(line) == 0:                                      # skip empty lines
-                        continue
+            line = line.decode('UTF-8')
+            line = line.replace('\t', ' ')
+            line = " ".join(line.split())           # collapse whitespace
+            line = line.strip()
+            if len(line) == 0:                      # skip empty lines
+                continue
 
-                if not line.startswith('#'):            # remove comments
-                        line = line.split(' ')[1]               # get DNS name
-                        if args.trim_subdomains:
-                                line = domain_extract(line)     # get tld
-                                line = line.domain + '.' + line.suffix
+            if not line.startswith('#'):            # remove comments
+                line = line.split(' ')[1]       # get DNS name
+                if args.trim_subdomains:
+                    line = domain_extract(line)     # get tld
+                    line = line.domain + '.' + line.suffix
 
-                        hosts_file_dns_names.append(line)
+                hosts_file_dns_names.append(line)
 
         hosts_file_dns_names = set(hosts_file_dns_names)
         return hosts_file_dns_names
@@ -163,7 +168,6 @@ if __name__ == '__main__':
     else:
         print("No --whitelist specified, skipping whitelisting")
 
-    print("args.format:", args.format)
     if args.format == ['hosts']:
         with open(output_file, 'w') as fh:
             for item in sorted(result_set):
