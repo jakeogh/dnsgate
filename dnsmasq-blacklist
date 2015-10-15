@@ -24,8 +24,7 @@ class DefaultHelpParser(argparse.ArgumentParser):
 
 default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 
-# http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
-class SmartFormatter(argparse.HelpFormatter):
+class SmartFormatter(argparse.HelpFormatter): # http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
     def _split_lines(self, text, width):
         # this is the RawTextHelpFormatter._split_lines
         if text.startswith('R|'):
@@ -36,14 +35,17 @@ parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 parser.add_argument("format", help='''R|(required) generate /etc/dnsmasq.conf or /etc/hosts file\n''', action="store", nargs=1, choices=['dnsmasq', 'hosts'], type=str)
 parser.add_argument("output_file", help='''R|(required) output file (- for stdout)\n ''', type=str)
 parser.add_argument("--url", help='R|optional hosts file url(s)\ndefaults to:\n    ' + default_data_sources[0] + '\n    ' + default_data_sources[1] + '\nlocal files can also be specified:\n    file://some_file\n ', nargs='*',  default=default_data_sources)
-
-parser.add_argument("--remove-subdomains", help='''R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\
-\nnot enabled by default. Useful for dnsmasq if you are willing to maintain a\n--whitelist file for inadvertently blocked domains. This causes ad-serving\ndomains to be blocked at their TLD's. Without this option, the domain owner\ncan change until the --url lists are updated. It does not make sense to use\nthis flag if you are generating a /etc/hosts format file since the effect\nwould be to block google.com and not *.google.com\n ''', action="store_true", default=False)
-
+parser.add_argument("--remove-subdomains", help='''R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\nnot enabled by default. Useful for dnsmasq if you are willing to maintain a\n--whitelist file for inadvertently blocked domains. This causes ad-serving\ndomains to be blocked at their TLD's. Without this option, the domain owner\ncan change until the --url lists are updated. It does not make sense to use\nthis flag if you are generating a /etc/hosts format file since the effect\nwould be to block google.com and not *.google.com\n ''', action="store_true", default=False)
+parser.add_argument("--verbose", help='''R|print additional debugging information to stderr\n ''', action="store_true", default=False)
 parser.add_argument("--whitelist", help='''R|file containing DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n ''', type=str, default=False)
 parser.add_argument("--url-cache-dir", help='''R|cache --url files as dnsmasq-blacklist_cache_domain_hosts.(timestamp) optionally in a specified directory\n ''', type=str, default=False)
 
-args = parser.parse_args()
+cmd_args = parser.parse_args()
+
+def cprint(*args, **kwargs):
+    if cmd_args.verbose:
+        caller = sys._getframe(1).f_code.co_name
+        print(str("%.5f" % time.time()), os.getpid(), '{0: <20}'.format(caller+'()'), *args, file=sys.stderr, **kwargs)
 
 def get_domains(url, cache_directory):
     domains = set()
@@ -52,7 +54,7 @@ def get_domains(url, cache_directory):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
         raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False, timeout=15.500).content.split(b'\n')
 
-        if args.url_cache_dir:
+        if cmd_args.url_cache_dir:
             domain = urlparse(url).netloc
             output_file = cache_directory + '/' + 'dnsmasq_blacklist_url-cache_' + domain + '_hosts.' + str(time.time())
             with open(output_file, 'wb') as fh:
@@ -76,7 +78,7 @@ def get_domains(url, cache_directory):
         local_file = url.split('file://')[-1]       # do that better
         domains = set(read_file(local_file).splitlines())
 
-    print("domains in", url, ":", len(domains), file=sys.stderr)
+    cprint("domains in", url, ":", len(domains))
     return domains
 
 def read_file(file):
@@ -110,83 +112,78 @@ def convert_domains_to_dnsmasq_format(domains):
 
 if __name__ == '__main__':
 
-    if os.path.isfile(args.output_file) and args.output_file != '/dev/stdout':
-        print("File %s exists. Refusing to overwrite. Exiting." % args.output_file, file=sys.stderr)
+    if os.path.isfile(cmd_args.output_file) and cmd_args.output_file != '/dev/stdout':
+        cprint("File %s exists. Refusing to overwrite. Exiting." % cmd_args.output_file)
         quit(1)
 
-    for url in args.url:
+    for url in cmd_args.url:
         if url.startswith('http://') or url.startswith('https://') or url.startswith('file://'):
             pass
         else:
-            print("Unknown URI scheme:", url, file=sys.stderr)
+            cprint("Unknown URI scheme:", url)
             quit(1)
 
-    if args.url_cache_dir:
-        cache_directory = os.path.abspath(os.path.expanduser(args.url_cache_dir))
+    if cmd_args.url_cache_dir:
+        cache_directory = os.path.abspath(os.path.expanduser(cmd_args.url_cache_dir))
         if not os.path.isdir(cache_directory):
-            print("--url-cache requires a directory argument,", cache_directory, " is not a directory.", file=sys.stderr)
+            cprint("--url-cache requires a directory argument,", cache_directory, " is not a directory.")
             quit(1)
     else:
         cache_directory = '.'
 
-    if args.output_file == '-' or args.output_file == '/dev/stdout':
+    if cmd_args.output_file == '-' or cmd_args.output_file == '/dev/stdout':
         output_file = '/dev/stdout'
     else:
-        output_file = os.path.abspath(args.output_file)
+        output_file = os.path.abspath(cmd_args.output_file)
  
-    print('--url:\t\t\t', ' '.join(args.url), file=sys.stderr)
-    if args.whitelist:
-        print('--whitelist:\t\t', args.whitelist, file=sys.stderr)
+    cprint('--url:\t\t\t', ' '.join(cmd_args.url))
+    if cmd_args.whitelist:
+        cprint('--whitelist:\t\t', cmd_args.whitelist)
     else:
-        print('--whitelist:\t\t', file=sys.stderr)
-    print('--url-cache-dir:\t', args.url_cache_dir, file=sys.stderr)
-    print('--remove-subdomains:\t', args.remove_subdomains, file=sys.stderr)
-    print('', file=sys.stderr)
+        cprint('--whitelist:\t\t')
+    cprint('--url-cache-dir:\t\t', cmd_args.url_cache_dir)
+    cprint('--remove-subdomains:\t', cmd_args.remove_subdomains)
+    cprint('')
 
-    if args.whitelist:
+    if cmd_args.whitelist:
         domains_whitelist = set()
-        whitelist_file = os.path.abspath(args.whitelist)
+        whitelist_file = os.path.abspath(cmd_args.whitelist)
         for line in read_file(whitelist_file).splitlines():
             line = line.strip()
             line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading and trailing .
             if len(line) > 0:
                 domains_whitelist.add(line)
 
-        print("domains in whitelist :", len(domains_whitelist), file=sys.stderr)
+        cprint("domains in whitelist :", len(domains_whitelist))
 
 
     domains_combined_orig = set()   # domains from all sources, combined
     domains_combined = set()        # domains from all sources, combined, optionally with subdomains removed
 
-    for url in args.url:
+    for url in cmd_args.url:
         domains = get_domains(url, cache_directory)
         domains_combined_orig = domains_combined_orig|domains # union, saving the names before removing the subdomains so the ad serving subdomains of whitelisted domains are still blocked unless explicitely whitelistes
-        if args.remove_subdomains:
+        if cmd_args.remove_subdomains:
             domains = remove_subdomains(domains)
 
         domains_combined = domains_combined|domains # union
 
-    if args.whitelist:
-        print("looking for subdomains to re-add")
+    if cmd_args.whitelist:
         # add in subdomains of whitelisted domains 
         for whitelisted_domain in domains_whitelist:
             for domain in domains_combined_orig:
                 if domain.endswith(whitelisted_domain):
-                    print("re-adding domain:", domain)
                     domains_combined.add(domain)
 
 
         domains_combined = domains_combined - domains_whitelist  # set subtraction of exact whitelist matches so ad serving subdomains can be whitelisted
 
-
-
-
-    if args.format == ['hosts']:
+    if cmd_args.format == ['hosts']:
         with open(output_file, 'w') as fh:
             for item in sorted(domains_combined):
                 fh.write('127.0.0.1 ' + item + '\n')
 
-    if args.format == ['dnsmasq']:
+    if cmd_args.format == ['dnsmasq']:
         domains_combined = convert_domains_to_dnsmasq_format(domains_combined)
         with open(output_file, 'w') as fh:
             for item in sorted(domains_combined):
@@ -195,109 +192,12 @@ if __name__ == '__main__':
     quit(0)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if args.format == ['hosts']:
-        print("\nTo add to /etc/hosts:", file=sys.stderr)
-        print('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) + ' && cat ' + output_file + '" >> /etc/hosts', file=sys.stderr)
+    if cmd_args.format == ['hosts']:
+        cprint("\nTo add to /etc/hosts:")
+        cprint('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) + ' && cat ' + output_file + '" >> /etc/hosts')
 
     else:
-        print("\nTo add to /etc/dnsmasq.conf:", file=sys.stderr)
-        print('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf', file=sys.stderr)
-        print('\nThen restart the dnsmasq service:', file=sys.stderr)
-        print('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"', file=sys.stderr)
+        cprint("\nTo add to /etc/dnsmasq.conf:")
+        cprint('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf')
+        cprint('\nThen restart the dnsmasq service:')
+        cprint('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"')
