@@ -37,7 +37,7 @@ parser.add_argument("output_file", help='''R|(required) output file (- for stdou
 parser.add_argument("--url", help='R|optional hosts file url(s)\ndefaults to:\n    ' + default_data_sources[0] + '\n    ' + default_data_sources[1] + '\nlocal files can also be specified:\n    file://some_file\n ', nargs='*',  default=default_data_sources)
 parser.add_argument("--remove-subdomains", help='''R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\nnot enabled by default. Useful for dnsmasq if you are willing to maintain a\n--whitelist file for inadvertently blocked domains. This causes ad-serving\ndomains to be blocked at their TLD's. Without this option, the domain owner\ncan change until the --url lists are updated. It does not make sense to use\nthis flag if you are generating a /etc/hosts format file since the effect\nwould be to block google.com and not *.google.com\n ''', action="store_true", default=False)
 parser.add_argument("--verbose", help='''R|print additional debugging information to stderr\n ''', action="store_true", default=False)
-parser.add_argument("--whitelist", help='''R|file containing DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n ''', type=str, default=False)
+parser.add_argument("--whitelist", help='''R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n ''', type=str, default=False)
 parser.add_argument("--url-cache-dir", help='''R|cache --url files as dnsmasq-blacklist_cache_domain_hosts.(timestamp) optionally in a specified directory\n ''', type=str, default=False)
 
 cmd_args = parser.parse_args()
@@ -47,8 +47,25 @@ def cprint(*args, **kwargs):
         caller = sys._getframe(1).f_code.co_name
         print(str("%.5f" % time.time()), os.getpid(), '{0: <20}'.format(caller+'()'), *args, file=sys.stderr, **kwargs)
 
-def get_domains(url, cache_directory):
+def extract_domains_from_bytes_list(domain_bytes):
     domains = set()
+    for line in domain_bytes:
+        line = line.decode('UTF-8')
+        line = line.replace('\t', ' ')
+        line = " ".join(line.split())           # collapse whitespace
+        line = line.strip()
+        if len(line) == 0:                      # skip empty lines
+            continue
+
+        if not line.startswith('#'):            # remove comments
+            line = line.split(' ')[1]           # get DNS name
+            line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading and trailing .
+            domains.add(line)
+
+    return domains
+
+
+def get_domains(url, cache_directory):
     
     if url.startswith('http://') or url.startswith('https://'):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
@@ -61,22 +78,16 @@ def get_domains(url, cache_directory):
                 for line in raw_hosts_file_lines:
                     fh.write(line + b'\n')
         
-        for line in raw_hosts_file_lines:
-            line = line.decode('UTF-8')
-            line = line.replace('\t', ' ')
-            line = " ".join(line.split())           # collapse whitespace
-            line = line.strip()
-            if len(line) == 0:                      # skip empty lines
-                continue
-
-            if not line.startswith('#'):            # remove comments
-                line = line.split(' ')[1]           # get DNS name
-                line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading and trailing .
-                domains.add(line)
+        domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
 
     elif url.startswith('file://'):
         local_file = url.split('file://')[-1]       # do that better
-        domains = set(read_file(local_file).splitlines())
+#       raw_hosts_file_lines = read_file(local_file).splitlines()
+#       domains = set(read_file(local_file).splitlines())
+
+        raw_hosts_file_lines = read_file_bytes(local_file).split(b'\n')
+        domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
+
 
     cprint("domains in", url, ":", len(domains))
     return domains
@@ -84,6 +95,14 @@ def get_domains(url, cache_directory):
 def read_file(file):
     if os.path.isfile(file):
         with open(file, 'r') as fh:
+            file_bytes = fh.read()
+        return file_bytes
+    else:
+        raise FileNotFoundError("file:" + file + " does not exist.")
+
+def read_file_bytes(file):
+    if os.path.isfile(file):
+        with open(file, 'rb') as fh:
             file_bytes = fh.read()
         return file_bytes
     else:
