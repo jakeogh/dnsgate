@@ -8,7 +8,6 @@ import time
 import sys
 import os
 import requests
-import urllib
 import argparse
 import tldextract
 from urllib.parse import urlparse
@@ -21,43 +20,41 @@ class DefaultHelpParser(argparse.ArgumentParser):
         sys.exit(2)
     def _get_option_tuples(self, option_string):    #https://bugs.python.org/issue14910
         return []
-                                                                                                                       # |
-default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']             # |
+default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 
 # http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
-class SmartFormatter(argparse.HelpFormatter): 
+class SmartFormatter(argparse.HelpFormatter):
     def _split_lines(self, text, width):
         # this is the RawTextHelpFormatter._split_lines
         if text.startswith('R|'):
-            return text[2:].splitlines()  
+            return text[2:].splitlines()
         return argparse.HelpFormatter._split_lines(self, text, width)
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
-format_help      = 'R|(required) generate /etc/dnsmasq.conf or /etc/hosts file\n'
+format_help = 'R|(required) generate /etc/dnsmasq.conf or /etc/hosts file\n'
 output_file_help = 'R|(required) output file (- for stdout)\n'
-url_help         = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
-                    + default_data_sources[0] + '\n    ' + default_data_sources[1] \
-                    + '\nlocal files can be specified:\n    file://some_file\n '
-                                                                                     #|
+url_help = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
+          + default_data_sources[0] + '\n    ' + default_data_sources[1] \
+          + '\nlocal files can be specified:\n    file://some_file\n '
 remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
-                    + 'not enabled by default. Useful for dnsmasq if you are willing\n'\
-                    + 'to maintain a --whitelist file for inadvertently blocked\n'\
-                    + 'domains. This causes ad-serving domains to be blocked at their\n'\
-                    + 'TLD. Without this option, the domain owner can change the\n'\
-                    + 'subdomain until the --url lists are updated. It does not make\n'\
-                    + 'sense to use this flag if you are generating a /etc/hosts\n'\
-                    + 'format file since the effect would be to block google.com and\n'\
-                    + 'not *.google.com\n'
-verbose_help     = 'R|print additional debugging information to stderr\n'
-whitelist_help   = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n'
+                        + 'not enabled by default. Useful for dnsmasq if you are willing\n'\
+                        + 'to maintain a --whitelist file for inadvertently blocked\n'\
+                        + 'domains. This causes ad-serving domains to be blocked at their\n'\
+                        + 'TLD. Without this option, the domain owner can change the\n'\
+                        + 'subdomain until the --url lists are updated. It does not make\n'\
+                        + 'sense to use this flag if you are generating a /etc/hosts\n'\
+                        + 'format file since the effect would be to block google.com and\n'\
+                        + 'not *.google.com\n'
+verbose_help = 'R|print additional debugging information to stderr\n'
+whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n'
 url_cache_dir_help = 'R|cache --url files as\n'\
                     + 'dnsmasq-blacklist_cache_domain_hosts.(timestamp)\n'\
                     + 'optionally in a specified directory\n'
 
 parser.add_argument("format", help=format_help, action="store", nargs=1, choices=['dnsmasq', 'hosts'], type=str)
 parser.add_argument("output_file", help=output_file_help, type=str)
-parser.add_argument("--url", help=url_help, nargs='*',  default=default_data_sources)
+parser.add_argument("--url", help=url_help, nargs='*', default=default_data_sources)
 parser.add_argument("--remove-subdomains", help=remove_subdomains_help, action="store_true", default=False)
 parser.add_argument("--verbose", help=verbose_help, action="store_true", default=False)
 parser.add_argument("--whitelist", help=whitelist_help, type=str, default=False)
@@ -89,10 +86,10 @@ def extract_domains_from_bytes_list(domain_bytes):
 
 
 def get_domains(url, cache_directory):
-    
+
     if url.startswith('http://') or url.startswith('https://'):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
-        raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False,
+        raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False,\
                                timeout=15.500).content.split(b'\n')
 
         if cmd_args.url_cache_dir:
@@ -101,14 +98,13 @@ def get_domains(url, cache_directory):
             with open(output_file, 'wb') as fh:
                 for line in raw_hosts_file_lines:
                     fh.write(line + b'\n')
-        
+
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
 
     elif url.startswith('file://'):
         local_file = url.split('file://')[-1]       # todo better
         raw_hosts_file_lines = read_file_bytes(local_file).split(b'\n')
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
-
 
     cprint("domains in", url, ":", len(domains))
     return domains
@@ -175,7 +171,7 @@ if __name__ == '__main__':
         output_file = '/dev/stdout'
     else:
         output_file = os.path.abspath(cmd_args.output_file)
- 
+
     cprint('--url:\t\t\t', ' '.join(cmd_args.url))
     if cmd_args.whitelist:
         cprint('--whitelist:\t\t', cmd_args.whitelist)
@@ -196,7 +192,6 @@ if __name__ == '__main__':
 
         cprint("domains in whitelist :", len(domains_whitelist))
 
-
     domains_combined_orig = set()   # domains from all sources, combined
     domains_combined = set()        # domains from all sources, combined, optionally with subdomains removed
 
@@ -209,7 +204,7 @@ if __name__ == '__main__':
         domains_combined = domains_combined|domains # union
 
     if cmd_args.whitelist:
-        # add in subdomains of whitelisted domains 
+        # add in subdomains of whitelisted domains
         for whitelisted_domain in domains_whitelist:
             for domain in domains_combined_orig:
                 if domain.endswith(whitelisted_domain):
