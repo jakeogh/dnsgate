@@ -68,6 +68,6 @@ optional arguments:
 
 **Why?**
 
-To force the issue. Individuals should decide who they execute code for. Providers will either adapt and not use subdomains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
+To force the issue. Individuals should decide who they execute code for. Providers will either adapt and not use sub or alternate domains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
 
 If you find this useful, you may appreciate the effects of disabling JS and making a hotkey for when you want to use it.
