@@ -2,7 +2,9 @@
 
 **dnsmasq-blacklist** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
 
-[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains; for example *.google.com:
+[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains.
+
+For example *.google.com:
 
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
@@ -12,7 +14,7 @@ Conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm) requir
 
 In dnsmasq mode the `--trim-subdomains` option can be used to block ad-serving domain's at their top level, removing the need to manually specify specific subdomains.
 
-Using dnsmasq often significantly lowers DNS latency.
+As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
 ```
 $./dnsmasq-blacklist -h
@@ -42,9 +44,9 @@ optional arguments:
                         not enabled by default. Useful for dnsmasq if you are willing to maintain a
                         --whitelist file for inadvertently blocked domains. This causes ad-serving
                         domains to be blocked at their TLD's. Without this option, the domain owner
-                        can change until the --url lists are updated. It does not make sense to use
-                        this flag if you are generating a /etc/hosts format file since the effect
-                        would be to block google.com and not *.google.com
+                        can change the subdomain until the --url lists are updated. It does not make
+                        sense to use this flag if you are generating a /etc/hosts format file since
+                        the effect would be to block google.com and not analytics.google.com.
                          
   --verbose             print additional debugging information to stderr
                          
@@ -67,3 +69,5 @@ optional arguments:
 **Why?**
 
 To force the issue. Individuals should decide who they execute code for. Providers will either adapt and not use subdomains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
+
+If you find this useful, you may appreciate the effects of disabling JS and making a hotkey for when you want to use it.
