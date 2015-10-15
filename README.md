@@ -2,15 +2,15 @@
 
 **dnsmasq-blacklist** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
 
-[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq)'s configuration syntax provides an alternative to /etc/hosts domain blocking.
-
-Unlike /etc/hosts dnsmasq allows wildcard blocking of domains, for example, to block *.google.com (and google.com):
+[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains; for example *.google.com:
 
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-Unlike conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm), dnsmasq does not require the listing of each subdomain. If the `--trim-subdomains` option is enabled subdomain changes wont subvert blocking (unless --hosts is also enabled).
+Conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm) requires the user to keep track of each subdomain/tld combination they want to block.
+
+In dnsmasq mode the `--trim-subdomains` option can be used to block ad-serving domain's at their top level, removing the need to manually specify specific subdomains.
 
 Using dnsmasq often significantly lowers DNS latency.
 
