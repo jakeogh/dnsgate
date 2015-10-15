@@ -81,10 +81,7 @@ def get_domains(url, cache_directory):
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
 
     elif url.startswith('file://'):
-        local_file = url.split('file://')[-1]       # do that better
-#       raw_hosts_file_lines = read_file(local_file).splitlines()
-#       domains = set(read_file(local_file).splitlines())
-
+        local_file = url.split('file://')[-1]       # todo better
         raw_hosts_file_lines = read_file_bytes(local_file).split(b'\n')
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
 
@@ -113,12 +110,12 @@ def domain_extract(domain):
     return dom
 
 def remove_subdomains(domains):
-    removemed_results = set()
+    domains_stripped = set()
     for line in domains:
         line = domain_extract(line)             # get tld
         line = line.domain + '.' + line.suffix
-        removemed_results.add(line)
-    return removemed_results
+        domains_stripped.add(line)
+    return domains_stripped
 
 def convert_domains_to_dnsmasq_format(domains):
     dnsmasq_rules = []
@@ -181,7 +178,7 @@ if __name__ == '__main__':
 
     for url in cmd_args.url:
         domains = get_domains(url, cache_directory)
-        domains_combined_orig = domains_combined_orig|domains # union, saving the names before removing the subdomains so the ad serving subdomains of whitelisted domains are still blocked unless explicitely whitelistes
+        domains_combined_orig = domains_combined_orig|domains # union, saving the names before removing the subdomains so the ad serving subdomains of whitelisted domains are still blocked unless explicitly whitelisted
         if cmd_args.remove_subdomains:
             domains = remove_subdomains(domains)
 

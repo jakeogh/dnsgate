@@ -16,8 +16,9 @@ Using dnsmasq often significantly lowers DNS latency.
 
 ```
 $./dnsmasq-blacklist -h
-usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--trim-subdomains]
-                         [--whitelist WHITELIST] [--keep]
+usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--remove-subdomains]
+                         [--verbose] [--whitelist WHITELIST]
+                         [--url-cache-dir URL_CACHE_DIR]
                          {dnsmasq,hosts} output_file
 
 positional arguments:
@@ -35,7 +36,7 @@ optional arguments:
                         local files can also be specified:
                             file://some_file
                          
-  --trim-subdomains     strip subdomains (see --whitelist)
+  --remove-subdomains   remove subdomains (see --whitelist)
                         example:
                             analytics.google.com -> google.com
                         not enabled by default. Useful for dnsmasq if you are willing to maintain a
@@ -45,36 +46,17 @@ optional arguments:
                         this flag if you are generating a /etc/hosts format file since the effect
                         would be to block google.com and not *.google.com
                          
+  --verbose             print additional debugging information to stderr
+                         
   --whitelist WHITELIST
-                        file containing DNS names to whitelist
+                        file of DNS names to whitelist
                         example:
                             stackexchange.com
                             stackoverflow.com
                          
-  --keep                save retrieved hosts files as hosts.(timestamp) in the current folder
+  --url-cache-dir URL_CACHE_DIR
+                        cache --url files as dnsmasq-blacklist_cache_domain_hosts.(timestamp) optionally in a specified directory
                          
-
-
-$./dnsmasq-blacklist --dnsmasq /etc/dnsmasq.blacklist.conf
-
-To add to dnsmasq.conf:
-cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.1428126020.6137238 && \
-echo "conf-file=/etc/dnsmasq.blacklist.conf" >> /etc/dnsmasq.conf
-
-Then restart the dnsmasq service:
-"/etc/init.d/dnsmasq restart" or "service dnsmasq restart"
-
-$ head /etc/dnsmasq.blacklist.conf
-address=/.s28.sitemeter.com/127.0.0.1
-address=/.ameritradeogilvy.112.2o7.net/127.0.0.1
-address=/.xtds.info/127.0.0.1
-address=/.ad.netcommunities.com/127.0.0.1
-address=/.banners.affilimatch.de/127.0.0.1
-address=/.www.synovite-scripts.com/127.0.0.1
-address=/.win-spy.com/127.0.0.1
-address=/.www.hitscreamer.com/127.0.0.1
-address=/.www.ivwbox.de/127.0.0.1
-address=/.images.bmnq.com/127.0.0.1
 ```
 
 `[1]:`
@@ -84,4 +66,4 @@ address=/.images.bmnq.com/127.0.0.1
 
 **Why?**
 
-To force the issue. It's up to the people who they execute code for. Providers will either adapt and not use subdomains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
+To force the issue. Individuals should decide who they execute code for. Providers will either adapt and not use subdomains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
