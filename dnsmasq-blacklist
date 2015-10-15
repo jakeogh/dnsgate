@@ -40,8 +40,8 @@ url_help         = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
                     + default_data_sources[0] + '\n    ' + default_data_sources[1] \
                     + '\nlocal files can be specified:\n    file://some_file\n '
 remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
-                    + 'not enabled by default. Useful for dnsmasq if you are willing to\n'\
-                    + 'maintain a --whitelist file for inadvertently blocked domains.\n'\
+                    + 'not enabled by default. Useful for dnsmasq if you are willing\n'\
+                    + 'to maintain a --whitelist file for inadvertently blocked domains.\n'\
                     + 'This causes ad-serving domains to be blocked at their TLD.\n'\
                     + 'Without this option, the domain owner can change the subdomain\n'\
                     + 'until the --url lists are updated. It does not make sense to\n'\
