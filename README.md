@@ -41,13 +41,13 @@ optional arguments:
                         example:
                             analytics.google.com -> google.com
                         not enabled by default. Useful for dnsmasq if you are willing
-                        to maintain a --whitelist file for inadvertently blocked domains.
-                        This causes ad-serving domains to be blocked at their TLD.
-                        Without this option, the domain owner can change the subdomain
-                        until the --url lists are updated. It does not make sense to
-                        use this flag if you are generating a /etc/hosts format file
-                        since the effect would be to block google.com and not
-                        *.google.com
+                        to maintain a --whitelist file for inadvertently blocked
+                        domains. This causes ad-serving domains to be blocked at their
+                        TLD. Without this option, the domain owner can change the
+                        subdomain until the --url lists are updated. It does not make
+                        sense to use this flag if you are generating a /etc/hosts
+                        format file since the effect would be to block google.com and
+                        not *.google.com
   --verbose             print additional debugging information to stderr
   --whitelist WHITELIST
                         file of DNS names to whitelist
