@@ -21,10 +21,11 @@ class DefaultHelpParser(argparse.ArgumentParser):
         sys.exit(2)
     def _get_option_tuples(self, option_string):    #https://bugs.python.org/issue14910
         return []
+                                                                                                                       # |
+default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']             # |
 
-default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
-
-class SmartFormatter(argparse.HelpFormatter): # http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
+# http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
+class SmartFormatter(argparse.HelpFormatter): 
     def _split_lines(self, text, width):
         # this is the RawTextHelpFormatter._split_lines
         if text.startswith('R|'):
@@ -32,13 +33,34 @@ class SmartFormatter(argparse.HelpFormatter): # http://stackoverflow.com/questio
         return argparse.HelpFormatter._split_lines(self, text, width)
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
-parser.add_argument("format", help='''R|(required) generate /etc/dnsmasq.conf or /etc/hosts file\n''', action="store", nargs=1, choices=['dnsmasq', 'hosts'], type=str)
-parser.add_argument("output_file", help='''R|(required) output file (- for stdout)\n ''', type=str)
-parser.add_argument("--url", help='R|optional hosts file url(s)\ndefaults to:\n    ' + default_data_sources[0] + '\n    ' + default_data_sources[1] + '\nlocal files can also be specified:\n    file://some_file\n ', nargs='*',  default=default_data_sources)
-parser.add_argument("--remove-subdomains", help='''R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\nnot enabled by default. Useful for dnsmasq if you are willing to maintain a\n--whitelist file for inadvertently blocked domains. This causes ad-serving\ndomains to be blocked at their TLD's. Without this option, the domain owner\ncan change until the --url lists are updated. It does not make sense to use\nthis flag if you are generating a /etc/hosts format file since the effect\nwould be to block google.com and not *.google.com\n ''', action="store_true", default=False)
-parser.add_argument("--verbose", help='''R|print additional debugging information to stderr\n ''', action="store_true", default=False)
-parser.add_argument("--whitelist", help='''R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n ''', type=str, default=False)
-parser.add_argument("--url-cache-dir", help='''R|cache --url files as dnsmasq-blacklist_cache_domain_hosts.(timestamp) optionally in a specified directory\n ''', type=str, default=False)
+
+format_help      = 'R|(required) generate /etc/dnsmasq.conf or /etc/hosts file\n'
+output_file_help = 'R|(required) output file (- for stdout)\n'
+url_help         = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
+                    + default_data_sources[0] + '\n    ' + default_data_sources[1] \
+                    + '\nlocal files can be specified:\n    file://some_file\n '
+remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
+                    + 'not enabled by default. Useful for dnsmasq if you are willing to\n'\
+                    + 'maintain a --whitelist file for inadvertently blocked domains.\n'\
+                    + 'This causes ad-serving domains to be blocked at their TLD.\n'\
+                    + 'Without this option, the domain owner can change the subdomain\n'\
+                    + 'until the --url lists are updated. It does not make sense to\n'\
+                    + 'use this flag if you are generating a /etc/hosts format file\n'\
+                    + 'since the effect would be to block google.com and not\n'\
+                    + '*.google.com\n'
+verbose_help     = 'R|print additional debugging information to stderr\n'
+whitelist_help   = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n'
+url_cache_dir_help = 'R|cache --url files as\n'\
+                    + 'dnsmasq-blacklist_cache_domain_hosts.(timestamp)\n'\
+                    + 'optionally in a specified directory\n'
+
+parser.add_argument("format", help=format_help, action="store", nargs=1, choices=['dnsmasq', 'hosts'], type=str)
+parser.add_argument("output_file", help=output_file_help, type=str)
+parser.add_argument("--url", help=url_help, nargs='*',  default=default_data_sources)
+parser.add_argument("--remove-subdomains", help=remove_subdomains_help, action="store_true", default=False)
+parser.add_argument("--verbose", help=verbose_help, action="store_true", default=False)
+parser.add_argument("--whitelist", help=whitelist_help, type=str, default=False)
+parser.add_argument("--url-cache-dir", help=url_cache_dir_help, type=str, default=False)
 
 cmd_args = parser.parse_args()
 
@@ -69,7 +91,8 @@ def get_domains(url, cache_directory):
     
     if url.startswith('http://') or url.startswith('https://'):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
-        raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False, timeout=15.500).content.split(b'\n')
+        raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False,
+                               timeout=15.500).content.split(b'\n')
 
         if cmd_args.url_cache_dir:
             domain = urlparse(url).netloc
@@ -178,7 +201,7 @@ if __name__ == '__main__':
 
     for url in cmd_args.url:
         domains = get_domains(url, cache_directory)
-        domains_combined_orig = domains_combined_orig|domains # union, saving the names before removing the subdomains so the ad serving subdomains of whitelisted domains are still blocked unless explicitly whitelisted
+        domains_combined_orig = domains_combined_orig|domains # union
         if cmd_args.remove_subdomains:
             domains = remove_subdomains(domains)
 
@@ -191,8 +214,7 @@ if __name__ == '__main__':
                 if domain.endswith(whitelisted_domain):
                     domains_combined.add(domain)
 
-
-        domains_combined = domains_combined - domains_whitelist  # set subtraction of exact whitelist matches so ad serving subdomains can be whitelisted
+        domains_combined = domains_combined - domains_whitelist  # exact whitelist matches
 
     if cmd_args.format == ['hosts']:
         with open(output_file, 'w') as fh:
@@ -214,6 +236,7 @@ if __name__ == '__main__':
 
     else:
         cprint("\nTo add to /etc/dnsmasq.conf:")
-        cprint('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf')
+        cprint('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + \
+            ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf')
         cprint('\nThen restart the dnsmasq service:')
         cprint('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"')
