@@ -40,9 +40,9 @@ optional arguments:
                             analytics.google.com -> google.com
                         not enabled by default. Useful for dnsmasq if you are willing to maintain a
                         --whitelist file for inadvertently blocked domains. This causes ad-serving
-                        domains to be blocked at their TLD's. Wihout this option, the domain owner
+                        domains to be blocked at their TLD's. Without this option, the domain owner
                         can change until the --url lists are updated. It does not make sense to use
-                        this flag if you are generateing a /etc/hosts format file since the effect
+                        this flag if you are generating a /etc/hosts format file since the effect
                         would be to block google.com and not *.google.com
                          
   --whitelist WHITELIST
@@ -80,3 +80,8 @@ address=/.images.bmnq.com/127.0.0.1
 `[1]:`
  `http://winhelp2002.mvps.org/hosts.txt`
  `http://someonewhocares.org/hosts/hosts`
+
+
+**Why?**
+
+To force the issue. It's up to the people who they execute code for. Providers will either adapt and not use subdomains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
