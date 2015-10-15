@@ -40,8 +40,8 @@ optional arguments:
   --remove-subdomains   remove subdomains (see --whitelist)
                         example:
                             analytics.google.com -> google.com
-                        not enabled by default. Useful for dnsmasq if you are willing to
-                        maintain a --whitelist file for inadvertently blocked domains.
+                        not enabled by default. Useful for dnsmasq if you are willing
+                        to maintain a --whitelist file for inadvertently blocked domains.
                         This causes ad-serving domains to be blocked at their TLD.
                         Without this option, the domain owner can change the subdomain
                         until the --url lists are updated. It does not make sense to
