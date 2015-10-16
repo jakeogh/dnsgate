@@ -33,7 +33,7 @@ class SmartFormatter(argparse.HelpFormatter):
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
-format_help = 'R|\'format\' (required) generate /etc/dnsmasq.conf or /etc/hosts file\n'
+format_help = 'R|\'format\' (required) generate /etc/dnsmasq.conf or /etc/hosts format file\n'
 output_file_help = 'R|(required) output file (- for stdout)\n'
 url_help = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
           + default_data_sources[0] + '\n    ' + default_data_sources[1] \
@@ -52,7 +52,7 @@ install_help = 'R|print example install and configure information\n(requires for
 whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n'
 url_cache_dir_help = 'R|cache --url files as\n'\
                     + 'dnsmasq-blacklist_cache_domain_hosts.(timestamp)\n'\
-                    + 'optionally in a specified directory\n'
+                    + 'optionally in a specified directory\n\n'
 
 parser.add_argument("format", help=format_help, action="store", nargs=1, choices=['dnsmasq', 'hosts'], type=str)
 parser.add_argument("output_file", help=output_file_help, type=str)
@@ -63,7 +63,32 @@ parser.add_argument("--install-help", help=install_help, action="store_true", de
 parser.add_argument("--whitelist", help=whitelist_help, type=str, default=False)
 parser.add_argument("--url-cache-dir", help=url_cache_dir_help, type=str, default=False)
 
-cmd_args = parser.parse_args()
+def install_help():
+    if cmd_args.format == ['dnsmasq']:
+        eprint('\ndnsmasq mode usage:')
+        eprint('    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq %s'\
+            % cmd_args.output_file)
+    
+        output_file_name = os.path.basename(cmd_args.output_file)
+
+        eprint("\ndnsmasq config:")
+        eprint('    $ cp -vi %s /etc/' % cmd_args.output_file)
+        eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
+        eprint('    $ echo \"conf-file=/etc/%s\" >> /etc/dnsmasq.conf' % output_file_name)
+        eprint('    $ /etc/init.d/dnsmasq restart')
+
+    if cmd_args.format == ['hosts']:
+
+        eprint('\nhosts mode usage:')
+        eprint('    $ ./dnsmasq-blacklist --whitelist whitelist.txt hosts %s' % cmd_args.output_file)
+
+        eprint("\nhosts config:")
+        eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
+        eprint("    $ cat %s >> /etc/hosts" % cmd_args.output_file)
+        eprint("\n    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
+
+    eprint("\nSee --help and --verbose for more information.\n")
+    quit(0)
 
 def vprint(*args, **kwargs):
     if cmd_args.verbose:
@@ -90,7 +115,7 @@ def extract_domains_from_bytes_list(domain_bytes):
 
     return domains
 
-def get_domains(url, cache_directory):
+def get_domains(url, cache_directory='.'):
 
     if url.startswith('http://') or url.startswith('https://'):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
@@ -159,33 +184,10 @@ def convert_domains_to_dnsmasq_format(domains):
 
 if __name__ == '__main__':
 
+    cmd_args = parser.parse_args()
+
     if cmd_args.install_help:
-
-        if cmd_args.format == ['dnsmasq']:
-            eprint('\ndnsmasq mode usage:')
-            eprint('    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq %s'\
-                % cmd_args.output_file)
-    
-            output_file_name = os.path.basename(cmd_args.output_file)
-
-            eprint("\ndnsmasq config:")
-            eprint('    $ cp -vi %s /etc/' % cmd_args.output_file)
-            eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
-            eprint('    $ echo \"conf-file=/etc/%s\" >> /etc/dnsmasq.conf' % output_file_name)
-            eprint('    $ /etc/init.d/dnsmasq restart')
-
-        if cmd_args.format == ['hosts']:
-
-            eprint('\nhosts mode usage:')
-            eprint('    $ ./dnsmasq-blacklist --whitelist whitelist.txt hosts %s' % cmd_args.output_file)
-
-            eprint("\nhosts config:")
-            eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
-            eprint("    $ cat %s >> /etc/hosts" % cmd_args.output_file)
-            eprint("\n    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
-
-        eprint("\nSee --help and --verbose for more information.\n")
-        quit(0)
+        install_help()
 
     if os.path.isfile(cmd_args.output_file) and cmd_args.output_file != '/dev/stdout':
         eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output_file)
@@ -204,7 +206,7 @@ if __name__ == '__main__':
             eprint("--url-cache requires a directory argument,", cache_directory, " is not a directory.")
             quit(1)
     else:
-        cache_directory = '.'
+        cache_directory = '.'   # passed to get_domains()
 
     if cmd_args.output_file == '-' or cmd_args.output_file == '/dev/stdout':
         output_file = '/dev/stdout'
@@ -246,10 +248,9 @@ if __name__ == '__main__':
     if cmd_args.remove_subdomains:
         domains_combined = remove_subdomains(domains_combined)
 
-    domains_combined = domains_combined - domains_whitelist  # exact whitelist matches
-
     if cmd_args.whitelist:
         # re-add subdomains of whitelisted domains
+        domains_combined = domains_combined - domains_whitelist  # exact whitelist matches
         for orig_domain in domains_combined_orig:
             if orig_domain not in domains_whitelist:
                 domains_combined.add(orig_domain)
@@ -265,4 +266,5 @@ if __name__ == '__main__':
             for item in sorted(domains_combined):
                 fh.write(item + '\n')
 
+    vprint("Exiting without error.")
     quit(0)
