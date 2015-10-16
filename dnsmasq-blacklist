@@ -32,7 +32,7 @@ class SmartFormatter(argparse.HelpFormatter):
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
-format_help = 'R|(required) generate /etc/dnsmasq.conf or /etc/hosts file\n'
+format_help = 'R|\'format\' (required) generate /etc/dnsmasq.conf or /etc/hosts file\n'
 output_file_help = 'R|(required) output file (- for stdout)\n'
 url_help = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
           + default_data_sources[0] + '\n    ' + default_data_sources[1] \
@@ -62,10 +62,13 @@ parser.add_argument("--url-cache-dir", help=url_cache_dir_help, type=str, defaul
 
 cmd_args = parser.parse_args()
 
-def cprint(*args, **kwargs):
+def vprint(*args, **kwargs):
     if cmd_args.verbose:
         caller = sys._getframe(1).f_code.co_name
         print(str("%.5f" % time.time()), os.getpid(), '{0: <20}'.format(caller+'()'), *args, file=sys.stderr, **kwargs)
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 def extract_domains_from_bytes_list(domain_bytes):
     domains = set()
@@ -84,13 +87,17 @@ def extract_domains_from_bytes_list(domain_bytes):
 
     return domains
 
-
 def get_domains(url, cache_directory):
 
     if url.startswith('http://') or url.startswith('https://'):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
-        raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False,\
-                               timeout=15.500).content.split(b'\n')
+
+        try:
+            raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False,\
+                                   timeout=15.500).content.split(b'\n')
+        except Exception as e:
+            eprint("Exception:", e)
+            raise e
 
         if cmd_args.url_cache_dir:
             domain = urlparse(url).netloc
@@ -106,7 +113,8 @@ def get_domains(url, cache_directory):
         raw_hosts_file_lines = read_file_bytes(local_file).split(b'\n')
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
 
-    cprint("domains in", url, ":", len(domains))
+    vprint("domains in", url, ":", len(domains))
+
     return domains
 
 def read_file(file):
@@ -149,20 +157,20 @@ def convert_domains_to_dnsmasq_format(domains):
 if __name__ == '__main__':
 
     if os.path.isfile(cmd_args.output_file) and cmd_args.output_file != '/dev/stdout':
-        cprint("File %s exists. Refusing to overwrite. Exiting." % cmd_args.output_file)
+        eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output_file)
         quit(1)
 
     for url in cmd_args.url:
         if url.startswith('http://') or url.startswith('https://') or url.startswith('file://'):
             pass
         else:
-            cprint("Unknown URI scheme:", url)
+            eprint("Unknown URI scheme:", url)
             quit(1)
 
     if cmd_args.url_cache_dir:
         cache_directory = os.path.abspath(os.path.expanduser(cmd_args.url_cache_dir))
         if not os.path.isdir(cache_directory):
-            cprint("--url-cache requires a directory argument,", cache_directory, " is not a directory.")
+            eprint("--url-cache requires a directory argument,", cache_directory, " is not a directory.")
             quit(1)
     else:
         cache_directory = '.'
@@ -172,14 +180,14 @@ if __name__ == '__main__':
     else:
         output_file = os.path.abspath(cmd_args.output_file)
 
-    cprint('--url:\t\t\t', ' '.join(cmd_args.url))
+    vprint('--url:\t\t', ' '.join(cmd_args.url))
     if cmd_args.whitelist:
-        cprint('--whitelist:\t\t', cmd_args.whitelist)
+        vprint('--whitelist:\t', cmd_args.whitelist)
     else:
-        cprint('--whitelist:\t\t')
-    cprint('--url-cache-dir:\t\t', cmd_args.url_cache_dir)
-    cprint('--remove-subdomains:\t', cmd_args.remove_subdomains)
-    cprint('')
+        vprint('--whitelist:\t\t')
+    vprint('--url-cache-dir:\t', cmd_args.url_cache_dir)
+    vprint('--remove-subdomains:', cmd_args.remove_subdomains)
+    vprint('')
 
     if cmd_args.whitelist:
         domains_whitelist = set()
@@ -190,27 +198,31 @@ if __name__ == '__main__':
             if len(line) > 0:
                 domains_whitelist.add(line)
 
-        cprint("domains in whitelist :", len(domains_whitelist))
+        vprint("domains in whitelist :", len(domains_whitelist))
 
     domains_combined_orig = set()   # domains from all sources, combined
-    domains_combined = set()        # domains from all sources, combined, optionally with subdomains removed
-
     for url in cmd_args.url:
-        domains = get_domains(url, cache_directory)
-        domains_combined_orig = domains_combined_orig|domains # union
-        if cmd_args.remove_subdomains:
-            domains = remove_subdomains(domains)
+        try:
+            domains = get_domains(url, cache_directory)
+            domains_combined_orig = domains_combined_orig|domains # union
 
-        domains_combined = domains_combined|domains # union
+        except Exception as e:
+            eprint("Exception on url:", url)
+            eprint("Exception:", e)
+            pass
+
+    domains_combined = domains_combined_orig        # domains from all sources, combined, optionally with subdomains removed
+
+    if cmd_args.remove_subdomains:
+        domains_combined = remove_subdomains(domains_combined)
+
+    domains_combined = domains_combined - domains_whitelist  # exact whitelist matches
 
     if cmd_args.whitelist:
         # add in subdomains of whitelisted domains
-        for whitelisted_domain in domains_whitelist:
-            for domain in domains_combined_orig:
-                if domain.endswith(whitelisted_domain):
-                    domains_combined.add(domain)
-
-        domains_combined = domains_combined - domains_whitelist  # exact whitelist matches
+        for orig_domain in domains_combined_orig:
+            if orig_domain not in domains_whitelist:
+                domains_combined.add(orig_domain)
 
     if cmd_args.format == ['hosts']:
         with open(output_file, 'w') as fh:
@@ -225,14 +237,13 @@ if __name__ == '__main__':
 
     quit(0)
 
-
     if cmd_args.format == ['hosts']:
-        cprint("\nTo add to /etc/hosts:")
-        cprint('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) + ' && cat ' + output_file + '" >> /etc/hosts')
+        vprint("\nTo add to /etc/hosts:")
+        vprint('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) + ' && cat ' + output_file + '" >> /etc/hosts')
 
     else:
-        cprint("\nTo add to /etc/dnsmasq.conf:")
-        cprint('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + \
+        vprint("\nTo add to /etc/dnsmasq.conf:")
+        vprint('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + \
             ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf')
-        cprint('\nThen restart the dnsmasq service:')
-        cprint('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"')
+        vprint('\nThen restart the dnsmasq service:')
+        vprint('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"')
