@@ -20,6 +20,7 @@ class DefaultHelpParser(argparse.ArgumentParser):
         sys.exit(2)
     def _get_option_tuples(self, option_string):    #https://bugs.python.org/issue14910
         return []
+
 default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 
 # http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
@@ -47,6 +48,7 @@ remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    a
                         + 'format file since the effect would be to block google.com and\n'\
                         + 'not *.google.com\n'
 verbose_help = 'R|print additional debugging information to stderr\n'
+install_help = 'R|print example install and configure information\n(requires format and output_file)\n'
 whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n'
 url_cache_dir_help = 'R|cache --url files as\n'\
                     + 'dnsmasq-blacklist_cache_domain_hosts.(timestamp)\n'\
@@ -57,6 +59,7 @@ parser.add_argument("output_file", help=output_file_help, type=str)
 parser.add_argument("--url", help=url_help, nargs='*', default=default_data_sources)
 parser.add_argument("--remove-subdomains", help=remove_subdomains_help, action="store_true", default=False)
 parser.add_argument("--verbose", help=verbose_help, action="store_true", default=False)
+parser.add_argument("--install-help", help=install_help, action="store_true", default=False)
 parser.add_argument("--whitelist", help=whitelist_help, type=str, default=False)
 parser.add_argument("--url-cache-dir", help=url_cache_dir_help, type=str, default=False)
 
@@ -65,7 +68,7 @@ cmd_args = parser.parse_args()
 def vprint(*args, **kwargs):
     if cmd_args.verbose:
         caller = sys._getframe(1).f_code.co_name
-        print(str("%.5f" % time.time()), os.getpid(), '{0: <20}'.format(caller+'()'), *args, file=sys.stderr, **kwargs)
+        print(str("%.5f" % time.time()), os.getpid(), '{0: <15}'.format(caller+'()'), *args, file=sys.stderr, **kwargs)
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -156,6 +159,33 @@ def convert_domains_to_dnsmasq_format(domains):
 
 if __name__ == '__main__':
 
+    if cmd_args.install_help:
+
+        if cmd_args.format == ['dnsmasq']:
+            eprint('\ndnsmasq mode usage:')
+            eprint('    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq %s' % cmd_args.output_file)
+    
+            output_file_name = os.path.basename(cmd_args.output_file)
+
+            eprint("\ndnsmasq config:")
+            eprint('    $ cp -vi %s /etc/' % cmd_args.output_file)
+            eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
+            eprint('    $ echo \"conf-file=/etc/%s\" >> /etc/dnsmasq.conf' % output_file_name)
+            eprint('    $ /etc/init.d/dnsmasq restart')
+
+        if cmd_args.format == ['hosts']:
+
+            eprint('\nhosts mode usage:')
+            eprint('    $ ./dnsmasq-blacklist --whitelist whitelist.txt hosts %s' % cmd_args.output_file)
+
+            eprint("\nhosts config:")
+            eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
+            eprint("    $ cat %s >> /etc/hosts" % cmd_args.output_file)
+            eprint("\n    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
+
+        eprint("\nSee --help and --verbose for more information.\n")
+        quit(0)
+
     if os.path.isfile(cmd_args.output_file) and cmd_args.output_file != '/dev/stdout':
         eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output_file)
         quit(1)
@@ -180,14 +210,13 @@ if __name__ == '__main__':
     else:
         output_file = os.path.abspath(cmd_args.output_file)
 
-    vprint('--url:\t\t', ' '.join(cmd_args.url))
+    vprint( '--url:', ' '.join(cmd_args.url))
     if cmd_args.whitelist:
-        vprint('--whitelist:\t', cmd_args.whitelist)
+        vprint('--whitelist:', cmd_args.whitelist)
     else:
-        vprint('--whitelist:\t\t')
-    vprint('--url-cache-dir:\t', cmd_args.url_cache_dir)
-    vprint('--remove-subdomains:', cmd_args.remove_subdomains)
-    vprint('')
+        vprint('--whitelist:')
+    vprint('--url-cache-dir:', cmd_args.url_cache_dir)
+    vprint('--remove-subdomains:', cmd_args.remove_subdomains, '\n')
 
     if cmd_args.whitelist:
         domains_whitelist = set()
@@ -236,14 +265,3 @@ if __name__ == '__main__':
                 fh.write(item + '\n')
 
     quit(0)
-
-    if cmd_args.format == ['hosts']:
-        vprint("\nTo add to /etc/hosts:")
-        vprint('cp -vi /etc/hosts /etc/hosts.' + str(time.time()) + ' && cat ' + output_file + '" >> /etc/hosts')
-
-    else:
-        vprint("\nTo add to /etc/dnsmasq.conf:")
-        vprint('cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.' + str(time.time()) + \
-            ' && echo \"conf-file=' + output_file + '" >> /etc/dnsmasq.conf')
-        vprint('\nThen restart the dnsmasq service:')
-        vprint('\"/etc/init.d/dnsmasq restart\" or \"service dnsmasq restart\"')
