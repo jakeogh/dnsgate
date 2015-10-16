@@ -96,8 +96,8 @@ def get_domains(url, cache_directory):
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
 
         try:
-            raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, stream=False,\
-                                   timeout=15.500).content.split(b'\n')
+            raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,\
+                                   stream=False, timeout=15.500).content.split(b'\n')
         except Exception as e:
             eprint("Exception:", e)
             raise e
@@ -163,7 +163,8 @@ if __name__ == '__main__':
 
         if cmd_args.format == ['dnsmasq']:
             eprint('\ndnsmasq mode usage:')
-            eprint('    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq %s' % cmd_args.output_file)
+            eprint('    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq %s'\
+                % cmd_args.output_file)
     
             output_file_name = os.path.basename(cmd_args.output_file)
 
@@ -240,7 +241,7 @@ if __name__ == '__main__':
             eprint("Exception:", e)
             pass
 
-    domains_combined = domains_combined_orig        # domains from all sources, combined, optionally with subdomains removed
+    domains_combined = domains_combined_orig        
 
     if cmd_args.remove_subdomains:
         domains_combined = remove_subdomains(domains_combined)
@@ -248,7 +249,7 @@ if __name__ == '__main__':
     domains_combined = domains_combined - domains_whitelist  # exact whitelist matches
 
     if cmd_args.whitelist:
-        # add in subdomains of whitelisted domains
+        # re-add subdomains of whitelisted domains
         for orig_domain in domains_combined_orig:
             if orig_domain not in domains_whitelist:
                 domains_combined.add(orig_domain)
