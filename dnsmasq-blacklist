@@ -13,6 +13,8 @@ import tldextract
 from urllib.parse import urlparse
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
+default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+
 class DefaultHelpParser(argparse.ArgumentParser):
     def error(self, message):
         sys.stderr.write('error: %s\n\n' % message)
@@ -20,8 +22,6 @@ class DefaultHelpParser(argparse.ArgumentParser):
         sys.exit(2)
     def _get_option_tuples(self, option_string):    #https://bugs.python.org/issue14910
         return []
-
-default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 
 # http://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text
 class SmartFormatter(argparse.HelpFormatter):
@@ -46,10 +46,10 @@ remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    a
                         + 'subdomain until the --url lists are updated. It does not make\n'\
                         + 'sense to use this flag if you are generating a /etc/hosts\n'\
                         + 'format file since the effect would be to block google.com and\n'\
-                        + 'not *.google.com\n'
-verbose_help = 'R|print additional debugging information to stderr\n'
-install_help = 'R|print example install and configure information\n(requires format and output_file)\n'
-whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n'
+                        + 'not *.google.com\n\n'
+verbose_help = 'R|print additional debugging information to stderr\n\n'
+install_help = 'R|print example install and configure information\n(requires format and output_file)\n\n'
+whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n\n'
 url_cache_dir_help = 'R|cache --url files as\n'\
                     + 'dnsmasq-blacklist_cache_domain_hosts.(timestamp)\n'\
                     + 'optionally in a specified directory\n\n'
