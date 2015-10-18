@@ -25,7 +25,7 @@ usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--remove-subdomains]
                          {dnsmasq,hosts} output_file
 
 positional arguments:
-  {dnsmasq,hosts}       'format' (required) generate /etc/dnsmasq.conf or /etc/hosts format file
+  {dnsmasq,hosts}       (required) generate /etc/dnsmasq.conf or /etc/hosts format file
   output_file           (required) output file (- for stdout)
 
 optional arguments:
