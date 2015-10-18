@@ -1,3 +1,4 @@
+
 # dnsmasq-blacklist
 
 **dnsmasq-blacklist** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
@@ -17,14 +18,14 @@ In dnsmasq mode the `--trim-subdomains` option can be used to block ad-serving d
 As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
 ```
-$./dnsmasq-blacklist -h
+./dnsmasq-blacklist --help
 usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--remove-subdomains]
-                         [--verbose] [--whitelist WHITELIST]
+                         [--verbose] [--install-help] [--whitelist WHITELIST]
                          [--url-cache-dir URL_CACHE_DIR]
                          {dnsmasq,hosts} output_file
 
 positional arguments:
-  {dnsmasq,hosts}       (required) generate /etc/dnsmasq.conf or /etc/hosts file
+  {dnsmasq,hosts}       'format' (required) generate /etc/dnsmasq.conf or /etc/hosts format file
   output_file           (required) output file (- for stdout)
 
 optional arguments:
@@ -48,18 +49,38 @@ optional arguments:
                         sense to use this flag if you are generating a /etc/hosts
                         format file since the effect would be to block google.com and
                         not *.google.com
+                        
   --verbose             print additional debugging information to stderr
+                        
+  --install-help        print example install and configure information
+                        (requires format and output_file)
+                        
   --whitelist WHITELIST
                         file of DNS names to whitelist
                         example:
                             stackexchange.com
                             stackoverflow.com
+                        
   --url-cache-dir URL_CACHE_DIR
                         cache --url files as
                         dnsmasq-blacklist_cache_domain_hosts.(timestamp)
                         optionally in a specified directory
-                         
+                        
+
 ```
+ 
+dnsmasq example:
+```
+./dnsmasq-blacklist dnsmasq blacklist.txt
+
+```
+ 
+hosts example:
+```
+./dnsmasq-blacklist hosts blacklist.txt
+
+```
+ 
 
 `[1]:`
  `http://winhelp2002.mvps.org/hosts.txt`
@@ -68,6 +89,7 @@ optional arguments:
 
 **Why?**
 
-To force the issue. Individuals should decide who they execute code for. Providers will either adapt and not use sub or alternate domains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
+Individuals should decide who they execute code for. Providers will either adapt and not use sub or alternate domains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
 
 If you find this useful, you may appreciate the effects of disabling JS and making a hotkey for when you want to use it.
+
