@@ -33,7 +33,7 @@ class SmartFormatter(argparse.HelpFormatter):
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
-format_help = 'R|\'format\' (required) generate /etc/dnsmasq.conf or /etc/hosts format file\n'
+format_help = 'R|(required) generate /etc/dnsmasq.conf or /etc/hosts format file\n'
 output_file_help = 'R|(required) output file (- for stdout)\n'
 url_help = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
           + default_data_sources[0] + '\n    ' + default_data_sources[1] \
