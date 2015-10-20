@@ -53,6 +53,7 @@ whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.
 url_cache_dir_help = 'R|cache --url files as\n'\
                     + 'dnsmasq-blacklist_cache_domain_hosts.(timestamp)\n'\
                     + 'optionally in a specified directory\n\n'
+dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'
 
 parser.add_argument("format", help=format_help, action="store", nargs=1, choices=['dnsmasq', 'hosts'], type=str)
 parser.add_argument("output_file", help=output_file_help, type=str)
@@ -62,6 +63,7 @@ parser.add_argument("--verbose", help=verbose_help, action="store_true", default
 parser.add_argument("--install-help", help=install_help, action="store_true", default=False)
 parser.add_argument("--whitelist", help=whitelist_help, type=str, default=False)
 parser.add_argument("--url-cache-dir", help=url_cache_dir_help, type=str, default=False)
+parser.add_argument("--dest-ip", help=dest_ip_help, type=str, default='127.0.0.1')
 
 def install_help():
     if cmd_args.format == ['dnsmasq']:
@@ -176,7 +178,7 @@ def remove_subdomains(domains):
 def convert_domains_to_dnsmasq_format(domains):
     dnsmasq_rules = []
     for domain in domains:
-        dnsmasq_line = 'address=/.' + domain + '/127.0.0.1'
+        dnsmasq_line = 'address=/.' + domain + '/' + cmd_args.dest_ip
         dnsmasq_rules.append(dnsmasq_line)
     dnsmasq_rules = set(dnsmasq_rules)
     return dnsmasq_rules
@@ -258,7 +260,7 @@ if __name__ == '__main__':
     if cmd_args.format == ['hosts']:
         with open(output_file, 'w') as fh:
             for item in sorted(domains_combined):
-                fh.write('127.0.0.1 ' + item + '\n')
+                fh.write(cmd_args.dest_ip + ' ' + item + '\n')
 
     if cmd_args.format == ['dnsmasq']:
         domains_combined = convert_domains_to_dnsmasq_format(domains_combined)

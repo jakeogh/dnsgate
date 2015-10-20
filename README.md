@@ -21,7 +21,7 @@ As a bonus, using dnsmasq can significantly lower DNS latency and therefore make
 ./dnsmasq-blacklist --help
 usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--remove-subdomains]
                          [--verbose] [--install-help] [--whitelist WHITELIST]
-                         [--url-cache-dir URL_CACHE_DIR]
+                         [--url-cache-dir URL_CACHE_DIR] [--dest-ip DEST_IP]
                          {dnsmasq,hosts} output_file
 
 positional arguments:
@@ -65,6 +65,8 @@ optional arguments:
                         cache --url files as
                         dnsmasq-blacklist_cache_domain_hosts.(timestamp)
                         optionally in a specified directory
+                        
+  --dest-ip DEST_IP     IP to redirect blocked connections to. Defaults to 127.0.0.1
                         
 
 ```
