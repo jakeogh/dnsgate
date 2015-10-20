@@ -87,6 +87,11 @@ hosts example:
  `http://someonewhocares.org/hosts/hosts`
 
 
+**Similar Software**
+
+https://gaenserich.github.io/hostsblock/
+
+
 **Why?**
 
 Individuals should decide who they execute code for. Providers will either adapt and not use sub or alternate domains; explicitly linking the requirement to execute their code to get their content, or will find a better way.
