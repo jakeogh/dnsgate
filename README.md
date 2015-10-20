@@ -18,7 +18,7 @@ In dnsmasq mode the `--trim-subdomains` option can be used to block ad-serving d
 As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
 ```
-./dnsmasq-blacklist --help
+$ ./dnsmasq-blacklist --help
 usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--remove-subdomains]
                          [--verbose] [--install-help] [--whitelist WHITELIST]
                          [--url-cache-dir URL_CACHE_DIR] [--dest-ip DEST_IP]
@@ -73,12 +73,12 @@ optional arguments:
  
 dnsmasq example:
 ```
-./dnsmasq-blacklist dnsmasq blacklist.txt
+$ ./dnsmasq-blacklist dnsmasq blacklist.txt
 
-./dnsmasq-blacklist dnsmasq blacklist.txt --install-help
+$ ./dnsmasq-blacklist dnsmasq blacklist.txt --install-help
 
 dnsmasq mode usage:
-    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq blacklist.txt
+    $ ./dnsmasq-blacklist dnsmasq blacklist.txt --install-help
 
 dnsmasq config:
     $ cp -vi blacklist.txt /etc/
@@ -93,12 +93,12 @@ See --help and --verbose for more information.
  
 hosts example:
 ```
-./dnsmasq-blacklist hosts blacklist.txt
+$ ./dnsmasq-blacklist hosts blacklist.txt
 
-./dnsmasq-blacklist hosts blacklist.txt --install-help
+$ ./dnsmasq-blacklist hosts blacklist.txt --install-help
 
 hosts mode usage:
-    $ ./dnsmasq-blacklist --whitelist whitelist.txt hosts blacklist.txt
+    $ ./dnsmasq-blacklist hosts blacklist.txt --install-help
 
 hosts config:
     $ cp -vi /etc/hosts /etc/hosts.bak

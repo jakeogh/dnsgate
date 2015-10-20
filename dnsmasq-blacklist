@@ -68,8 +68,7 @@ parser.add_argument("--dest-ip", help=dest_ip_help, type=str, default='127.0.0.1
 def install_help():
     if cmd_args.format == ['dnsmasq']:
         eprint('\ndnsmasq mode usage:')
-        eprint('    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq %s'\
-            % cmd_args.output_file)
+        eprint('    $ ' + ' '.join(sys.argv[:]))
     
         output_file_name = os.path.basename(cmd_args.output_file)
 
@@ -82,7 +81,7 @@ def install_help():
     if cmd_args.format == ['hosts']:
 
         eprint('\nhosts mode usage:')
-        eprint('    $ ./dnsmasq-blacklist --whitelist whitelist.txt hosts %s' % cmd_args.output_file)
+        eprint('    $ ' + ' '.join(sys.argv[:]))
 
         eprint("\nhosts config:")
         eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
