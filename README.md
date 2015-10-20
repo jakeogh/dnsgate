@@ -75,11 +75,39 @@ dnsmasq example:
 ```
 ./dnsmasq-blacklist dnsmasq blacklist.txt
 
+./dnsmasq-blacklist dnsmasq blacklist.txt --install-help
+
+dnsmasq mode usage:
+    $ ./dnsmasq-blacklist --remove-subdomains --whitelist whitelist.txt dnsmasq blacklist.txt
+
+dnsmasq config:
+    $ cp -vi blacklist.txt /etc/
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+    $ echo "conf-file=/etc/blacklist.txt" >> /etc/dnsmasq.conf
+    $ /etc/init.d/dnsmasq restart
+
+See --help and --verbose for more information.
+
+
 ```
  
 hosts example:
 ```
 ./dnsmasq-blacklist hosts blacklist.txt
+
+./dnsmasq-blacklist hosts blacklist.txt --install-help
+
+hosts mode usage:
+    $ ./dnsmasq-blacklist --whitelist whitelist.txt hosts blacklist.txt
+
+hosts config:
+    $ cp -vi /etc/hosts /etc/hosts.bak
+    $ cat blacklist.txt >> /etc/hosts
+
+    NOTE: "cp /etc/hosts.bak /etc/hosts" before doing this a second time.
+
+See --help and --verbose for more information.
+
 
 ```
  
