@@ -71,7 +71,7 @@ optional arguments:
 
 ```
  
-dnsmasq example:
+**dnsmasq example:**
 ```
 $ ./dnsmasq-blacklist dnsmasq blacklist.txt
 
@@ -91,7 +91,7 @@ See --help and --verbose for more information.
 
 ```
  
-hosts example:
+**hosts example:**
 ```
 $ ./dnsmasq-blacklist hosts blacklist.txt
 
@@ -103,7 +103,6 @@ hosts mode usage:
 hosts config:
     $ cp -vi /etc/hosts /etc/hosts.bak
     $ cat blacklist.txt >> /etc/hosts
-
     NOTE: "cp /etc/hosts.bak /etc/hosts" before doing this a second time.
 
 See --help and --verbose for more information.

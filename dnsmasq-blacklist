@@ -86,7 +86,7 @@ def install_help():
         eprint("\nhosts config:")
         eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
         eprint("    $ cat %s >> /etc/hosts" % cmd_args.output_file)
-        eprint("\n    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
+        eprint("    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
 
     eprint("\nSee --help and --verbose for more information.\n")
     quit(0)
