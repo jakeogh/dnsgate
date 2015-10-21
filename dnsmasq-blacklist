@@ -2,7 +2,7 @@
 # tab-width:4
 
 # PUBLIC DOMAIN
-# http://github.com/jkeogh/dnsmasq-blacklist
+# http://github.com/jkeogh/dnsgate
 
 import time
 import sys
@@ -51,7 +51,7 @@ verbose_help = 'R|print additional debugging information to stderr\n\n'
 install_help = 'R|print example install and configure information\n(requires format and output_file)\n\n'
 whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n\n'
 url_cache_dir_help = 'R|cache --url files as\n'\
-                    + 'dnsmasq-blacklist_cache_domain_hosts.(timestamp)\n'\
+                    + 'dnsgate_cache_domain_hosts.(timestamp)\n'\
                     + 'optionally in a specified directory\n\n'
 dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'
 
@@ -130,7 +130,7 @@ def get_domains(url, cache_directory='.'):
 
         if cmd_args.url_cache_dir:
             domain = urlparse(url).netloc
-            output_file = cache_directory + '/' + 'dnsmasq_blacklist_url-cache_' + domain + '_hosts.' + str(time.time())
+            output_file = cache_directory + '/' + 'dnsgate_url-cache_' + domain + '_hosts.' + str(time.time())
             with open(output_file, 'wb') as fh:
                 for line in raw_hosts_file_lines:
                     fh.write(line + b'\n')
