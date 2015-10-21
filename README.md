@@ -1,7 +1,7 @@
 
-# dnsmasq-blacklist
+# dnsgate
 
-**dnsmasq-blacklist** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
+**dnsgate** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
 
 [dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains.
 
@@ -18,11 +18,11 @@ In dnsmasq mode the `--trim-subdomains` option can be used to block ad-serving d
 As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
 ```
-$ ./dnsmasq-blacklist --help
-usage: dnsmasq-blacklist [-h] [--url [URL [URL ...]]] [--remove-subdomains]
-                         [--verbose] [--install-help] [--whitelist WHITELIST]
-                         [--url-cache-dir URL_CACHE_DIR] [--dest-ip DEST_IP]
-                         {dnsmasq,hosts} output_file
+$ ./dnsgate --help
+usage: dnsgate [-h] [--url [URL [URL ...]]] [--remove-subdomains] [--verbose]
+               [--install-help] [--whitelist WHITELIST]
+               [--url-cache-dir URL_CACHE_DIR] [--dest-ip DEST_IP]
+               {dnsmasq,hosts} output_file
 
 positional arguments:
   {dnsmasq,hosts}       (required) generate /etc/dnsmasq.conf or /etc/hosts format file
@@ -63,7 +63,7 @@ optional arguments:
                         
   --url-cache-dir URL_CACHE_DIR
                         cache --url files as
-                        dnsmasq-blacklist_cache_domain_hosts.(timestamp)
+                        dnsgate_cache_domain_hosts.(timestamp)
                         optionally in a specified directory
                         
   --dest-ip DEST_IP     IP to redirect blocked connections to. Defaults to 127.0.0.1
@@ -73,12 +73,12 @@ optional arguments:
  
 **dnsmasq example:**
 ```
-$ ./dnsmasq-blacklist dnsmasq blacklist.txt
+$ ./dnsgate dnsmasq blacklist.txt
 
-$ ./dnsmasq-blacklist dnsmasq blacklist.txt --install-help
+$ ./dnsgate dnsmasq blacklist.txt --install-help
 
 dnsmasq mode usage:
-    $ ./dnsmasq-blacklist dnsmasq blacklist.txt --install-help
+    $ ./dnsgate dnsmasq blacklist.txt --install-help
 
 dnsmasq config:
     $ cp -vi blacklist.txt /etc/
@@ -93,12 +93,12 @@ See --help and --verbose for more information.
  
 **hosts example:**
 ```
-$ ./dnsmasq-blacklist hosts blacklist.txt
+$ ./dnsgate hosts blacklist.txt
 
-$ ./dnsmasq-blacklist hosts blacklist.txt --install-help
+$ ./dnsgate hosts blacklist.txt --install-help
 
 hosts mode usage:
-    $ ./dnsmasq-blacklist hosts blacklist.txt --install-help
+    $ ./dnsgate hosts blacklist.txt --install-help
 
 hosts config:
     $ cp -vi /etc/hosts /etc/hosts.bak
