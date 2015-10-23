@@ -65,11 +65,11 @@ parser.add_argument("--whitelist", help=whitelist_help, type=str, default=False)
 parser.add_argument("--url-cache-dir", help=url_cache_dir_help, type=str, default=False)
 parser.add_argument("--dest-ip", help=dest_ip_help, type=str, default='127.0.0.1')
 
-def install_help():
+def show_install_help():
     if cmd_args.format == ['dnsmasq']:
         eprint('\ndnsmasq mode usage:')
         eprint('    $ ' + ' '.join(sys.argv[:]))
-    
+
         output_file_name = os.path.basename(cmd_args.output_file)
 
         eprint("\ndnsmasq config:")
@@ -183,12 +183,11 @@ def convert_domains_to_dnsmasq_format(domains):
     return dnsmasq_rules
 
 
-if __name__ == '__main__':
 
-    cmd_args = parser.parse_args()
+def main():
 
     if cmd_args.install_help:
-        install_help()
+        show_install_help()
 
     if os.path.isfile(cmd_args.output_file) and cmd_args.output_file != '/dev/stdout':
         eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output_file)
@@ -214,7 +213,7 @@ if __name__ == '__main__':
     else:
         output_file = os.path.abspath(cmd_args.output_file)
 
-    vprint( '--url:', ' '.join(cmd_args.url))
+    vprint('--url:', ' '.join(cmd_args.url))
     if cmd_args.whitelist:
         vprint('--whitelist:', cmd_args.whitelist)
     else:
@@ -242,9 +241,8 @@ if __name__ == '__main__':
         except Exception as e:
             eprint("Exception on url:", url)
             eprint("Exception:", e)
-            pass
 
-    domains_combined = domains_combined_orig        
+    domains_combined = domains_combined_orig
 
     if cmd_args.remove_subdomains:
         domains_combined = remove_subdomains(domains_combined)
@@ -267,5 +265,9 @@ if __name__ == '__main__':
             for item in sorted(domains_combined):
                 fh.write(item + '\n')
 
+
+if __name__ == '__main__':
+    cmd_args = parser.parse_args()
+    main()
     vprint("Exiting without error.")
     quit(0)
