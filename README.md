@@ -18,7 +18,6 @@ In dnsmasq mode the `--trim-subdomains` option can be used to block ad-serving d
 As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
 ```
-$ ./dnsgate --help
 usage: dnsgate [-h] [--url [URL [URL ...]]] [--remove-subdomains] [--verbose]
                [--install-help] [--whitelist WHITELIST]
                [--url-cache-dir URL_CACHE_DIR] [--dest-ip DEST_IP]
@@ -73,14 +72,8 @@ optional arguments:
  
 **dnsmasq example:**
 ```
-$ ./dnsgate dnsmasq blacklist.txt
 
-$ ./dnsgate dnsmasq blacklist.txt --install-help
-
-dnsmasq mode usage:
     $ ./dnsgate dnsmasq blacklist.txt --install-help
-
-dnsmasq config:
     $ cp -vi blacklist.txt /etc/
     $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
     $ echo "conf-file=/etc/blacklist.txt" >> /etc/dnsmasq.conf
@@ -93,14 +86,8 @@ See --help and --verbose for more information.
  
 **hosts example:**
 ```
-$ ./dnsgate hosts blacklist.txt
 
-$ ./dnsgate hosts blacklist.txt --install-help
-
-hosts mode usage:
     $ ./dnsgate hosts blacklist.txt --install-help
-
-hosts config:
     $ cp -vi /etc/hosts /etc/hosts.bak
     $ cat blacklist.txt >> /etc/hosts
     NOTE: "cp /etc/hosts.bak /etc/hosts" before doing this a second time.

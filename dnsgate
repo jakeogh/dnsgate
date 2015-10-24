@@ -67,12 +67,12 @@ parser.add_argument("--dest-ip", help=dest_ip_help, type=str, default='127.0.0.1
 
 def show_install_help():
     if cmd_args.format == ['dnsmasq']:
-        eprint('\ndnsmasq mode usage:')
+#       eprint('\ndnsmasq mode usage:')
         eprint('    $ ' + ' '.join(sys.argv[:]))
 
         output_file_name = os.path.basename(cmd_args.output_file)
 
-        eprint("\ndnsmasq config:")
+#       eprint("\ndnsmasq config:")
         eprint('    $ cp -vi %s /etc/' % cmd_args.output_file)
         eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
         eprint('    $ echo \"conf-file=/etc/%s\" >> /etc/dnsmasq.conf' % output_file_name)
@@ -80,10 +80,10 @@ def show_install_help():
 
     if cmd_args.format == ['hosts']:
 
-        eprint('\nhosts mode usage:')
+#       eprint('\nhosts mode usage:')
         eprint('    $ ' + ' '.join(sys.argv[:]))
 
-        eprint("\nhosts config:")
+#       eprint("\nhosts config:")
         eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
         eprint("    $ cat %s >> /etc/hosts" % cmd_args.output_file)
         eprint("    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
