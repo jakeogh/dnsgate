@@ -84,7 +84,7 @@ def show_install_help():
         eprint("    $ cat %s >> /etc/hosts" % cmd_args.output)
         eprint("    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
 
-    eprint("\nSee --help and --verbose for more information.\n")
+    eprint("\nSee --help and --verbose for more information.")
     quit(0)
 
 def vprint(*args, **kwargs):

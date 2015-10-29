@@ -13,7 +13,7 @@ echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 
 Conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm) requires the user to keep track of each subdomain/tld combination they want to block.
 
-With --format=dnsmasq  the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains.
+With `--format=dnsmasq` the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains.
 
 As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
@@ -80,7 +80,6 @@ optional arguments:
 
 See --help and --verbose for more information.
 
-
 ```
  
 **hosts example:**
@@ -92,7 +91,6 @@ See --help and --verbose for more information.
     NOTE: "cp /etc/hosts.bak /etc/hosts" before doing this a second time.
 
 See --help and --verbose for more information.
-
 
 ```
  
