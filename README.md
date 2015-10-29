@@ -1,9 +1,9 @@
 
 # dnsgate
 
-**dnsgate** merges two /etc/hosts blocking lists```[1]``` into /etc/dnsmasq.conf or /etc/hosts format.
+**dnsgate** merges 3rd party dns blocking lists```[1]```into /etc/dnsmasq.conf or /etc/hosts format.
 
-[dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains.
+While not required, [dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains.
 
 For example *.google.com:
 
@@ -11,9 +11,9 @@ For example *.google.com:
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-Conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm) requires the user to keep track of each subdomain/tld combination they want to block.
+Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block.
 
-With `--format=dnsmasq` the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains.
+With `--format=dnsmasq` the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains. `--trim-subdomains` may block TLD's you want to use, so use it with `--whitelist`.
 
 As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
