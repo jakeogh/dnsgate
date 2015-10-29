@@ -1,7 +1,7 @@
 
 # dnsgate
 
-**dnsgate** merges 3rd party dns blocking lists```[1]```into /etc/dnsmasq.conf or /etc/hosts format.
+**dnsgate** merges 3rd party dns blocking lists`[1]`into `/etc/dnsmasq.conf` or `/etc/hosts` format.
 
 While not required, [dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains.
 
@@ -71,7 +71,6 @@ optional arguments:
  
 **dnsmasq example:**
 ```
-
     $ ./dnsgate --format=dnsmasq --output=blacklist.txt --install-help
     $ cp -vi blacklist.txt /etc/
     $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
@@ -80,11 +79,9 @@ optional arguments:
 
 See --help and --verbose for more information.
 
-```
- 
+``` 
 **hosts example:**
 ```
-
     $ ./dnsgate --format=hosts --output=blacklist.txt --install-help
     $ cp -vi /etc/hosts /etc/hosts.bak
     $ cat blacklist.txt >> /etc/hosts
@@ -92,8 +89,7 @@ See --help and --verbose for more information.
 
 See --help and --verbose for more information.
 
-```
- 
+``` 
 
 `[1]:`
  `http://winhelp2002.mvps.org/hosts.txt`
