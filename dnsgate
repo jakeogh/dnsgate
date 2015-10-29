@@ -33,9 +33,9 @@ class SmartFormatter(argparse.HelpFormatter):
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
-format_help = 'R|(required) generate /etc/dnsmasq.conf or /etc/hosts format file\n'
-output_file_help = 'R|(required) output file (- for stdout)\n'
-url_help = 'R|optional hosts file url(s)\ndefaults to:\n    ' \
+format_help = 'R|generate /etc/dnsmasq.conf (default) or /etc/hosts format file\n'
+output_help = 'R|output file (default stdout)\n'
+url_help = 'R|hosts file url(s)\ndefaults to:\n    ' \
           + default_data_sources[0] + '\n    ' + default_data_sources[1] \
           + '\nlocal files can be specified:\n    file://some_file\n '
 remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
@@ -48,15 +48,15 @@ remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    a
                         + 'format file since the effect would be to block google.com and\n'\
                         + 'not *.google.com\n\n'
 verbose_help = 'R|print additional debugging information to stderr\n\n'
-install_help = 'R|print example install and configure information\n(requires format and output_file)\n\n'
+install_help = 'R|print example install and configure information\n(requires format)\n\n'
 whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n\n'
 url_cache_dir_help = 'R|cache --url files as\n'\
                     + 'dnsgate_cache_domain_hosts.(timestamp)\n'\
                     + 'optionally in a specified directory\n\n'
 dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'
 
-parser.add_argument("format", help=format_help, action="store", nargs=1, choices=['dnsmasq', 'hosts'], type=str)
-parser.add_argument("output_file", help=output_file_help, type=str)
+parser.add_argument("--format", help=format_help, type=str, choices=['dnsmasq', 'hosts'], default=['dnsmasq'], nargs=1)
+parser.add_argument("--output", help=output_help, type=str, default='-')
 parser.add_argument("--url", help=url_help, nargs='*', default=default_data_sources)
 parser.add_argument("--remove-subdomains", help=remove_subdomains_help, action="store_true", default=False)
 parser.add_argument("--verbose", help=verbose_help, action="store_true", default=False)
@@ -67,25 +67,21 @@ parser.add_argument("--dest-ip", help=dest_ip_help, type=str, default='127.0.0.1
 
 def show_install_help():
     if cmd_args.format == ['dnsmasq']:
-#       eprint('\ndnsmasq mode usage:')
         eprint('    $ ' + ' '.join(sys.argv[:]))
 
-        output_file_name = os.path.basename(cmd_args.output_file)
+        output_file_name = os.path.basename(cmd_args.output)
 
-#       eprint("\ndnsmasq config:")
-        eprint('    $ cp -vi %s /etc/' % cmd_args.output_file)
+        eprint('    $ cp -vi %s /etc/' % cmd_args.output)
         eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
         eprint('    $ echo \"conf-file=/etc/%s\" >> /etc/dnsmasq.conf' % output_file_name)
         eprint('    $ /etc/init.d/dnsmasq restart')
 
-    if cmd_args.format == ['hosts']:
+    elif cmd_args.format == ['hosts']:
 
-#       eprint('\nhosts mode usage:')
         eprint('    $ ' + ' '.join(sys.argv[:]))
 
-#       eprint("\nhosts config:")
         eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
-        eprint("    $ cat %s >> /etc/hosts" % cmd_args.output_file)
+        eprint("    $ cat %s >> /etc/hosts" % cmd_args.output)
         eprint("    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
 
     eprint("\nSee --help and --verbose for more information.\n")
@@ -189,8 +185,8 @@ def main():
     if cmd_args.install_help:
         show_install_help()
 
-    if os.path.isfile(cmd_args.output_file) and cmd_args.output_file != '/dev/stdout':
-        eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output_file)
+    if os.path.isfile(cmd_args.output) and cmd_args.output != '/dev/stdout':
+        eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output)
         quit(1)
 
     for url in cmd_args.url:
@@ -208,10 +204,10 @@ def main():
     else:
         cache_directory = '.'   # passed to get_domains()
 
-    if cmd_args.output_file == '-' or cmd_args.output_file == '/dev/stdout':
+    if cmd_args.output == '-' or cmd_args.output == '/dev/stdout':
         output_file = '/dev/stdout'
     else:
-        output_file = os.path.abspath(cmd_args.output_file)
+        output_file = os.path.abspath(cmd_args.output)
 
     vprint('--url:', ' '.join(cmd_args.url))
     if cmd_args.whitelist:
@@ -259,12 +255,11 @@ def main():
             for item in sorted(domains_combined):
                 fh.write(cmd_args.dest_ip + ' ' + item + '\n')
 
-    if cmd_args.format == ['dnsmasq']:
+    elif cmd_args.format == ['dnsmasq']:
         domains_combined = convert_domains_to_dnsmasq_format(domains_combined)
         with open(output_file, 'w') as fh:
             for item in sorted(domains_combined):
                 fh.write(item + '\n')
-
 
 if __name__ == '__main__':
     cmd_args = parser.parse_args()

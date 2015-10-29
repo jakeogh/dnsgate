@@ -13,24 +13,23 @@ echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 
 Conventional [hosts file blocking](http://winhelp2002.mvps.org/hosts.htm) requires the user to keep track of each subdomain/tld combination they want to block.
 
-In dnsmasq mode the `--trim-subdomains` option can be used to block ad-serving domain's at their top level, removing the need to manually specify specific subdomains.
+With --format=dnsmasq  the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains.
 
 As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
 
 ```
-usage: dnsgate [-h] [--url [URL [URL ...]]] [--remove-subdomains] [--verbose]
+usage: dnsgate [-h] [--format {dnsmasq,hosts}] [--output OUTPUT]
+               [--url [URL [URL ...]]] [--remove-subdomains] [--verbose]
                [--install-help] [--whitelist WHITELIST]
                [--url-cache-dir URL_CACHE_DIR] [--dest-ip DEST_IP]
-               {dnsmasq,hosts} output_file
-
-positional arguments:
-  {dnsmasq,hosts}       (required) generate /etc/dnsmasq.conf or /etc/hosts format file
-  output_file           (required) output file (- for stdout)
 
 optional arguments:
   -h, --help            show this help message and exit
+  --format {dnsmasq,hosts}
+                        generate /etc/dnsmasq.conf (default) or /etc/hosts format file
+  --output OUTPUT       output file (default stdout)
   --url [URL [URL ...]]
-                        optional hosts file url(s)
+                        hosts file url(s)
                         defaults to:
                             http://winhelp2002.mvps.org/hosts.txt
                             http://someonewhocares.org/hosts/hosts
@@ -52,7 +51,7 @@ optional arguments:
   --verbose             print additional debugging information to stderr
                         
   --install-help        print example install and configure information
-                        (requires format and output_file)
+                        (requires format)
                         
   --whitelist WHITELIST
                         file of DNS names to whitelist
@@ -73,7 +72,7 @@ optional arguments:
 **dnsmasq example:**
 ```
 
-    $ ./dnsgate dnsmasq blacklist.txt --install-help
+    $ ./dnsgate --format=dnsmasq --output=blacklist.txt --install-help
     $ cp -vi blacklist.txt /etc/
     $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
     $ echo "conf-file=/etc/blacklist.txt" >> /etc/dnsmasq.conf
@@ -87,7 +86,7 @@ See --help and --verbose for more information.
 **hosts example:**
 ```
 
-    $ ./dnsgate hosts blacklist.txt --install-help
+    $ ./dnsgate --format=hosts --output=blacklist.txt --install-help
     $ cp -vi /etc/hosts /etc/hosts.bak
     $ cat blacklist.txt >> /etc/hosts
     NOTE: "cp /etc/hosts.bak /etc/hosts" before doing this a second time.
