@@ -4,6 +4,7 @@
 # PUBLIC DOMAIN
 # http://github.com/jkeogh/dnsgate
 
+import copy
 import time
 import sys
 import os
@@ -13,7 +14,17 @@ import tldextract
 from urllib.parse import urlparse
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
-default_data_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+global config_directory
+config_directory = os.path.expanduser('~/.dnsgate')
+
+global cache_directory
+cache_directory = config_directory + '/cache'
+
+default_blacklist = config_directory + '/blacklist'
+default_whitelist = config_directory + '/whitelist'
+
+default_blacklist_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', default_blacklist]
+default_whitelist_sources = [default_whitelist]
 
 class DefaultHelpParser(argparse.ArgumentParser):
     def error(self, message):
@@ -33,12 +44,11 @@ class SmartFormatter(argparse.HelpFormatter):
 
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
-format_help = 'R|generate /etc/dnsmasq.conf (default) or /etc/hosts format file\n'
-output_help = 'R|output file (default stdout)\n'
-url_help = 'R|hosts file url(s)\ndefaults to:\n    ' \
-          + default_data_sources[0] + '\n    ' + default_data_sources[1] \
-          + '\nlocal files can be specified:\n    file://some_file\n '
-remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
+format_help = 'R|generate /etc/dnsmasq.conf (default) or /etc/hosts format file\n\n'
+output_help = 'R|output file (default stdout)\n\n'
+blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(default_blacklist_sources) + '\n\n'
+whitelist_help = 'R|whitelists(s) defaults to:\n    ' + '\n    '.join(default_whitelist_sources) + '\n\n'
+block_tld_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
                         + 'not enabled by default. Useful for dnsmasq if you are willing\n'\
                         + 'to maintain a --whitelist file for inadvertently blocked\n'\
                         + 'domains. This causes ad-serving domains to be blocked at their\n'\
@@ -49,39 +59,34 @@ remove_subdomains_help = 'R|remove subdomains (see --whitelist)\nexample:\n    a
                         + 'not *.google.com\n\n'
 verbose_help = 'R|print additional debugging information to stderr\n\n'
 install_help = 'R|print example install and configure information\n(requires format)\n\n'
-whitelist_help = 'R|file of DNS names to whitelist\nexample:\n    stackexchange.com\n    stackoverflow.com\n\n'
-url_cache_dir_help = 'R|cache --url files as\n'\
-                    + 'dnsgate_cache_domain_hosts.(timestamp)\n'\
-                    + 'optionally in a specified directory\n\n'
+url_cache_help = 'R|cache --url files as dnsgate_cache_domain_hosts.(timestamp)\n'\
+                    + 'to ~/.dnsgate/cache\n\n'
 dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'
 
-parser.add_argument("--format", help=format_help, type=str, choices=['dnsmasq', 'hosts'], default=['dnsmasq'], nargs=1)
-parser.add_argument("--output", help=output_help, type=str, default='-')
-parser.add_argument("--url", help=url_help, nargs='*', default=default_data_sources)
-parser.add_argument("--remove-subdomains", help=remove_subdomains_help, action="store_true", default=False)
-parser.add_argument("--verbose", help=verbose_help, action="store_true", default=False)
-parser.add_argument("--install-help", help=install_help, action="store_true", default=False)
-parser.add_argument("--whitelist", help=whitelist_help, type=str, default=False)
-parser.add_argument("--url-cache-dir", help=url_cache_dir_help, type=str, default=False)
-parser.add_argument("--dest-ip", help=dest_ip_help, type=str, default='127.0.0.1')
+parser.add_argument("--format",       help=format_help,    type=str, nargs=1, choices=['dnsmasq', 'hosts'], default=['dnsmasq'])
+parser.add_argument("--blacklist",    help=blacklist_help, type=str, nargs='*', default=default_blacklist_sources)
+parser.add_argument("--whitelist",    help=whitelist_help, type=str, nargs='*', default=default_whitelist_sources)
+parser.add_argument("--output",       help=output_help,    type=str,            default='-')
+parser.add_argument("--dest-ip",      help=dest_ip_help,   type=str,            default='127.0.0.1')
+parser.add_argument("--block-tld",    help=block_tld_help, action="store_true", default=False)
+parser.add_argument("--verbose",      help=verbose_help,   action="store_true", default=False)
+parser.add_argument("--install-help", help=install_help,   action="store_true", default=False)
+parser.add_argument("--url-cache",    help=url_cache_help, action="store_true", default=False)
 
 def show_install_help():
     if cmd_args.format == ['dnsmasq']:
-        eprint('    $ ' + ' '.join(sys.argv[:]))
 
-        output_file_name = os.path.basename(cmd_args.output)
-
-        eprint('    $ cp -vi %s /etc/' % cmd_args.output)
+        eprint('    $ dnsgate --format=dnsmasq --output=dnsgate_output')
+        eprint('    $ cp -vi dnsgate_output /etc/')
         eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
-        eprint('    $ echo \"conf-file=/etc/%s\" >> /etc/dnsmasq.conf' % output_file_name)
+        eprint('    $ echo \"conf-file=/etc/dnsgate_output\" >> /etc/dnsmasq.conf')
         eprint('    $ /etc/init.d/dnsmasq restart')
 
     elif cmd_args.format == ['hosts']:
 
-        eprint('    $ ' + ' '.join(sys.argv[:]))
-
+        eprint('    $ dnsgate --format=hosts --output=dnsgate_output')
         eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
-        eprint("    $ cat %s >> /etc/hosts" % cmd_args.output)
+        eprint("    $ cat dnsgate_output >> /etc/hosts")
         eprint("    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
 
     eprint("\nSee --help and --verbose for more information.")
@@ -113,8 +118,8 @@ def extract_domains_from_bytes_list(domain_bytes):
     return domains
 
 def get_domains(url, cache_directory='.'):
-
     if url.startswith('http://') or url.startswith('https://'):
+        vprint("GET:", url)
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
 
         try:
@@ -124,17 +129,19 @@ def get_domains(url, cache_directory='.'):
             eprint("Exception:", e)
             raise e
 
-        if cmd_args.url_cache_dir:
+        if cmd_args.url_cache:
             domain = urlparse(url).netloc
             output_file = cache_directory + '/' + 'dnsgate_url-cache_' + domain + '_hosts.' + str(time.time())
+            if not os.path.isdir(cache_directory):
+                os.makedirs(cache_directory)
             with open(output_file, 'wb') as fh:
                 for line in raw_hosts_file_lines:
                     fh.write(line + b'\n')
 
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
 
-    elif url.startswith('file://'):
-        local_file = url.split('file://')[-1]       # todo better
+    else:
+        local_file = url
         raw_hosts_file_lines = read_file_bytes(local_file).split(b'\n')
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
 
@@ -148,7 +155,7 @@ def read_file(file):
             file_bytes = fh.read()
         return file_bytes
     else:
-        raise FileNotFoundError("file:" + file + " does not exist.")
+        raise FileNotFoundError(file + ' does not exist.')
 
 def read_file_bytes(file):
     if os.path.isfile(file):
@@ -156,13 +163,13 @@ def read_file_bytes(file):
             file_bytes = fh.read()
         return file_bytes
     else:
-        raise FileNotFoundError("file:" + file + " does not exist.")
+        raise FileNotFoundError(file + ' does not exist.')
 
 def domain_extract(domain):
     dom = no_cache_extract(domain)  #prevent tldextract cache update error when run as a normal user
     return dom
 
-def remove_subdomains(domains):
+def block_tld(domains):
     domains_stripped = set()
     for line in domains:
         line = domain_extract(line)             # get tld
@@ -178,8 +185,6 @@ def convert_domains_to_dnsmasq_format(domains):
     dnsmasq_rules = set(dnsmasq_rules)
     return dnsmasq_rules
 
-
-
 def main():
 
     if cmd_args.install_help:
@@ -189,66 +194,67 @@ def main():
         eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output)
         quit(1)
 
-    for url in cmd_args.url:
-        if url.startswith('http://') or url.startswith('https://') or url.startswith('file://'):
-            pass
-        else:
-            eprint("Unknown URI scheme:", url)
-            quit(1)
-
-    if cmd_args.url_cache_dir:
-        cache_directory = os.path.abspath(os.path.expanduser(cmd_args.url_cache_dir))
-        if not os.path.isdir(cache_directory):
-            eprint("--url-cache requires a directory argument,", cache_directory, " is not a directory.")
-            quit(1)
-    else:
-        cache_directory = '.'   # passed to get_domains()
-
     if cmd_args.output == '-' or cmd_args.output == '/dev/stdout':
         output_file = '/dev/stdout'
     else:
         output_file = os.path.abspath(cmd_args.output)
 
-    vprint('--url:', ' '.join(cmd_args.url))
-    if cmd_args.whitelist:
-        vprint('--whitelist:', cmd_args.whitelist)
-    else:
-        vprint('--whitelist:')
-    vprint('--url-cache-dir:', cmd_args.url_cache_dir)
-    vprint('--remove-subdomains:', cmd_args.remove_subdomains, '\n')
+    vprint('--url:', ' '.join(cmd_args.blacklist))
+    vprint('--whitelist:', ' '.join(cmd_args.whitelist))
+    vprint('--url-cache-dir:', cmd_args.url_cache)
+    vprint('--block-tld:', cmd_args.block_tld)
 
-    if cmd_args.whitelist:
-        domains_whitelist = set()
-        whitelist_file = os.path.abspath(cmd_args.whitelist)
-        for line in read_file(whitelist_file).splitlines():
-            line = line.strip()
-            line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading and trailing .
-            if len(line) > 0:
-                domains_whitelist.add(line)
+    domains_whitelist = set()
+    for whitelist in cmd_args.whitelist:
+        whitelist_file = os.path.abspath(whitelist)
 
-        vprint("domains in whitelist :", len(domains_whitelist))
+        try:
+            lines = read_file(whitelist_file).splitlines()
+        except FileNotFoundError as e:
+            if whitelist != default_whitelist:
+                eprint(e)
+            else:
+                vprint(e)
+        else:
+            for line in lines:
+                line = line.strip()
+                line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading and trailing .
+                if len(line) > 0:
+                    domains_whitelist.add(line)
+
+        vprint("len(domains_whitelist):", len(domains_whitelist))
 
     domains_combined_orig = set()   # domains from all sources, combined
-    for url in cmd_args.url:
+    for url in cmd_args.blacklist:
         try:
             domains = get_domains(url, cache_directory)
             domains_combined_orig = domains_combined_orig|domains # union
+            vprint("url:", url, "len(domains_combined_orig):", len(domains_combined_orig))
 
         except Exception as e:
-            eprint("Exception on url:", url)
-            eprint("Exception:", e)
+            if url != default_blacklist:
+                eprint("Exception on url:", url)
+                eprint(e)
+            else:
+                vprint(e)
 
-    domains_combined = domains_combined_orig
+    domains_combined = copy.deepcopy(domains_combined_orig)
 
-    if cmd_args.remove_subdomains:
-        domains_combined = remove_subdomains(domains_combined)
+    if cmd_args.block_tld:
+        domains_combined = block_tld(domains_combined)
 
-    if cmd_args.whitelist:
-        # re-add subdomains of whitelisted domains
-        domains_combined = domains_combined - domains_whitelist  # exact whitelist matches
-        for orig_domain in domains_combined_orig:
-            if orig_domain not in domains_whitelist:
-                domains_combined.add(orig_domain)
+    # re-add subdomains of whitelisted domains
+    domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches
+
+    #re-add subdomains that are not explicitely whitelisted or already blocked by another rule
+    for orig_domain in domains_combined_orig:
+        if orig_domain not in domains_whitelist:
+            if orig_domain not in domains_combined:
+                orig_domain_tldextract = domain_extract(orig_domain)
+                orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
+                if orig_domain_tld not in domains_combined:
+                    vprint("re-adding:", orig_domain)
+                    domains_combined.add(orig_domain)
 
     if cmd_args.format == ['hosts']:
         with open(output_file, 'w') as fh:
