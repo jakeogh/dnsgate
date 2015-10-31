@@ -11,7 +11,7 @@ For example *.google.com:
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not necessarily a problem; if you don't use dnsmasq 3rd party lists `[1]` keep track of the subdomains for you. But, if you decide you want to block a specific domain completely, you must use dnsmasq.
+Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people `[1]` keep track of the subdomains for you. If you decide you want to block a specific domain completely, you must use dnsmasq.
 
 With `--format=dnsmasq` the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains. `--trim-subdomains` may block TLD's you want to use, so use it with `--whitelist`.
 
