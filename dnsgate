@@ -23,7 +23,8 @@ cache_directory = config_directory + '/cache'
 default_blacklist = config_directory + '/blacklist'
 default_whitelist = config_directory + '/whitelist'
 
-default_blacklist_sources = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', default_blacklist]
+default_blacklist_sources = ['http://winhelp2002.mvps.org/hosts.txt',\
+                             'http://someonewhocares.org/hosts/hosts', default_blacklist]
 default_whitelist_sources = [default_whitelist]
 
 class DefaultHelpParser(argparse.ArgumentParser):
@@ -61,19 +62,20 @@ block_at_tld_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analyt
                         + 'not *.google.com\n\n'
 verbose_help = 'R|print additional debugging information to stderr\n\n'
 install_help = 'R|print example install and configure information\n(requires format)\n\n'
-url_cache_help = 'R|cache --url files as dnsgate_cache_domain_hosts.(timestamp)\n'\
+cache_help = 'R|cache --url files as dnsgate_cache_domain_hosts.(timestamp)\n'\
                     + 'to ~/.dnsgate/cache\n\n'
 dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'
 
-parser.add_argument("--format",       help=format_help,    type=str, nargs=1, choices=['dnsmasq', 'hosts'], default=['dnsmasq'])
+parser.add_argument("--format",       help=format_help,    type=str, nargs=1, choices=['dnsmasq', 'hosts'],\
+                                                                                default=['dnsmasq'])
 parser.add_argument("--blacklist",    help=blacklist_help, type=str, nargs='*', default=default_blacklist_sources)
 parser.add_argument("--whitelist",    help=whitelist_help, type=str, nargs='*', default=default_whitelist_sources)
 parser.add_argument("--output",       help=output_help,    type=str,            default='-')
 parser.add_argument("--dest-ip",      help=dest_ip_help,   type=str,            default='127.0.0.1')
-parser.add_argument("--block-at-tld",    help=block_at_tld_help, action="store_true", default=False)
+parser.add_argument("--block-at-tld", help=block_at_tld_help, action="store_true", default=False)
 parser.add_argument("--verbose",      help=verbose_help,   action="store_true", default=False)
 parser.add_argument("--install-help", help=install_help,   action="store_true", default=False)
-parser.add_argument("--url-cache",    help=url_cache_help, action="store_true", default=False)
+parser.add_argument("--cache",    help=cache_help, action="store_true", default=False)
 parser.add_argument("--force",        help=force_help,     action="store_true", default=False)
 
 def show_install_help():
@@ -132,9 +134,9 @@ def get_domains(url, cache_directory='.'):
             eprint("Exception:", e)
             raise e
 
-        if cmd_args.url_cache:
+        if cmd_args.cache:
             domain = urlparse(url).netloc
-            output_file = cache_directory + '/' + 'dnsgate_url-cache_' + domain + '_hosts.' + str(time.time())
+            output_file = cache_directory + '/' + 'dnsgate_cache_' + domain + '_hosts.' + str(time.time())
             if not os.path.isdir(cache_directory):
                 os.makedirs(cache_directory)
             with open(output_file, 'wb') as fh:
@@ -205,7 +207,7 @@ def main():
 
     vprint('--url:', ' '.join(cmd_args.blacklist))
     vprint('--whitelist:', ' '.join(cmd_args.whitelist))
-    vprint('--url-cache-dir:', cmd_args.url_cache)
+    vprint('--cache-dir:', cmd_args.cache)
     vprint('--block-at-tld:', cmd_args.block_at_tld)
 
     domains_whitelist = set()

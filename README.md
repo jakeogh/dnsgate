@@ -20,7 +20,7 @@ usage: dnsgate [-h] [--format {dnsmasq,hosts}]
                [--blacklist [BLACKLIST [BLACKLIST ...]]]
                [--whitelist [WHITELIST [WHITELIST ...]]] [--output OUTPUT]
                [--dest-ip DEST_IP] [--block-at-tld] [--verbose]
-               [--install-help] [--url-cache] [--force]
+               [--install-help] [--cache] [--force]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -58,7 +58,7 @@ optional arguments:
   --install-help        print example install and configure information
                         (requires format)
                         
-  --url-cache           cache --url files as dnsgate_cache_domain_hosts.(timestamp)
+  --cache               cache --url files as dnsgate_cache_domain_hosts.(timestamp)
                         to ~/.dnsgate/cache
                         
   --force               overwrite existing output file
