@@ -11,11 +11,11 @@ For example *.google.com:
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not a problem if you don't use dnsmasq, because the 3rd party lists `[1]` do that work for you.
+Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not necessarily a problem; if you don't use dnsmasq 3rd party lists `[1]` keep track of the subdomains for you. But, if you decide you want to block a specific domain completely, you must use dnsmasq.
 
 With `--format=dnsmasq` the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains. `--trim-subdomains` may block TLD's you want to use, so use it with `--whitelist`.
 
-As a bonus, using dnsmasq can significantly lower DNS latency and therefore make your net connection more responsive.
+Since dnsmasq caches dns queries, it often lowers DNS latency.
 
 ```
 usage: dnsgate [-h] [--format {dnsmasq,hosts}]
