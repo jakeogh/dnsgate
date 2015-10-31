@@ -50,7 +50,7 @@ force_help = 'R|overwrite existing output file\n\n'
 blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(default_blacklist_sources[0:2]) + '\n    '\
                         + default_blacklist_sources[2].replace(os.path.expanduser('~'), '~') + '\n\n'
 whitelist_help = 'R|whitelists(s) defaults to:\n    ' + default_whitelist.replace(os.path.expanduser('~'), '~') + '\n\n'
-block_tld_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
+block_at_tld_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
                         + 'not enabled by default. Useful for dnsmasq if you are willing\n'\
                         + 'to maintain a --whitelist file for inadvertently blocked\n'\
                         + 'domains. This causes ad-serving domains to be blocked at their\n'\
@@ -70,7 +70,7 @@ parser.add_argument("--blacklist",    help=blacklist_help, type=str, nargs='*', 
 parser.add_argument("--whitelist",    help=whitelist_help, type=str, nargs='*', default=default_whitelist_sources)
 parser.add_argument("--output",       help=output_help,    type=str,            default='-')
 parser.add_argument("--dest-ip",      help=dest_ip_help,   type=str,            default='127.0.0.1')
-parser.add_argument("--block-tld",    help=block_tld_help, action="store_true", default=False)
+parser.add_argument("--block-at-tld",    help=block_at_tld_help, action="store_true", default=False)
 parser.add_argument("--verbose",      help=verbose_help,   action="store_true", default=False)
 parser.add_argument("--install-help", help=install_help,   action="store_true", default=False)
 parser.add_argument("--url-cache",    help=url_cache_help, action="store_true", default=False)
@@ -172,7 +172,7 @@ def domain_extract(domain):
     dom = no_cache_extract(domain)  #prevent tldextract cache update error when run as a normal user
     return dom
 
-def block_tld(domains):
+def block_at_tld(domains):
     domains_stripped = set()
     for line in domains:
         line = domain_extract(line)             # get tld
@@ -206,7 +206,7 @@ def main():
     vprint('--url:', ' '.join(cmd_args.blacklist))
     vprint('--whitelist:', ' '.join(cmd_args.whitelist))
     vprint('--url-cache-dir:', cmd_args.url_cache)
-    vprint('--block-tld:', cmd_args.block_tld)
+    vprint('--block-at-tld:', cmd_args.block_at_tld)
 
     domains_whitelist = set()
     for whitelist in cmd_args.whitelist:
@@ -244,8 +244,8 @@ def main():
 
     domains_combined = copy.deepcopy(domains_combined_orig)
 
-    if cmd_args.block_tld:
-        domains_combined = block_tld(domains_combined)
+    if cmd_args.block_at_tld:
+        domains_combined = block_at_tld(domains_combined)
 
     # re-add subdomains of whitelisted domains
     domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches

@@ -13,16 +13,14 @@ echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 
 Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people `[1]` keep track of the subdomains for you. If you decide you want to block a specific domain completely, you must use dnsmasq.
 
-With `--format=dnsmasq` the `--trim-subdomains` option can be used to block domain's at their top level, removing the need to manually specify specific subdomains. `--trim-subdomains` may block TLD's you want to use, so use it with `--whitelist`.
-
-Since dnsmasq caches dns queries, it often lowers DNS latency.
+With `--format=dnsmasq` the `--block-at-tld` option blocks domains at their TLD, removing the need to manually specify/track specific subdomains. `--block-at-tld` may block TLD's you want to use, so use it with `--whitelist`.
 
 ```
 usage: dnsgate [-h] [--format {dnsmasq,hosts}]
                [--blacklist [BLACKLIST [BLACKLIST ...]]]
                [--whitelist [WHITELIST [WHITELIST ...]]] [--output OUTPUT]
-               [--dest-ip DEST_IP] [--block-tld] [--verbose] [--install-help]
-               [--url-cache]
+               [--dest-ip DEST_IP] [--block-at-tld] [--verbose]
+               [--install-help] [--url-cache] [--force]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -43,7 +41,7 @@ optional arguments:
                         
   --dest-ip DEST_IP     IP to redirect blocked connections to. Defaults to 127.0.0.1
                         
-  --block-tld           remove subdomains (see --whitelist)
+  --block-at-tld        remove subdomains (see --whitelist)
                         example:
                             analytics.google.com -> google.com
                         not enabled by default. Useful for dnsmasq if you are willing
@@ -62,6 +60,8 @@ optional arguments:
                         
   --url-cache           cache --url files as dnsgate_cache_domain_hosts.(timestamp)
                         to ~/.dnsgate/cache
+                        
+  --force               overwrite existing output file
                         
 
 ```
