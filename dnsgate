@@ -46,6 +46,7 @@ parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
 format_help = 'R|generate /etc/dnsmasq.conf (default) or /etc/hosts format file\n\n'
 output_help = 'R|output file (default stdout)\n\n'
+force_help = 'R|overwrite existing output file\n\n'
 blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(default_blacklist_sources[0:2]) + '\n    '\
                         + default_blacklist_sources[2].replace(os.path.expanduser('~'), '~') + '\n\n'
 whitelist_help = 'R|whitelists(s) defaults to:\n    ' + default_whitelist.replace(os.path.expanduser('~'), '~') + '\n\n'
@@ -73,6 +74,7 @@ parser.add_argument("--block-tld",    help=block_tld_help, action="store_true", 
 parser.add_argument("--verbose",      help=verbose_help,   action="store_true", default=False)
 parser.add_argument("--install-help", help=install_help,   action="store_true", default=False)
 parser.add_argument("--url-cache",    help=url_cache_help, action="store_true", default=False)
+parser.add_argument("--force",        help=force_help,     action="store_true", default=False)
 
 def show_install_help():
     if cmd_args.format == ['dnsmasq']:
@@ -192,8 +194,9 @@ def main():
         show_install_help()
 
     if os.path.isfile(cmd_args.output) and cmd_args.output != '/dev/stdout':
-        eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output)
-        quit(1)
+        if not cmd_args.force:
+            eprint("File '%s' exists. Refusing to overwrite. Exiting." % cmd_args.output)
+            quit(1)
 
     if cmd_args.output == '-' or cmd_args.output == '/dev/stdout':
         output_file = '/dev/stdout'
