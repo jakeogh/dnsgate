@@ -11,7 +11,7 @@ For example *.google.com:
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people `[1]` keep track of the subdomains for you. If you decide you want to block a specific domain completely, you must use dnsmasq.
+Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people `[1]` keep track of the subdomains for you. If you want to block a specific domain completely use dnsmasq.
 
 With `--format=dnsmasq` the `--block-at-tld` option blocks domains at their TLD, removing the need to manually specify/track specific subdomains. `--block-at-tld` may block TLD's you want to use, so use it with `--whitelist`.
 
@@ -98,5 +98,5 @@ See --help and --verbose for more information.
 https://gaenserich.github.io/hostsblock/
 
 
-If you find this useful, you may appreciate the effects of disabling JS and making a key shortcut to enable it.
+If you find this useful consider disabling JS and making a keybinding to enable it.
 
