@@ -46,8 +46,9 @@ parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 
 format_help = 'R|generate /etc/dnsmasq.conf (default) or /etc/hosts format file\n\n'
 output_help = 'R|output file (default stdout)\n\n'
-blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(default_blacklist_sources) + '\n\n'
-whitelist_help = 'R|whitelists(s) defaults to:\n    ' + '\n    '.join(default_whitelist_sources) + '\n\n'
+blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(default_blacklist_sources[0:2]) + '\n    '\
+                        + default_blacklist_sources[2].replace(os.path.expanduser('~'), '~') + '\n\n'
+whitelist_help = 'R|whitelists(s) defaults to:\n    ' + default_whitelist.replace(os.path.expanduser('~'), '~') + '\n\n'
 block_tld_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analytics.google.com -> google.com\n'\
                         + 'not enabled by default. Useful for dnsmasq if you are willing\n'\
                         + 'to maintain a --whitelist file for inadvertently blocked\n'\

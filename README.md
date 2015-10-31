@@ -33,11 +33,11 @@ optional arguments:
                         blacklist(s) defaults to:
                             http://winhelp2002.mvps.org/hosts.txt
                             http://someonewhocares.org/hosts/hosts
-                            /home/user/.dnsgate/blacklist
+                            ~/.dnsgate/blacklist
                         
   --whitelist [WHITELIST [WHITELIST ...]]
                         whitelists(s) defaults to:
-                            /home/user/.dnsgate/whitelist
+                            ~/.dnsgate/whitelist
                         
   --output OUTPUT       output file (default stdout)
                         
