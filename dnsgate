@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
 global config_directory
-config_directory = os.path.expanduser('~/.dnsgate')
+config_directory = '/etc/dnsgate'
 
 global cache_directory
 cache_directory = config_directory + '/cache'
