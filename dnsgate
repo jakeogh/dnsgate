@@ -61,7 +61,7 @@ block_at_tld_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analyt
                         + 'format file since the effect would be to block google.com and\n'\
                         + 'not *.google.com\n\n'
 verbose_help = 'R|print additional debugging information to stderr\n\n'
-install_help = 'R|print example install and configure information\n(requires format)\n\n'
+install_help = 'R|print example install and configure information\n\n'
 cache_help = 'R|cache --url files as dnsgate_cache_domain_hosts.(timestamp)\n'\
                     + 'to ~/.dnsgate/cache\n\n'
 dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'

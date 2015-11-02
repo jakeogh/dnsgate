@@ -56,7 +56,6 @@ optional arguments:
   --verbose             print additional debugging information to stderr
                         
   --install-help        print example install and configure information
-                        (requires format)
                         
   --cache               cache --url files as dnsgate_cache_domain_hosts.(timestamp)
                         to ~/.dnsgate/cache
@@ -98,5 +97,9 @@ See --help and --verbose for more information.
 https://gaenserich.github.io/hostsblock/
 
 
-If you find this useful consider disabling JS and making a keybinding to enable it.
+If you find this useful you may appreciate:
+
+ - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
+ - Use [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
+
 
