@@ -1,7 +1,7 @@
 
 # dnsgate
 
-**dnsgate** merges 3rd party dns blocking lists`[1]`into `/etc/dnsmasq.conf` or `/etc/hosts` format.
+**dnsgate** merges 3rd party [1] dns blocking lists into `/etc/dnsmasq.conf` or `/etc/hosts` format.
 
 While not required, [dnsmasq](https://wiki.gentoo.org/wiki/Dnsmasq) improves on conventional [/etc/hosts domain blocking](http://winhelp2002.mvps.org/hosts.htm) by enabling * blocking of domains.
 
@@ -11,7 +11,7 @@ For example *.google.com:
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
 
-Said another way, conventional `/etc/hosts` blocking can't use wildcards * and therefore requires the user to keep track of each subdomain/tld combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people `[1]` keep track of the subdomains for you. If you want to block a specific domain completely use dnsmasq.
+Said another way, conventional `/etc/hosts` blocking can't use wildcards (*) and therefore requires the user to keep track of each subdomain / domain combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people [1] keep track of the subdomains for you. If you want to block a specific domain completely, use dnsmasq.
 
 With `--format=dnsmasq` the `--block-at-tld` option blocks domains at their TLD, removing the need to manually specify/track specific subdomains. `--block-at-tld` may block TLD's you want to use, so use it with `--whitelist`.
 
@@ -31,11 +31,11 @@ optional arguments:
                         blacklist(s) defaults to:
                             http://winhelp2002.mvps.org/hosts.txt
                             http://someonewhocares.org/hosts/hosts
-                            ~/.dnsgate/blacklist
+                            /etc/dnsgate/blacklist
                         
   --whitelist [WHITELIST [WHITELIST ...]]
                         whitelists(s) defaults to:
-                            ~/.dnsgate/whitelist
+                            /etc/dnsgate/whitelist
                         
   --output OUTPUT       output file (default stdout)
                         
@@ -96,10 +96,11 @@ See --help and --verbose for more information.
 
 https://gaenserich.github.io/hostsblock/
 
+**Simple Software**
 
 If you find this useful you may appreciate:
 
  - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
- - Use [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
+ - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
 
 
