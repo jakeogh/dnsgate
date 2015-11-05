@@ -20,7 +20,7 @@ usage: dnsgate [-h] [--format {dnsmasq,hosts}]
                [--blacklist [BLACKLIST [BLACKLIST ...]]]
                [--whitelist [WHITELIST [WHITELIST ...]]] [--output OUTPUT]
                [--dest-ip DEST_IP] [--block-at-tld] [--verbose]
-               [--install-help] [--cache] [--force]
+               [--install-help] [--cache] [--force] [--restart-dnsmasq]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -61,6 +61,8 @@ optional arguments:
                         to ~/.dnsgate/cache
                         
   --force               overwrite existing output file
+                        
+  --restart-dnsmasq     Restart dnsmasq service. Ignored if --format=hosts
                         
 
 ```

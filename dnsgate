@@ -65,6 +65,7 @@ install_help = 'R|print example install and configure information\n\n'
 cache_help = 'R|cache --url files as dnsgate_cache_domain_hosts.(timestamp)\n'\
                     + 'to ~/.dnsgate/cache\n\n'
 dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'
+restart_dnsmasq_help = 'R|Restart dnsmasq service. Ignored if --format=hosts\n\n'
 
 parser.add_argument("--format",       help=format_help,    type=str, nargs=1, choices=['dnsmasq', 'hosts'],\
                                                                                 default=['dnsmasq'])
@@ -77,6 +78,7 @@ parser.add_argument("--verbose",      help=verbose_help,   action="store_true", 
 parser.add_argument("--install-help", help=install_help,   action="store_true", default=False)
 parser.add_argument("--cache",    help=cache_help, action="store_true", default=False)
 parser.add_argument("--force",        help=force_help,     action="store_true", default=False)
+parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help, action="store_true", default=False)
 
 def show_install_help():
     if cmd_args.format == ['dnsmasq']:
@@ -104,6 +106,13 @@ def vprint(*args, **kwargs):
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
+
+def restart_dnsmasq():
+    if os.path.lexists('/etc/init.d/dnsmasq'):
+        ret = os.system('/etc/init.d/dnsmasq restart')
+    else:
+        ret = os.system('systemctl restart dnsmasq')    # untested
+    return ret        
 
 def extract_domains_from_bytes_list(domain_bytes):
     domains = set()
@@ -262,7 +271,7 @@ def main():
     # re-add subdomains of whitelisted domains
     domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches
 
-    #re-add subdomains that are not explicitely whitelisted or already blocked by another rule
+    #re-add subdomains that are not explicitly whitelisted or already blocked by another rule
     for orig_domain in domains_combined_orig:
         if orig_domain not in domains_whitelist:
             if orig_domain not in domains_combined:
@@ -287,4 +296,7 @@ if __name__ == '__main__':
     cmd_args = parser.parse_args()
     main()
     vprint("Exiting without error.")
+    if cmd_args.restart_dnsmasq:
+        if cmd_args.format != ['hosts']:
+            restart_dnsmasq()
     quit(0)
