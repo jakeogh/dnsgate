@@ -18,14 +18,17 @@ With `--format=dnsmasq` the `--block-at-tld` option blocks domains at their TLD,
 ```
 usage: dnsgate [-h] [--format {dnsmasq,hosts}]
                [--blacklist [BLACKLIST [BLACKLIST ...]]]
-               [--whitelist [WHITELIST [WHITELIST ...]]] [--output OUTPUT]
-               [--dest-ip DEST_IP] [--block-at-tld] [--verbose]
-               [--install-help] [--cache] [--force] [--restart-dnsmasq]
+               [--whitelist [WHITELIST [WHITELIST ...]]]
+               [--blacklist-append [BLACKLIST_APPEND [BLACKLIST_APPEND ...]]]
+               [--whitelist-append [WHITELIST_APPEND [WHITELIST_APPEND ...]]]
+               [--output OUTPUT] [--dest-ip DEST_IP] [--block-at-tld]
+               [--verbose] [--install-help] [--cache] [--force]
+               [--restart-dnsmasq]
 
 optional arguments:
   -h, --help            show this help message and exit
   --format {dnsmasq,hosts}
-                        generate /etc/dnsmasq.conf (default) or /etc/hosts format file
+                        generate /etc/dnsmasq.conf (default) or /etc/hosts format output file
                         
   --blacklist [BLACKLIST [BLACKLIST ...]]
                         blacklist(s) defaults to:
@@ -37,7 +40,13 @@ optional arguments:
                         whitelists(s) defaults to:
                             /etc/dnsgate/whitelist
                         
-  --output OUTPUT       output file (default stdout)
+  --blacklist-append [BLACKLIST_APPEND [BLACKLIST_APPEND ...]]
+                        Add domains(s) to /etc/dnsgate/blacklist 
+                        
+  --whitelist-append [WHITELIST_APPEND [WHITELIST_APPEND ...]]
+                        Add domains(s) to /etc/dnsgate/whitelist 
+                        
+  --output OUTPUT       output file (defaults to +/etc/dnsgate/generated_blacklist.conf with --format=dnsmasq and stdout with --format=hosts)
                         
   --dest-ip DEST_IP     IP to redirect blocked connections to. Defaults to 127.0.0.1
                         
