@@ -28,7 +28,7 @@ usage: dnsgate [-h] [--format {dnsmasq,hosts}]
 optional arguments:
   -h, --help            show this help message and exit
   --format {dnsmasq,hosts}
-                        generate /etc/dnsmasq.conf (default) or /etc/hosts format output
+                        dnsmasq (default) or /etc/hosts format output
                         
   --blacklist [BLACKLIST [BLACKLIST ...]]
                         blacklist(s) defaults to:
