@@ -42,7 +42,7 @@ class SmartFormatter(argparse.HelpFormatter):
 # pylint: disable=invalid-name
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 format_help = 'R|generate /etc/dnsmasq.conf (default) or /etc/hosts format output file\n\n'
-output_help = 'R|output file (defaults to +' + DEFAULT_OUTPUT_FILE + ' with --format=dnsmasq and stdout with --format=hosts)\n\n'
+output_help = 'R|output file (defaults to ' + DEFAULT_OUTPUT_FILE + '\nwith --format=dnsmasq and stdout with --format=hosts)\n\n'
 force_help = 'R|overwrite existing output file\n\n'
 blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(DEFAULT_BLACKLIST_SOURCES[0:2]) + '\n    '\
                         + DEFAULT_BLACKLIST_SOURCES[2].replace(os.path.expanduser('~'), '~') + '\n\n'
