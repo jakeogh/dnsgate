@@ -19,7 +19,6 @@ CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
 DEFAULT_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
 DEFAULT_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist.conf'
-
 DEFAULT_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',\
                              'http://someonewhocares.org/hosts/hosts', DEFAULT_BLACKLIST]
 DEFAULT_WHITELIST_SOURCES = [DEFAULT_WHITELIST]
@@ -86,20 +85,16 @@ parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help, action="stor
 
 def show_install_help():
     if CMD_ARGS.format == ['dnsmasq']:
-
         eprint('    $ dnsgate --format=dnsmasq --output=dnsgate_output')
         eprint('    $ cp -vi dnsgate_output /etc/')
         eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
         eprint('    $ echo \"conf-file=/etc/dnsgate_output\" >> /etc/dnsmasq.conf')
         eprint('    $ /etc/init.d/dnsmasq restart')
-
     elif CMD_ARGS.format == ['hosts']:
-
         eprint('    $ dnsgate --format=hosts --output=dnsgate_output')
         eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
         eprint("    $ cat dnsgate_output >> /etc/hosts")
         eprint("    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
-
     eprint("\nSee --help and --verbose for more information.")
     quit(0)
 
@@ -127,7 +122,6 @@ def extract_domains_from_bytes_list(domain_bytes):
         line = line.strip()
         if len(line) == 0:                      # skip empty lines
             continue
-
         if not line.startswith('#'):            # remove comments
             line = line.split(' ')[1]           # get DNS name (the url's are in hosts 0.0.0.0 dom.com format)
             # pylint: disable=bad-builtin
@@ -140,14 +134,12 @@ def get_url(url):
     if url.startswith('http://') or url.startswith('https://'):
         vprint("GET:", url)
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
-
         try:
             raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,\
                                    stream=False, timeout=15.500).content.split(b'\n')
         except Exception as e:
             eprint("Exception:", e)
             raise e
-
         if CMD_ARGS.cache:
             domain = urlparse(url).netloc
             output_file = CACHE_DIRECTORY + '/' + 'dnsgate_cache_' + domain + '_hosts.' + str(time.time())
@@ -156,9 +148,7 @@ def get_url(url):
             with open(output_file, 'wb') as fh:
                 for line in raw_hosts_file_lines:
                     fh.write(line + b'\n')
-
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
-
     else:
         eprint("unknown url scheme:", url)
         os._exit(1)
@@ -199,13 +189,6 @@ def block_at_tld(domains):
         domains_stripped.add(line)
     return domains_stripped
 
-def convert_domains_to_dnsmasq_format(domains):
-    dnsmasq_rules = []
-    for domain in domains:
-        dnsmasq_line = 'address=/.' + domain + '/' + CMD_ARGS.dest_ip
-        dnsmasq_rules.append(dnsmasq_line)
-    return dnsmasq_rules
-
 def write_unique_line(line, file):
     with open(file, 'r+') as fh:
         if line not in fh:
@@ -241,12 +224,6 @@ def main():
         if not CMD_ARGS.force:
             eprint("File '%s' exists. Refusing to overwrite. Use --force. Exiting." % output_file)
             quit(1)
-
-    vprint('--url:', ' '.join(CMD_ARGS.blacklist))
-    vprint('--output:', CMD_ARGS.output)
-    vprint('--whitelist:', ' '.join(CMD_ARGS.whitelist))
-    vprint('--cache-dir:', CMD_ARGS.cache)
-    vprint('--block-at-tld:', CMD_ARGS.block_at_tld)
 
 #   idn='☃.net'
     if CMD_ARGS.whitelist_append:
@@ -286,7 +263,6 @@ def main():
             if domains:
                 domains_combined_orig = domains_combined_orig|domains # union
 
-
     domains_combined = copy.deepcopy(domains_combined_orig)
 
     if CMD_ARGS.block_at_tld:
@@ -305,16 +281,19 @@ def main():
                     vprint("re-adding:", orig_domain)
                     domains_combined.add(orig_domain)
 
+    domains_combined = group_by_tld(domains_combined)
+
     if CMD_ARGS.format == ['hosts']:
         with open(output_file, 'w') as fh:
-            for item in group_by_tld(domains_combined):
-                fh.write(CMD_ARGS.dest_ip + ' ' + item + '\n')
+            for domain in domains_combined:
+                hosts_line = CMD_ARGS.dest_ip + ' ' + domain + '\n'
+                fh.write(hosts_line)
 
     elif CMD_ARGS.format == ['dnsmasq']:
-        domains_combined = convert_domains_to_dnsmasq_format(group_by_tld(domains_combined))
         with open(output_file, 'w') as fh:
-            for item in domains_combined:
-                fh.write(item + '\n')
+            for domain in domains_combined:
+                dnsmasq_line = 'address=/.' + domain + '/' + CMD_ARGS.dest_ip + '\n'
+                fh.write(dnsmasq_line)
 
 if __name__ == '__main__':
     no_cache_extract = tldextract.TLDExtract(cache_file=False)
