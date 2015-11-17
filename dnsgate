@@ -63,7 +63,7 @@ install_help = 'R|print example install and configure information\n\n'
 cache_help = 'R|cache --url files as dnsgate_cache_domain_hosts.(timestamp)\n'\
                     + 'to ~/.dnsgate/cache\n\n'
 dest_ip_help = 'R|IP to redirect blocked connections to. Defaults to 127.0.0.1\n\n'
-restart_dnsmasq_help = 'R|Restart dnsmasq service. Ignored if --format=hosts\n\n'
+restart_dnsmasq_help = 'R|Restart dnsmasq service (defaults to True). Ignored if --format=hosts\n\n'
 blacklist_append_help = 'R|Add domains(s) to ' + DEFAULT_BLACKLIST + ' \n\n'
 whitelist_append_help = 'R|Add domains(s) to ' + DEFAULT_WHITELIST + ' \n\n'
 # ignore 'Exactly one space required after comma'
@@ -82,7 +82,7 @@ parser.add_argument("--install-help", help=install_help,   action="store_true", 
 parser.add_argument("--cache",    help=cache_help, action="store_true", default=False)
 parser.add_argument("--force",        help=force_help,     action="store_true", default=False)
 parser.add_argument("--backup",       help=backup_help,    action="store_true", default=False)
-parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help, action="store_true", default=False)
+parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help, type=bool, default=True, choices=[True, False])
 # pylint: enable=C0324
 # pylint: enable=invalid-name
 

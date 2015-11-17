@@ -23,7 +23,7 @@ usage: dnsgate [-h] [--format {dnsmasq,hosts}]
                [--whitelist-append [WHITELIST_APPEND [WHITELIST_APPEND ...]]]
                [--output OUTPUT] [--dest-ip DEST_IP] [--block-at-tld]
                [--verbose] [--install-help] [--cache] [--force] [--backup]
-               [--restart-dnsmasq]
+               [--restart-dnsmasq {True,False}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -74,13 +74,16 @@ optional arguments:
                         
   --backup              backup output file before overwriting with --force
                         
-  --restart-dnsmasq     Restart dnsmasq service. Ignored if --format=hosts
+  --restart-dnsmasq {True,False}
+                        Restart dnsmasq service (defaults to True). Ignored if --format=hosts
                         
 
 ```
  
 **dnsmasq example:**
-```
+``` * Stopping dnsmasq ... [ ok ]
+ * Starting dnsmasq ... [ ok ]
+
     $ dnsgate --format=dnsmasq --output=dnsgate_output
     $ cp -vi dnsgate_output /etc/
     $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
