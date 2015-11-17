@@ -91,9 +91,9 @@ See --help and --verbose for more information.
 **hosts example:**
 ```
     $ dnsgate --format=hosts --output=dnsgate_output
-    $ cp -vi /etc/hosts /etc/hosts.bak
-    $ cat dnsgate_output >> /etc/hosts
-    NOTE: "cp /etc/hosts.bak /etc/hosts" before doing this a second time.
+    $ mv -vi /etc/hosts /etc/hosts.default
+    $ mv -vi dnsgate_output >> /etc/hosts.dnsgate
+    $ cat /etc/hosts.default /etc/hosts.dnsgate > /etc/hosts
 
 See --help and --verbose for more information.
 

@@ -92,9 +92,9 @@ def show_install_help():
         eprint('    $ /etc/init.d/dnsmasq restart')
     elif CMD_ARGS.format == ['hosts']:
         eprint('    $ dnsgate --format=hosts --output=dnsgate_output')
-        eprint("    $ cp -vi /etc/hosts /etc/hosts.bak")
-        eprint("    $ cat dnsgate_output >> /etc/hosts")
-        eprint("    NOTE: \"cp /etc/hosts.bak /etc/hosts\" before doing this a second time.")
+        eprint("    $ mv -vi /etc/hosts /etc/hosts.default")
+        eprint("    $ mv -vi dnsgate_output >> /etc/hosts.dnsgate")
+        eprint("    $ cat /etc/hosts.default /etc/hosts.dnsgate > /etc/hosts")
     eprint("\nSee --help and --verbose for more information.")
     quit(0)
 
