@@ -22,7 +22,7 @@ usage: dnsgate [-h] [--format {dnsmasq,hosts}]
                [--blacklist-append [BLACKLIST_APPEND [BLACKLIST_APPEND ...]]]
                [--whitelist-append [WHITELIST_APPEND [WHITELIST_APPEND ...]]]
                [--output OUTPUT] [--dest-ip DEST_IP] [--block-at-tld]
-               [--verbose] [--install-help] [--cache] [--force]
+               [--verbose] [--install-help] [--cache] [--force] [--backup]
                [--restart-dnsmasq]
 
 optional arguments:
@@ -71,6 +71,8 @@ optional arguments:
                         to ~/.dnsgate/cache
                         
   --force               overwrite existing output file
+                        
+  --backup              backup output file before overwriting with --force
                         
   --restart-dnsmasq     Restart dnsmasq service. Ignored if --format=hosts
                         

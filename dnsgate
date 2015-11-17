@@ -13,6 +13,7 @@ import requests
 import argparse
 import tldextract
 from urllib.parse import urlparse
+from shutil import copyfileobj
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
@@ -44,6 +45,7 @@ parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 format_help = 'R|dnsmasq (default) or /etc/hosts format output\n\n'
 output_help = 'R|output file (defaults to ' + DEFAULT_OUTPUT_FILE + '\nwith --format=dnsmasq and stdout with --format=hosts)\n\n'
 force_help = 'R|overwrite existing output file\n\n'
+backup_help = 'R|backup output file before overwriting with --force\n\n'
 blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(DEFAULT_BLACKLIST_SOURCES[0:2]) + '\n    '\
                         + DEFAULT_BLACKLIST_SOURCES[2].replace(os.path.expanduser('~'), '~') + '\n\n'
 whitelist_help = 'R|whitelists(s) defaults to:\n    ' + DEFAULT_WHITELIST.replace(os.path.expanduser('~'), '~') + '\n\n'
@@ -79,6 +81,7 @@ parser.add_argument("--verbose",      help=verbose_help,   action="store_true", 
 parser.add_argument("--install-help", help=install_help,   action="store_true", default=False)
 parser.add_argument("--cache",    help=cache_help, action="store_true", default=False)
 parser.add_argument("--force",        help=force_help,     action="store_true", default=False)
+parser.add_argument("--backup",       help=backup_help,    action="store_true", default=False)
 parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help, action="store_true", default=False)
 # pylint: enable=C0324
 # pylint: enable=invalid-name
@@ -209,6 +212,16 @@ def read_list_of_domains(file):
                 domains.add(line)
     return domains
 
+def backup_file_if_exists(file):
+    timestamp = str(time.time())
+    dest_file = file + '.bak.' + timestamp
+    try:
+        with open(file, 'r') as sf:
+            with open(dest_file, 'x') as df:
+                copyfileobj(sf, df)
+    except FileNotFoundError:
+        pass    # skip backup is file does not exist
+            
 def main():
     if CMD_ARGS.install_help:
         show_install_help()
@@ -282,6 +295,9 @@ def main():
                     domains_combined.add(orig_domain)
 
     domains_combined = group_by_tld(domains_combined)
+
+    if CMD_ARGS.backup:
+        backup_file_if_exists(output_file)
 
     if CMD_ARGS.format == ['hosts']:
         with open(output_file, 'w') as fh:
