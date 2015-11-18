@@ -68,21 +68,34 @@ blacklist_append_help = 'R|Add domains(s) to ' + DEFAULT_BLACKLIST + ' \n\n'
 whitelist_append_help = 'R|Add domains(s) to ' + DEFAULT_WHITELIST + ' \n\n'
 # ignore 'Exactly one space required after comma'
 # pylint: disable=C0324
-parser.add_argument("--format",       help=format_help,    type=str, nargs=1, choices=['dnsmasq', 'hosts'],\
-                                                                                default=['dnsmasq'])
-parser.add_argument("--blacklist",    help=blacklist_help, type=str, nargs='*', default=DEFAULT_BLACKLIST_SOURCES)
-parser.add_argument("--whitelist",    help=whitelist_help, type=str, nargs='*', default=DEFAULT_WHITELIST_SOURCES)
-parser.add_argument("--blacklist-append", help=blacklist_append_help, type=str, nargs='*')
-parser.add_argument("--whitelist-append", help=whitelist_append_help, type=str, nargs='*')
-parser.add_argument("--output",       help=output_help,    type=str)
-parser.add_argument("--dest-ip",      help=dest_ip_help,   type=str,            default='127.0.0.1')
-parser.add_argument("--block-at-tld", help=block_at_tld_help, action="store_true", default=False)
-parser.add_argument("--verbose",      help=verbose_help,   action="store_true", default=False)
-parser.add_argument("--install-help", help=install_help,   action="store_true", default=False)
-parser.add_argument("--cache",    help=cache_help, action="store_true", default=False)
-parser.add_argument("--force",        help=force_help,     action="store_true", default=False)
-parser.add_argument("--backup",       help=backup_help,    action="store_true", default=False)
-parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help, type=bool, default=True, choices=[True, False])
+parser.add_argument("--format", help=format_help,\
+                        type=str, nargs=1, choices=['dnsmasq', 'hosts'], default=['dnsmasq'])
+parser.add_argument("--blacklist", help=blacklist_help,\
+                        type=str, nargs='*', default=DEFAULT_BLACKLIST_SOURCES)
+parser.add_argument("--whitelist", help=whitelist_help,\
+                        type=str, nargs='*', default=DEFAULT_WHITELIST_SOURCES)
+parser.add_argument("--blacklist-append", help=blacklist_append_help,\
+                        type=str, nargs='*')
+parser.add_argument("--whitelist-append", help=whitelist_append_help,\
+                        type=str, nargs='*')
+parser.add_argument("--output", help=output_help,\
+                        type=str)
+parser.add_argument("--dest-ip", help=dest_ip_help,\
+                        type=str, default='127.0.0.1')
+parser.add_argument("--block-at-tld", help=block_at_tld_help,\
+                        action="store_true", default=False)
+parser.add_argument("--verbose", help=verbose_help,\
+                        action="store_true", default=False)
+parser.add_argument("--install-help", help=install_help,\
+                        action="store_true", default=False)
+parser.add_argument("--cache", help=cache_help,\
+                        action="store_true", default=False)
+parser.add_argument("--force", help=force_help,\
+                        action="store_true", default=False)
+parser.add_argument("--backup", help=backup_help,\
+                        action="store_true", default=False)
+parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help,\
+                        type=bool, default=True, choices=[True, False])
 # pylint: enable=C0324
 # pylint: enable=invalid-name
 
