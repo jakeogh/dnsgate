@@ -19,7 +19,7 @@ CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
 DEFAULT_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
 DEFAULT_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
-DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist.conf'
+DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
 DEFAULT_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',\
                              'http://someonewhocares.org/hosts/hosts', DEFAULT_BLACKLIST]
 DEFAULT_WHITELIST_SOURCES = [DEFAULT_WHITELIST]
@@ -44,8 +44,8 @@ class SmartFormatter(argparse.HelpFormatter):
 parser = DefaultHelpParser(formatter_class=SmartFormatter, add_help=True)
 format_help = 'R|dnsmasq (default) or /etc/hosts format output\n\n'
 output_help = 'R|output file (defaults to ' + DEFAULT_OUTPUT_FILE + '\nwith --format=dnsmasq and stdout with --format=hosts)\n\n'
-force_help = 'R|overwrite existing output file\n\n'
-backup_help = 'R|backup output file before overwriting with --force\n\n'
+noclobber_help = 'R|do not overwrite existing output file\n\n'
+backup_help = 'R|backup output file before overwriting with --noclobber\n\n'
 blacklist_help = 'R|blacklist(s) defaults to:\n    ' + '\n    '.join(DEFAULT_BLACKLIST_SOURCES[0:2]) + '\n    '\
                         + DEFAULT_BLACKLIST_SOURCES[2].replace(os.path.expanduser('~'), '~') + '\n\n'
 whitelist_help = 'R|whitelists(s) defaults to:\n    ' + DEFAULT_WHITELIST.replace(os.path.expanduser('~'), '~') + '\n\n'
@@ -58,7 +58,8 @@ block_at_tld_help = 'R|remove subdomains (see --whitelist)\nexample:\n    analyt
                         + 'sense to use this flag if you are generating a /etc/hosts\n'\
                         + 'format file since the effect would be to block google.com and\n'\
                         + 'not *.google.com\n\n'
-verbose_help = 'R|print additional debugging information to stderr\n\n'
+debug_help = 'R|print additional debugging information to stderr\n\n'
+verbose_help = 'R|print additional config information to stderr\n\n'
 install_help = 'R|print example install and configure information\n\n'
 cache_help = 'R|cache --url files as dnsgate_cache_domain_hosts.(timestamp)\n'\
                     + 'to ~/.dnsgate/cache\n\n'
@@ -84,13 +85,13 @@ parser.add_argument("--dest-ip", help=dest_ip_help,\
                         type=str, default='127.0.0.1')
 parser.add_argument("--block-at-tld", help=block_at_tld_help,\
                         action="store_true", default=False)
-parser.add_argument("--verbose", help=verbose_help,\
+parser.add_argument("--debug", help=debug_help,\
                         action="store_true", default=False)
 parser.add_argument("--install-help", help=install_help,\
                         action="store_true", default=False)
 parser.add_argument("--cache", help=cache_help,\
                         action="store_true", default=False)
-parser.add_argument("--force", help=force_help,\
+parser.add_argument("--noclobber", help=noclobber_help,\
                         action="store_true", default=False)
 parser.add_argument("--backup", help=backup_help,\
                         action="store_true", default=False)
@@ -99,23 +100,38 @@ parser.add_argument("--restart-dnsmasq", help=restart_dnsmasq_help,\
 # pylint: enable=C0324
 # pylint: enable=invalid-name
 
+
+def show_debug_install_help():
+    if CMD_ARGS.format == ['dnsmasq']:
+        eprint('    $ dnsgate --format=dnsmasq --output=/etc/dnsgate/generated_blacklist')
+        eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
+        eprint('    $ echo \"conf-file=/etc/dnsgate_output\" >> /etc/dnsmasq.conf')
+        eprint('    $ /etc/init.d/dnsmasq restart')
+    elif CMD_ARGS.format == ['hosts']:
+        eprint('    $ dnsgate --format=hosts --output=generated_blacklist')
+        eprint('    $ mv -vi /etc/hosts /etc/hosts.default')
+        eprint('    $ mv -vi dnsgate_output >> /etc/hosts.dnsgate')
+        eprint('    $ cat /etc/hosts.default /etc/hosts.dnsgate > /etc/hosts')
+    eprint('\nSee --help and --debug for more information.')
+    quit(0)
+
 def show_install_help():
     if CMD_ARGS.format == ['dnsmasq']:
-        eprint('    $ dnsgate --format=dnsmasq --output=dnsgate_output')
+        eprint('    $ dnsgate')
         eprint('    $ cp -vi dnsgate_output /etc/')
         eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')
         eprint('    $ echo \"conf-file=/etc/dnsgate_output\" >> /etc/dnsmasq.conf')
         eprint('    $ /etc/init.d/dnsmasq restart')
     elif CMD_ARGS.format == ['hosts']:
         eprint('    $ dnsgate --format=hosts --output=dnsgate_output')
-        eprint("    $ mv -vi /etc/hosts /etc/hosts.default")
-        eprint("    $ mv -vi dnsgate_output >> /etc/hosts.dnsgate")
-        eprint("    $ cat /etc/hosts.default /etc/hosts.dnsgate > /etc/hosts")
-    eprint("\nSee --help and --verbose for more information.")
+        eprint('    $ mv -vi /etc/hosts /etc/hosts.default')
+        eprint('    $ mv -vi dnsgate_output >> /etc/hosts.dnsgate')
+        eprint('    $ cat /etc/hosts.default /etc/hosts.dnsgate > /etc/hosts')
+    eprint('\nSee --help and --debug for more information.')
     quit(0)
 
-def vprint(*args, **kwargs):
-    if CMD_ARGS.verbose:
+def dprint(*args, **kwargs):
+    if CMD_ARGS.debug:
         caller = sys._getframe(1).f_code.co_name
         print(str("%.5f" % time.time()), os.getpid(), '{0: <15}'.format(caller+'()'), *args, file=sys.stderr, **kwargs)
 
@@ -148,7 +164,7 @@ def extract_domains_from_bytes_list(domain_bytes):
 
 def get_url(url):
     if url.startswith('http://') or url.startswith('https://'):
-        vprint("GET:", url)
+        dprint("GET:", url)
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
         try:
             raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,\
@@ -169,7 +185,7 @@ def get_url(url):
         eprint("unknown url scheme:", url)
         os._exit(1)
 
-    vprint("domains in", url, ":", len(domains))
+    dprint("domains in", url, ":", len(domains))
     return domains
 
 def group_by_tld(domains):
@@ -235,9 +251,16 @@ def backup_file_if_exists(file):
     except FileNotFoundError:
         pass    # skip backup is file does not exist
             
+def validate_domain_list(domains):
+    for hostname in domains:
+        hostname = hostname.encode('idna').decode('ascii')
+        #print(hostname)
+
+
+
 def main():
     if CMD_ARGS.install_help:
-        show_install_help()
+        show_debug_install_help()
 
     if not CMD_ARGS.output and CMD_ARGS.format == ['hosts']:
         output_file = '/dev/stdout'
@@ -247,22 +270,22 @@ def main():
         output_file = os.path.abspath(CMD_ARGS.output)
 
     if os.path.isfile(output_file) and CMD_ARGS.output != '/dev/stdout':
-        if not CMD_ARGS.force:
-            eprint("File '%s' exists. Refusing to overwrite. Use --force. Exiting." % output_file)
+        if CMD_ARGS.noclobber:
+            eprint("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting." % output_file)
             quit(1)
 
 #   idn='☃.net'
     if CMD_ARGS.whitelist_append:
         for idn in CMD_ARGS.whitelist_append:
             hostname = idn.encode('idna').decode('ascii')
-            vprint("appending hostname:", hostname, "to", DEFAULT_WHITELIST)
+            dprint("appending hostname:", hostname, "to", DEFAULT_WHITELIST)
             line = hostname + '\n'
             write_unique_line(line, DEFAULT_WHITELIST)
 
     if CMD_ARGS.blacklist_append:
         for idn in CMD_ARGS.blacklist_append:
             hostname = idn.encode('idna').decode('ascii')
-            vprint("appending hostname:", hostname, "to", DEFAULT_BLACKLIST)
+            dprint("appending hostname:", hostname, "to", DEFAULT_BLACKLIST)
             line = hostname + '\n'
             write_unique_line(line, DEFAULT_BLACKLIST)
 
@@ -278,7 +301,7 @@ def main():
             try:
                 domains = get_url(blacklist)
                 domains_combined_orig = domains_combined_orig|domains # union
-                vprint("blacklist:", blacklist, "len(domains_combined_orig):", len(domains_combined_orig))
+                dprint("blacklist:", blacklist, "len(domains_combined_orig):", len(domains_combined_orig))
 
             except Exception as e:
                 eprint("Exception on blacklist url:", blacklist)
@@ -288,6 +311,8 @@ def main():
             domains = read_list_of_domains(blacklist)
             if domains:
                 domains_combined_orig = domains_combined_orig|domains # union
+
+    validate_domain_list(domains_combined_orig)
 
     domains_combined = copy.deepcopy(domains_combined_orig)
 
@@ -304,7 +329,7 @@ def main():
                 orig_domain_tldextract = domain_extract(orig_domain)
                 orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
                 if orig_domain_tld not in domains_combined:
-                    vprint("re-adding:", orig_domain)
+                    dprint("re-adding:", orig_domain)
                     domains_combined.add(orig_domain)
 
     domains_combined = group_by_tld(domains_combined)
@@ -328,7 +353,7 @@ if __name__ == '__main__':
     no_cache_extract = tldextract.TLDExtract(cache_file=False)
     CMD_ARGS = parser.parse_args()
     main()
-    vprint("Exiting without error.")
+    dprint("Exiting without error.")
     if CMD_ARGS.restart_dnsmasq:
         if CMD_ARGS.format != ['hosts']:
             restart_dnsmasq()
