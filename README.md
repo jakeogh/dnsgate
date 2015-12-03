@@ -45,11 +45,13 @@ Options:
 ```
  
 **dnsmasq example:**
+ 
 ```  $ ./dnsgate
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
 ``` 
 ***is equivalent to:***
+ 
 ```  $ ./dnsgate --show-config
 output_file: /etc/dnsgate/generated_blacklist
 output_format: dnsmasq
@@ -69,9 +71,11 @@ dest_ip: 127.0.0.1
  * Starting dnsmasq ... [ ok ]
 ``` 
 **hosts example:**
+ 
 ```  $ ./dnsgate --output-format hosts --output-file hosts.blacklist
 ``` 
 **is equivalent to:**
+ 
 ```  $ ./dnsgate --output-format hosts --output-file hosts.blacklist --show-config
 output_file: hosts.blacklist
 output_format: hosts
