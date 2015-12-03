@@ -153,10 +153,16 @@ def validate_domain_list(domains):
         hostname = hostname.encode('idna').decode('ascii')
         #print(hostname)
 
+def dnsmasq_install_help(output_file):
+    eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')    
+    eprint('    $ echo \"conf-file=' + output_file + '\" >> /etc/dnsmasq.conf')
+    quit(0)
+
 # pylint: disable=invalid-name
 output_file_help = '''output file (defaults to ''' + DEFAULT_OUTPUT_FILE + ' with --format=dnsmasq and stdout with --format=hosts)'
 noclobber_help = '''do not overwrite existing output file'''
 backup_help = '''backup output file before overwriting'''
+install_help_help = '''show commands to configure dnsmasq or /etc/hosts'''
 blacklist_help = '''\b
 blacklist(s) defaults to:
 ''' + '\n'.join(['    {0}'.format(i) for i in DEFAULT_BLACKLIST_SOURCES])
@@ -181,6 +187,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--output-format',    required=False, is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
 @click.option('--show-config',      required=False, is_flag=True,  help=show_config_help)
+@click.option('--install-help',     required=False, is_flag=True,  help=install_help_help)
 @click.option('--debug',            required=False, is_flag=True,  help=debug_help)
 @click.option('--cache',            required=False, is_flag=True,  help=cache_help)
 @click.option('--noclobber',        required=False, is_flag=True,  help=noclobber_help)
@@ -192,15 +199,16 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--whitelist-append', required=False, is_flag=False, help=whitelist_append_help, type=str)
 @click.option('--blacklist',        required=False, is_flag=False, help=blacklist_help, default=DEFAULT_BLACKLIST_SOURCES)
 @click.option('--whitelist',        required=False, is_flag=False, help=whitelist_help, default=DEFAULT_WHITELIST_SOURCES)
-@click.option('--dest-ip',          required=False, is_flag=False, help=dest_ip_help, default='127.0.0.1')
+@click.option('--dest-ip',          required=False, is_flag=False, help=dest_ip_help)
 #@click.pass_context
-def main(output_file, output_format, show_config, debug, cache, noclobber, block_at_tld, backup, whitelist_append, blacklist_append, blacklist, whitelist, restart_dnsmasq, dest_ip):
+def main(output_file, output_format, show_config, install_help, debug, cache, noclobber, block_at_tld, backup, whitelist_append, blacklist_append, blacklist, whitelist, restart_dnsmasq, dest_ip):
 
     if show_config:
         print("output_file:", output_file)
         print("output_format:", output_format)
         print("debug:", debug)
         print("show_config:", show_config)
+        print("install_help:", install_help)
         print("cache:", cache)
         print("noclobber:", noclobber)
         print("block_at_tld:", block_at_tld)
@@ -212,6 +220,7 @@ def main(output_file, output_format, show_config, debug, cache, noclobber, block
         print("restart_dnsmasq:", restart_dnsmasq)
         print("dest_ip:", dest_ip)
         
+
     global click_debug
     click_debug = debug
 
@@ -227,6 +236,10 @@ def main(output_file, output_format, show_config, debug, cache, noclobber, block
             quit(1)
 
     dprint('output_file:', output_file)
+
+    if install_help:
+        if output_format == 'dnsmasq':
+            dnsmasq_install_help(output_file)
 
 #   idn='☃.net'
     if whitelist_append:
@@ -292,18 +305,27 @@ def main(output_file, output_format, show_config, debug, cache, noclobber, block
     if backup:
         backup_file_if_exists(output_file)
 
-    os.mkdir(CONFIG_DIRECTORY)
+    try:
+        os.mkdir(CONFIG_DIRECTORY)
+    except FileExistsError:
+        pass
 
     if output_format == 'hosts':
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
-                hosts_line = dest_ip + ' ' + domain + '\n'
+                if dest_ip:
+                    hosts_line = dest_ip + ' ' + domain + '\n'
+                else:
+                    hosts_line = '127.0.0.1' + ' ' + domain + '\n'
                 fh.write(hosts_line)
 
     elif output_format == 'dnsmasq':
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
-                dnsmasq_line = 'address=/.' + domain + '/' + dest_ip + '\n'
+                if dest_ip:
+                    dnsmasq_line = 'address=/.' + domain + '/' + dest_ip + '\n'
+                else:
+                    dnsmasq_line = 'server=/.' + domain + '/' '\n'  #return NXDOMAIN
                 fh.write(dnsmasq_line)
     else:
         print("unknown output format:", output_format)
