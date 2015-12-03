@@ -16,7 +16,7 @@ import requests
 import tldextract
 from urllib.parse import urlparse
 from shutil import copyfileobj
-from debug_logging import log_prefix, logger, print_traceback
+from debug_logging import log_prefix, logger, print_traceback, log_levels
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
@@ -43,22 +43,47 @@ def restart_dnsmasq_service():
         ret = os.system('systemctl restart dnsmasq')    # untested
     return ret
 
+def remove_comments(line):
+    uncommented_line = ''
+    for char in line:
+        if char != '#':
+            uncommented_line += char
+        else:
+            break
+    return uncommented_line    
+
 #@log_prefix()
 def extract_domains_from_bytes_list(domain_bytes):
     domains = set()
     for line in domain_bytes:
         line = line.decode('UTF-8')
-        line = line.replace('\t', ' ')
-        line = " ".join(line.split())           # collapse whitespace
+        line = line.replace('\t', ' ')          # expand tabs
+        line = ' '.join(line.split())           # collapse whitespace
         line = line.strip()
-        if len(line) == 0:                      # skip empty lines
-            continue
-        if not line.startswith('#'):            # remove comments
+        line = remove_comments(line)
+        if ' ' in line:                         # hosts format
             line = line.split(' ')[1]           # get DNS name (the url's are in hosts 0.0.0.0 dom.com format)
             # pylint: disable=bad-builtin
-            line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading and trailing .
+            line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading/trailing .
             # pylint: enable=bad-builtin
             domains.add(line)
+    return domains
+
+@log_prefix()
+def read_list_of_domains(file):
+    domains = set([])
+    file = os.path.abspath(file)
+    try:
+        lines = read_file(file).splitlines()
+    except Exception as e:
+        logger.exception(e)
+    else:
+        for line in lines:
+            line = line.strip()
+            line = remove_comments(line)
+            line = '.'.join(list(filter(None, line.split('.')))) # ignore leading/trailing . 
+            if len(line) > 0:
+                domains.add(line)
     return domains
 
 @log_prefix()
@@ -70,7 +95,7 @@ def get_url(url, cache=False):
             raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,\
                                    stream=False, timeout=15.500).content.split(b'\n')
         except Exception as e:
-            eprint("Exception:", e)
+            logger.exception(e)
             raise e
         if cache:
             domain = urlparse(url).netloc
@@ -116,7 +141,11 @@ def domain_extract(domain):
     return dom
 
 def strip_to_tld(domains):
-    '''This causes ad-serving domains to be blocked at their TLD. Otherwise the subdomain can be changed until the --url lists are updated. It does not make sense to use this flag if you are generating a /etc/hosts format file since the effect would be to block google.com and not *.google.com.'''
+    '''This causes ad-serving domains to be blocked at their TLD. 
+    Otherwise the subdomain can be changed until the --url lists are updated.
+    It does not make sense to use this flag if you are generating a /etc/hosts
+    format file since the effect would be to block google.com and not 
+    *.google.com.'''
     domains_stripped = set()
     for line in domains:
         line = domain_extract(line)             # get tld
@@ -129,22 +158,6 @@ def write_unique_line(line, file):
     with open(file, 'r+') as fh:
         if line not in fh:
             fh.write(line)
-
-@log_prefix()
-def read_list_of_domains(file):
-    domains = set([])
-    file = os.path.abspath(file)
-    try:
-        lines = read_file(file).splitlines()
-    except Exception as e:
-        eprint(e)
-    else:
-        for line in lines:
-            line = line.strip()
-            line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading and trailing .
-            if len(line) > 0:
-                domains.add(line)
-    return domains
 
 @log_prefix()
 def backup_file_if_exists(file):
@@ -165,7 +178,8 @@ def validate_domain_list(domains):
 def dnsmasq_install_help(output_file):
     dnsmasq_config_line = '\"conf-file=' + output_file + '\"'
     eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.' + str(time.time()))    
-    eprint('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo ' + dnsmasq_config_line + ' >> /etc/dnsmasq.conf ; }')
+    eprint('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo ' \
+    + dnsmasq_config_line + ' >> /etc/dnsmasq.conf ; }')
     eprint('    $ /etc/init.d/dnsmasq restart')
     quit(0)
 
@@ -175,7 +189,8 @@ def hosts_install_help(output_file):
     quit(0)
 
 # pylint: disable=invalid-name
-output_file_help = '''output file (defaults to ''' + DEFAULT_OUTPUT_FILE + ' with --format=dnsmasq and stdout with --format=hosts)'
+output_file_help = '''output file (defaults to ''' + DEFAULT_OUTPUT_FILE + \
+' with --mode dnsmasq and stdout with --mode hosts)'
 noclobber_help = '''do not overwrite existing output file'''
 backup_help = '''backup output file before overwriting'''
 install_help_help = '''show commands to configure dnsmasq or /etc/hosts'''
@@ -194,51 +209,56 @@ debug_help = '''print debugging information to stderr'''
 show_config_help = '''print config information to stderr'''
 cache_help = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
 dest_ip_help = '''IP to redirect blocked connections to (defaults to 127.0.0.1)'''
-restart_dnsmasq_help = '''Restart dnsmasq service (defaults to True, ignored if --format=hosts)'''
+restart_dnsmasq_help = '''Restart dnsmasq service (defaults to True, ignored if --mode hosts)'''
 blacklist_append_help = '''Add domain to ''' + DEFAULT_BLACKLIST
 whitelist_append_help = '''Add domain to ''' + DEFAULT_WHITELIST
 # pylint: enable=invalid-name
 
-CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns) #https://github.com/mitsuhiko/click/issues/441
+#https://github.com/mitsuhiko/click/issues/441
+CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns) 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('--output-format',    required=False, is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
-@click.option('--show-config',      required=False, is_flag=True,  help=show_config_help)
-@click.option('--install-help',     required=False, is_flag=True,  help=install_help_help)
-@click.option('--debug',            required=False, is_flag=True,  help=debug_help)
-@click.option('--cache',            required=False, is_flag=True,  help=cache_help)
-@click.option('--noclobber',        required=False, is_flag=True,  help=noclobber_help)
-@click.option('--block-at-tld',     required=False, is_flag=True,  help=block_at_tld_help)
-@click.option('--backup',           required=False, is_flag=True,  help=backup_help)
-@click.option('--restart-dnsmasq',  required=False, is_flag=True,  help=restart_dnsmasq_help,  default=True)
-@click.option('--output-file',      required=False, is_flag=False, help=output_file_help,      default=DEFAULT_OUTPUT_FILE)
-@click.option('--blacklist-append', required=False, is_flag=False, help=blacklist_append_help, type=str)
-@click.option('--whitelist-append', required=False, is_flag=False, help=whitelist_append_help, type=str)
-@click.option('--blacklist',        required=False, is_flag=False, help=blacklist_help, default=DEFAULT_BLACKLIST_SOURCES)
-@click.option('--whitelist',        required=False, is_flag=False, help=whitelist_help, default=DEFAULT_WHITELIST_SOURCES)
-@click.option('--dest-ip',          required=False, is_flag=False, help=dest_ip_help)
+@click.option('--mode',             is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
+@click.option('--block-at-tld',     is_flag=True,  help=block_at_tld_help)
+@click.option('--restart-dnsmasq',  is_flag=True,  help=restart_dnsmasq_help,  default=True)
+@click.option('--output-file',      is_flag=False, help=output_file_help,      default=DEFAULT_OUTPUT_FILE)
+@click.option('--backup',           is_flag=True,  help=backup_help)
+@click.option('--noclobber',        is_flag=True,  help=noclobber_help)
+@click.option('--blacklist-append', is_flag=False, help=blacklist_append_help, type=str)
+@click.option('--whitelist-append', is_flag=False, help=whitelist_append_help, type=str)
+@click.option('--blacklist',        is_flag=False, help=blacklist_help, default=DEFAULT_BLACKLIST_SOURCES)
+@click.option('--whitelist',        is_flag=False, help=whitelist_help, default=DEFAULT_WHITELIST_SOURCES)
+@click.option('--cache',            is_flag=True,  help=cache_help)
+@click.option('--dest-ip',          is_flag=False, help=dest_ip_help)
+@click.option('--show-config',      is_flag=True,  help=show_config_help)
+@click.option('--install-help',     is_flag=True,  help=install_help_help)
+@click.option('--debug',            is_flag=True,  help=debug_help)
 @log_prefix()
-def main(output_file, output_format, show_config, install_help, debug, cache, noclobber, block_at_tld, backup, whitelist_append, blacklist_append, blacklist, whitelist, restart_dnsmasq, dest_ip):
+def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber, 
+            blacklist_append, whitelist_append, blacklist, whitelist, 
+            cache, dest_ip, show_config, install_help, debug):
 
     if show_config:
+        print("mode:", mode)
+        print("block_at_tld:", block_at_tld)
+        print("restart_dnsmasq:", restart_dnsmasq)
         print("output_file:", output_file)
-        print("output_format:", output_format)
+        print("backup:", backup)
+        print("noclobber:", noclobber)
+        print("blacklist_append:", blacklist_append)
+        print("whitelist_append:", whitelist_append)
+        print("blacklist:", blacklist)
+        print("whitelist:", whitelist)
+        print("cache:", cache)
+        print("dest_ip:", dest_ip)
         print("debug:", debug)
         print("show_config:", show_config)
         print("install_help:", install_help)
-        print("cache:", cache)
-        print("noclobber:", noclobber)
-        print("block_at_tld:", block_at_tld)
-        print("backup:", backup)
-        print("whitelist_append:", whitelist_append)
-        print("blacklist_append:", blacklist_append)
-        print("blacklist:", blacklist)
-        print("whitelist:", whitelist)
-        print("restart_dnsmasq:", restart_dnsmasq)
-        print("dest_ip:", dest_ip)
-        
+        print("debug:", debug)
 
     global click_debug
     click_debug = debug
+    if debug:
+        logger.setLevel(log_levels['DEBUG'])
 
     if output_file == '-' or output_file == '/dev/stdout':
         output_file = '/dev/stdout'
@@ -254,9 +274,9 @@ def main(output_file, output_format, show_config, install_help, debug, cache, no
     dprint('output_file:', output_file)
 
     if install_help:
-        if output_format == 'dnsmasq':
+        if mode == 'dnsmasq':
             dnsmasq_install_help(output_file)
-        elif output_format == 'hosts':
+        elif mode == 'hosts':
             hosts_install_help(output_file)
 
 #   idn='☃.net'
@@ -294,7 +314,7 @@ def main(output_file, output_format, show_config, install_help, debug, cache, no
 
             except Exception as e:
                 logger.error("Exception on blacklist url: %s", item)
-                eprint(e)
+                logger.exception(e)
 
         else:
             logger.debug("trying local blacklist file: %s", item)
@@ -352,7 +372,7 @@ def main(output_file, output_format, show_config, install_help, debug, cache, no
     except FileExistsError:
         pass
 
-    if output_format == 'hosts':
+    if mode == 'hosts':
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
                 if dest_ip:
@@ -361,7 +381,7 @@ def main(output_file, output_format, show_config, install_help, debug, cache, no
                     hosts_line = '127.0.0.1' + ' ' + domain + '\n'
                 fh.write(hosts_line)
 
-    elif output_format == 'dnsmasq':
+    elif mode == 'dnsmasq':
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
                 if dest_ip:
@@ -370,11 +390,11 @@ def main(output_file, output_format, show_config, install_help, debug, cache, no
                     dnsmasq_line = 'server=/.' + domain + '/' '\n'  #return NXDOMAIN
                 fh.write(dnsmasq_line)
     else:
-        print("unknown output format:", output_format)
+        print("unknown mode:", mode)
         quit(1)
 
     if restart_dnsmasq:
-        if output_format != 'hosts':
+        if mode != 'hosts':
             restart_dnsmasq_service()
 
 
