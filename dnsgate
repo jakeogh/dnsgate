@@ -17,21 +17,6 @@ import tldextract
 from urllib.parse import urlparse
 from shutil import copyfileobj
 
-from click.formatting import HelpFormatter
-def write_text(self, text):
-    print('aaaaaaaaaaaaaaaaaaaaa')
-    return orig_write_text(self, text)
-#    from axc.markdown.mdv import main as mdv
-#    self.buffer.append(mdv(md=text, theme=os.environ['AXC_THEME']))  # supply a theme ID or get random
-
-
-HelpFormatter.orig_write_text = HelpFormatter.write_text    
-HelpFormatter.write_text = write_text
-#click.HelpFormatter = HelpFormatter #didnt work
-
-def print_hex(text):
-#    print(':'.join(x.encode('hex') for x in text))
-    print(':'.join(hex(ord(x))[2:] for x in text))
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
