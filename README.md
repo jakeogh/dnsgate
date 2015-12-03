@@ -78,14 +78,28 @@ debug: False
 **hosts example:**
 
 ```
-$ ./dnsgate --output-format hosts
-Error: no such option: --output-format
+$ ./dnsgate --mode hosts
 ```
 **is equivalent to:**
 
 ```
-$ ./dnsgate --output-format hosts --show-config
-Error: no such option: --output-format
+$ ./dnsgate --mode hosts --show-config
+mode: hosts
+block_at_tld: False
+restart_dnsmasq: True
+output_file: /etc/dnsgate/generated_blacklist
+backup: False
+noclobber: False
+blacklist_append: None
+whitelist_append: None
+blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
+whitelist: ['/etc/dnsgate/whitelist']
+cache: False
+dest_ip: None
+debug: False
+show_config: True
+install_help: False
+debug: False
 ```
 
 `[1]:`
