@@ -16,6 +16,7 @@ import requests
 import tldextract
 from urllib.parse import urlparse
 from shutil import copyfileobj
+from debug_logging import log_prefix, logger, print_traceback
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
@@ -34,6 +35,7 @@ def dprint(*args, **kwargs):
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+@log_prefix()
 def restart_dnsmasq_service():
     if os.path.lexists('/etc/init.d/dnsmasq'):
         ret = os.system('/etc/init.d/dnsmasq restart')
@@ -41,6 +43,7 @@ def restart_dnsmasq_service():
         ret = os.system('systemctl restart dnsmasq')    # untested
     return ret
 
+#@log_prefix()
 def extract_domains_from_bytes_list(domain_bytes):
     domains = set()
     for line in domain_bytes:
@@ -58,9 +61,10 @@ def extract_domains_from_bytes_list(domain_bytes):
             domains.add(line)
     return domains
 
+@log_prefix()
 def get_url(url, cache=False):
     if url.startswith('http://') or url.startswith('https://'):
-        dprint("GET:", url)
+        logger.debug("GET: %s", url)
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
         try:
             raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,\
@@ -84,6 +88,7 @@ def get_url(url, cache=False):
     dprint("domains in", url, ":", len(domains))
     return domains
 
+#@log_prefix()
 def group_by_tld(domains):
     sorted_output = []
     reversed_domains = []
@@ -97,6 +102,7 @@ def group_by_tld(domains):
         sorted_output.append('.'.join(rev_domain))
     return sorted_output
 
+@log_prefix()
 def read_file(file):
     if os.path.isfile(file):
         with open(file, 'r') as fh:
@@ -118,11 +124,13 @@ def strip_to_tld(domains):
         domains_stripped.add(line)
     return domains_stripped
 
+@log_prefix()
 def write_unique_line(line, file):
     with open(file, 'r+') as fh:
         if line not in fh:
             fh.write(line)
 
+@log_prefix()
 def read_list_of_domains(file):
     domains = set([])
     file = os.path.abspath(file)
@@ -138,6 +146,7 @@ def read_list_of_domains(file):
                 domains.add(line)
     return domains
 
+@log_prefix()
 def backup_file_if_exists(file):
     timestamp = str(time.time())
     dest_file = file + '.bak.' + timestamp
@@ -154,8 +163,15 @@ def validate_domain_list(domains):
         #print(hostname)
 
 def dnsmasq_install_help(output_file):
-    eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak')    
-    eprint('    $ echo \"conf-file=' + output_file + '\" >> /etc/dnsmasq.conf')
+    dnsmasq_config_line = '\"conf-file=' + output_file + '\"'
+    eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.' + str(time.time()))    
+    eprint('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo ' + dnsmasq_config_line + ' >> /etc/dnsmasq.conf ; }')
+    eprint('    $ /etc/init.d/dnsmasq restart')
+    quit(0)
+
+def hosts_install_help(output_file):
+    eprint('    $ mv -vi /etc/hosts /etc/hosts.default')
+    eprint('    $ cat /etc/hosts.default ' + output_file + ' > /etc/hosts')
     quit(0)
 
 # pylint: disable=invalid-name
@@ -200,7 +216,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--blacklist',        required=False, is_flag=False, help=blacklist_help, default=DEFAULT_BLACKLIST_SOURCES)
 @click.option('--whitelist',        required=False, is_flag=False, help=whitelist_help, default=DEFAULT_WHITELIST_SOURCES)
 @click.option('--dest-ip',          required=False, is_flag=False, help=dest_ip_help)
-#@click.pass_context
+@log_prefix()
 def main(output_file, output_format, show_config, install_help, debug, cache, noclobber, block_at_tld, backup, whitelist_append, blacklist_append, blacklist, whitelist, restart_dnsmasq, dest_ip):
 
     if show_config:
@@ -240,6 +256,8 @@ def main(output_file, output_format, show_config, install_help, debug, cache, no
     if install_help:
         if output_format == 'dnsmasq':
             dnsmasq_install_help(output_file)
+        elif output_format == 'hosts':
+            hosts_install_help(output_file)
 
 #   idn='☃.net'
     if whitelist_append:
@@ -258,38 +276,62 @@ def main(output_file, output_format, show_config, install_help, debug, cache, no
         write_unique_line(line, DEFAULT_BLACKLIST)
 
     domains_whitelist = set()
-    for whitelist in whitelist:
-        whitelist_file = os.path.abspath(whitelist)
+    for item in whitelist:
+        whitelist_file = os.path.abspath(item)
         domains_whitelist = domains_whitelist|read_list_of_domains(whitelist_file)
 
     domains_combined_orig = set()   # domains from all sources, combined
 
-    for blacklist in blacklist:
-        if blacklist.startswith('http'):
+
+    for item in blacklist:
+        if item.startswith('http'):
             try:
-                domains = get_url(blacklist, cache)
+                logger.debug("trying http:// blacklist location: %s", item)
+                domains = get_url(item, cache)
                 domains_combined_orig = domains_combined_orig|domains # union
-                dprint("blacklist:", blacklist, "len(domains_combined_orig):", len(domains_combined_orig))
+                logger.debug("blacklist: %s", blacklist)
+                logger.debug("len(domains_combined_orig): %s", len(domains_combined_orig))
 
             except Exception as e:
-                eprint("Exception on blacklist url:", blacklist)
+                logger.error("Exception on blacklist url: %s", item)
                 eprint(e)
 
         else:
-            domains = read_list_of_domains(blacklist)
+            logger.debug("trying local blacklist file: %s", item)
+            blacklist_file = os.path.abspath(item)
+            domains = read_list_of_domains(blacklist_file)
+            logger.debug("got %s domains from %s", domains, blacklist_file)
             if domains:
                 domains_combined_orig = domains_combined_orig|domains # union
+#           import IPython; IPython.embed()
+    
+    
+
+    domains_combined_orig = domains_combined_orig - domains_whitelist  # remove exact whitelist matches
+
+    if DEFAULT_BLACKLIST in blacklist:
+        logger.debug("re adding items from local blacklist file: %s", )
+        blacklist_file = os.path.abspath(DEFAULT_BLACKLIST)
+        domains = read_list_of_domains(blacklist_file)
+        logger.debug("got %s domains from %s", domains, blacklist_file)
+        if domains:
+            domains_combined_orig = domains_combined_orig|domains # union
+
+
 
     validate_domain_list(domains_combined_orig)
+
+    
+
 
     domains_combined = copy.deepcopy(domains_combined_orig)
 
     if block_at_tld:
         domains_combined = strip_to_tld(domains_combined)
 
-    # re-add subdomains of whitelisted domains
-    domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches
+#   import IPython; IPython.embed()
 
+    # re-add subdomains of whitelisted domains
     #re-add subdomains that are not explicitly whitelisted or already blocked by another rule
     for orig_domain in domains_combined_orig:
         if orig_domain not in domains_whitelist:
