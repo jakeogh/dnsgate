@@ -17,7 +17,6 @@ import tldextract
 from urllib.parse import urlparse
 from shutil import copyfileobj
 
-
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
 DEFAULT_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
@@ -26,30 +25,6 @@ DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
 DEFAULT_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',\
                              'http://someonewhocares.org/hosts/hosts', DEFAULT_BLACKLIST]
 DEFAULT_WHITELIST_SOURCES = [DEFAULT_WHITELIST]
-
-# pylint: disable=invalid-name
-output_file_help = '''output file (defaults to ''' + DEFAULT_OUTPUT_FILE + ' with --format=dnsmasq and stdout with --format=hosts)'
-noclobber_help = '''do not overwrite existing output file'''
-backup_help = '''backup output file before overwriting'''
-blacklist_help        = '''\b
-blacklist(s) defaults to:
-''' + '\n'.join(['    {0}'.format(i) for i in DEFAULT_BLACKLIST_SOURCES])
-
-whitelist_help = '''\b
-whitelists(s) defaults to:''' + DEFAULT_WHITELIST.replace(os.path.expanduser('~'), '~') 
-block_at_tld_help = '''
-\b
-strips subdomains, for example:
-    analytics.google.com -> google.com
-    Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.'''
-debug_help = '''print debugging information to stderr'''
-show_config_help = '''print config information to stderr'''
-cache_help = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
-dest_ip_help = '''IP to redirect blocked connections to (defaults to 127.0.0.1)'''
-restart_dnsmasq_help = '''Restart dnsmasq service (defaults to True, ignored if --format=hosts)'''
-blacklist_append_help = '''Add domain to ''' + DEFAULT_BLACKLIST
-whitelist_append_help = '''Add domain to ''' + DEFAULT_WHITELIST
-# pylint: enable=invalid-name
 
 def dprint(*args, **kwargs):
     if click_debug:
@@ -136,7 +111,6 @@ def domain_extract(domain):
 
 def strip_to_tld(domains):
     '''This causes ad-serving domains to be blocked at their TLD. Otherwise the subdomain can be changed until the --url lists are updated. It does not make sense to use this flag if you are generating a /etc/hosts format file since the effect would be to block google.com and not *.google.com.'''
-
     domains_stripped = set()
     for line in domains:
         line = domain_extract(line)             # get tld
@@ -179,9 +153,31 @@ def validate_domain_list(domains):
         hostname = hostname.encode('idna').decode('ascii')
         #print(hostname)
 
+# pylint: disable=invalid-name
+output_file_help = '''output file (defaults to ''' + DEFAULT_OUTPUT_FILE + ' with --format=dnsmasq and stdout with --format=hosts)'
+noclobber_help = '''do not overwrite existing output file'''
+backup_help = '''backup output file before overwriting'''
+blacklist_help = '''\b
+blacklist(s) defaults to:
+''' + '\n'.join(['    {0}'.format(i) for i in DEFAULT_BLACKLIST_SOURCES])
+
+whitelist_help = '''\b
+whitelists(s) defaults to:''' + DEFAULT_WHITELIST.replace(os.path.expanduser('~'), '~') 
+block_at_tld_help = '''
+\b
+strips subdomains, for example:
+    analytics.google.com -> google.com
+    Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.'''
+debug_help = '''print debugging information to stderr'''
+show_config_help = '''print config information to stderr'''
+cache_help = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
+dest_ip_help = '''IP to redirect blocked connections to (defaults to 127.0.0.1)'''
+restart_dnsmasq_help = '''Restart dnsmasq service (defaults to True, ignored if --format=hosts)'''
+blacklist_append_help = '''Add domain to ''' + DEFAULT_BLACKLIST
+whitelist_append_help = '''Add domain to ''' + DEFAULT_WHITELIST
+# pylint: enable=invalid-name
+
 CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns) #https://github.com/mitsuhiko/click/issues/441
-
-
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--output-format',    required=False, is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
 @click.option('--show-config',      required=False, is_flag=True,  help=show_config_help)
@@ -295,6 +291,8 @@ def main(output_file, output_format, show_config, debug, cache, noclobber, block
 
     if backup:
         backup_file_if_exists(output_file)
+
+    os.mkdir(CONFIG_DIRECTORY)
 
     if output_format == 'hosts':
         with open(output_file, 'w') as fh:
