@@ -23,9 +23,10 @@ Options:
   --block-at-tld
                            strips subdomains, for example:
                                analytics.google.com -> google.com
-                               Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.
+                               Useful for dnsmasq if you are willing to maintain a --whitelist file
+                               for inadvertently blocked domains.
   --restart-dnsmasq        Restart dnsmasq service (defaults to True, ignored if --mode hosts)
-  --output-file TEXT       output file (defaults to /etc/dnsgate/generated_blacklist with --mode dnsmasq and stdout with --mode hosts)
+  --output-file TEXT       output file defaults to /etc/dnsgate/generated_blacklist
   --backup                 backup output file before overwriting
   --noclobber              do not overwrite existing output file
   --blacklist-append TEXT  Add domain to /etc/dnsgate/blacklist
