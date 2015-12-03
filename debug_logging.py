@@ -38,8 +38,8 @@ level = logging.CRITICAL    # 50
 level = logging.ERROR       # 40
 level = logging.WARNING     # 30    #python default level
 level = logging.INFO        # 20
-level = logging.DEBUG       # 10
-#level = DEBUG_LEVELV_NUM	#debugv
+#level = logging.DEBUG       # 10
+#level = DEBUG_LEVELV_NUM   # 9     #debugv
 
 #Level	Numeric value
 #ALWAYS		100
