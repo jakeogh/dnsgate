@@ -8,12 +8,6 @@ import colorama
 from colorama import Fore
 
 import logging
-#logging.basicConfig(level=logging.DEBUG)
-#logger = logging.getLogger(__name__)
-
-#FORMAT = Fore.GREEN + "%(levelname)-8s %(filename)-42s:%(lineno)4s - %(funcName)-32s : %(message)s" #http://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
-##FORMAT = "%(levelname)-8s %(filename)-42s:%(lineno)4s - %(funcName)-32s : %(message)s" #http://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
-#FORMAT = Fore.GREEN + "%(levelname)-7s %(lineno)4s %(filename)-20s:%(funcName)-16s : %(message)s" #http://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
 
 DEBUG_LEVELV_NUM = 9	#http://stackoverflow.com/questions/2183233/how-to-add-a-custom-loglevel-to-pythons-logging-facility/13638084#13638084
 logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
@@ -24,7 +18,6 @@ def debugv(self, message, *args, **kws):
 
 logging.Logger.debugv = debugv
 
-
 ALWAYS_LEVEL_NUM = 100	#http://stackoverflow.com/questions/2183233/how-to-add-a-custom-loglevel-to-pythons-logging-facility/13638084#13638084
 logging.addLevelName(ALWAYS_LEVEL_NUM, "ALWAYS")
 def always(self, message, *args, **kws):
@@ -34,23 +27,19 @@ def always(self, message, *args, **kws):
 
 logging.Logger.always = always
 
-
-
-
 logger = logging.getLogger(__name__)
 
 FORMAT = "%(levelname)-7s %(lineno)4s %(filename)-41s:%(funcName)-23s : %(message)s" + Fore.RESET #http://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
 
 #http://docs.python.org/3/howto/logging.html
-level = ALWAYS_LEVEL_NUM
-level = logging.CRITICAL
-level = logging.ERROR
-level = logging.WARNING #python default level
-level = logging.INFO
-level = logging.DEBUG
+#Level                      # Numeric value
+level = ALWAYS_LEVEL_NUM    # 100
+level = logging.CRITICAL    # 50
+level = logging.ERROR       # 40
+level = logging.WARNING     # 30    #python default level
+level = logging.INFO        # 20
+level = logging.DEBUG       # 10
 #level = DEBUG_LEVELV_NUM	#debugv
-
-
 
 #Level	Numeric value
 #ALWAYS		100
@@ -79,81 +68,61 @@ import inspect
 
 
 def get_parent_function():
-#	print(inspect.stack())
-	return inspect.stack()[2][3]
+    return inspect.stack()[2][3]
 
 
 def print_traceback():
-	ex_type, ex, tb = sys.exc_info()
-	traceback.print_tb(tb)
-	del tb
+    ex_type, ex, tb = sys.exc_info()
+    traceback.print_tb(tb)
+    del tb
 
 
 def log_prefix(func=None, *, prefix='', return_status='', log_level='DEBUG'):
-	if func is None:
-		return partial(log_prefix, prefix=prefix, return_status=return_status, log_level=log_level)
-	msg = prefix + '[' + func.__qualname__ + '()]'
-	@wraps(func)
-	def FUNCTION_CALL(*args, **kwargs):
-		parent = get_parent_function()
+    if func is None:
+        return partial(log_prefix, prefix=prefix, return_status=return_status, log_level=log_level)
+    msg = prefix + '[' + func.__qualname__ + '()]'
+    @wraps(func)
+    def FUNCTION_CALL(*args, **kwargs):
+        parent = get_parent_function()
+        args_list = []
+        for arg in args:
+            if isinstance(arg, bytes):
+                arg = arg.decode(encoding='UTF-8') #AttributeError: 'bytes' object has no attribute 'encode'
+                args_list.append(arg)
+            elif isinstance(arg, str): #unicode
+                args_list.append(arg)
+            else:
+                try:
+                    args_list.append(pprint.pformat(arg))
+                except:
+                    args_list.append("Unconvertable_Thing_type:" + str(type(arg)))
 
-		args_list = []
-		for arg in args:
-			if isinstance(arg, bytes):
-#				arg = arg.encode(encoding='UTF-8') #AttributeError: 'bytes' object has no attribute 'encode'
-				arg = arg.decode(encoding='UTF-8') #AttributeError: 'bytes' object has no attribute 'encode'
-				args_list.append(arg)
+        args_output_string = ' '.join(pprint.pformat(args_list).split("\n"))
+        kwargs_output_string = ' '.join(pprint.pformat(kwargs).split("\n"))
+        output_string = msg + ' caller: ' + parent + '()' + ' args:' + args_output_string + kwargs_output_string
 
-			elif isinstance(arg, str): #unicode
-				args_list.append(arg)
+        #Fore.BLACK    Fore.BLUE     Fore.CYAN     Fore.GREEN    Fore.MAGENTA  Fore.RED      Fore.RESET    Fore.WHITE    Fore.YELLOW 
 
-			else:
-				try:
-					args_list.append(pprint.pformat(arg))
-				except:
-					args_list.append("Unconvertable_Thing_type:" + str(type(arg)))
+        if log_level == 'DEBUGV':
+            logger.debugv(Fore.GREEN + output_string)
+        if log_level == 'DEBUG':
+            logger.debug(Fore.GREEN + output_string)
+        if log_level == 'INFO':
+            logger.info(Fore.WHITE + output_string)
+        if log_level == 'WARNING':
+            logger.warning(Fore.YELLOW + output_string)
+        if log_level == 'ERROR':
+            logger.error(Fore.RED + output_string)
+        if log_level == 'CRITICAL':
+            logger.critical(Fore.RED + output_string)
+        answer = func(*args, **kwargs)
+        if answer == False:
+            logger.debugv(Fore.RED + func.__name__ + " returned False")
+        else:
+            if return_status == True:
+                logger.debugv(Fore.YELLOW + func.__name__ + " OK")
+        return answer
 
-		args_output_string = ' '.join(pprint.pformat(args_list).split("\n"))
-
-		kwargs_output_string = ' '.join(pprint.pformat(kwargs).split("\n"))
-
-
-		output_string = msg + ' caller: ' + parent + '()' + ' args:' + args_output_string + kwargs_output_string
-
-#		output_string = ' '.join(output_string.split('\n'))
-#		print('output_string:', output_string)
-
-		#Fore.BLACK    Fore.BLUE     Fore.CYAN     Fore.GREEN    Fore.MAGENTA  Fore.RED      Fore.RESET    Fore.WHITE    Fore.YELLOW 
-
-		if log_level == 'DEBUGV':
-			logger.debugv(Fore.GREEN + output_string)
-
-		if log_level == 'DEBUG':
-			logger.debug(Fore.GREEN + output_string)
-
-		if log_level == 'INFO':
-			logger.info(Fore.WHITE + output_string)
-
-		if log_level == 'WARNING':
-			logger.warning(Fore.YELLOW + output_string)
-
-		if log_level == 'ERROR':
-			logger.error(Fore.RED + output_string)
-
-		if log_level == 'CRITICAL':
-			logger.critical(Fore.RED + output_string)
-
-		answer = func(*args, **kwargs)
-
-		if answer == False:
-			logger.debugv(Fore.RED + func.__name__ + " returned False")
-		else:
-			if return_status == True:
-				logger.debugv(Fore.YELLOW + func.__name__ + " OK")
-
-		return answer
-#		return func(*args, **kwargs)
-
-	return FUNCTION_CALL
+    return FUNCTION_CALL
 
 
