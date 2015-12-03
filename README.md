@@ -19,29 +19,30 @@ With `--format=dnsmasq` (default if not specified) the `--block-at-tld` option b
 Usage: dnsgate [OPTIONS]
 
 Options:
-  --output-format [dnsmasq|hosts]
-  --show-config                   print config information to stderr
-  --debug                         print debugging information to stderr
-  --cache                         cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache
-  --noclobber                     do not overwrite existing output file
+  --mode [dnsmasq|hosts]
   --block-at-tld
-                                  strips subdomains, for example:
-                                      analytics.google.com -> google.com
-                                      Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.
-  --backup                        backup output file before overwriting
-  --restart-dnsmasq               Restart dnsmasq service (defaults to True, ignored if --format=hosts)
-  --output-file TEXT              output file (defaults to /etc/dnsgate/generated_blacklist with --format=dnsmasq and stdout with --format=hosts)
-  --blacklist-append TEXT         Add domain to /etc/dnsgate/blacklist
-  --whitelist-append TEXT         Add domain to /etc/dnsgate/whitelist
+                           strips subdomains, for example:
+                               analytics.google.com -> google.com
+                               Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.
+  --restart-dnsmasq        Restart dnsmasq service (defaults to True, ignored if --mode hosts)
+  --output-file TEXT       output file (defaults to /etc/dnsgate/generated_blacklist with --mode dnsmasq and stdout with --mode hosts)
+  --backup                 backup output file before overwriting
+  --noclobber              do not overwrite existing output file
+  --blacklist-append TEXT  Add domain to /etc/dnsgate/blacklist
+  --whitelist-append TEXT  Add domain to /etc/dnsgate/whitelist
   --blacklist TEXT
-                                  blacklist(s) defaults to:
-                                      http://winhelp2002.mvps.org/hosts.txt
-                                      http://someonewhocares.org/hosts/hosts
-                                      /etc/dnsgate/blacklist
+                           blacklist(s) defaults to:
+                               http://winhelp2002.mvps.org/hosts.txt
+                               http://someonewhocares.org/hosts/hosts
+                               /etc/dnsgate/blacklist
   --whitelist TEXT
-                                  whitelists(s) defaults to:/etc/dnsgate/whitelist
-  --dest-ip TEXT                  IP to redirect blocked connections to (defaults to 127.0.0.1)
-  --help                          Show this message and exit.
+                           whitelists(s) defaults to:/etc/dnsgate/whitelist
+  --cache                  cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache
+  --dest-ip TEXT           IP to redirect blocked connections to (defaults to 127.0.0.1)
+  --show-config            print config information to stderr
+  --install-help           show commands to configure dnsmasq or /etc/hosts
+  --debug                  print debugging information to stderr
+  --help                   Show this message and exit.
 ```
 
 **dnsmasq example:**
@@ -51,50 +52,40 @@ $ ./dnsgate
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
 ```
-***is equivalent to:***
+**is equivalent to:**
 
 ```
 $ ./dnsgate --show-config
-output_file: /etc/dnsgate/generated_blacklist
-output_format: dnsmasq
-debug: False
-show_config: True
-cache: False
-noclobber: False
+mode: dnsmasq
 block_at_tld: False
+restart_dnsmasq: True
+output_file: /etc/dnsgate/generated_blacklist
 backup: False
-whitelist_append: None
+noclobber: False
 blacklist_append: None
+whitelist_append: None
 blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
 whitelist: ['/etc/dnsgate/whitelist']
-restart_dnsmasq: True
-dest_ip: 127.0.0.1
+cache: False
+dest_ip: None
+debug: False
+show_config: True
+install_help: False
+debug: False
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
 ```
 **hosts example:**
 
 ```
-$ ./dnsgate --output-format hosts --output-file hosts.blacklist
+$ ./dnsgate --output-format hosts
+Error: no such option: --output-format
 ```
 **is equivalent to:**
 
 ```
-$ ./dnsgate --output-format hosts --output-file hosts.blacklist --show-config
-output_file: hosts.blacklist
-output_format: hosts
-debug: False
-show_config: True
-cache: False
-noclobber: False
-block_at_tld: False
-backup: False
-whitelist_append: None
-blacklist_append: None
-blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-whitelist: ['/etc/dnsgate/whitelist']
-restart_dnsmasq: True
-dest_ip: 127.0.0.1
+$ ./dnsgate --output-format hosts --show-config
+Error: no such option: --output-format
 ```
 
 `[1]:`
