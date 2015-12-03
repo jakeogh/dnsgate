@@ -24,7 +24,7 @@ Options:
   --debug                         print debugging information to stderr
   --cache                         cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache
   --noclobber                     do not overwrite existing output file
-  --block-at-tld                 
+  --block-at-tld
                                   strips subdomains, for example:
                                       analytics.google.com -> google.com
                                       Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.
@@ -33,26 +33,28 @@ Options:
   --output-file TEXT              output file (defaults to /etc/dnsgate/generated_blacklist with --format=dnsmasq and stdout with --format=hosts)
   --blacklist-append TEXT         Add domain to /etc/dnsgate/blacklist
   --whitelist-append TEXT         Add domain to /etc/dnsgate/whitelist
-  --blacklist TEXT               
+  --blacklist TEXT
                                   blacklist(s) defaults to:
                                       http://winhelp2002.mvps.org/hosts.txt
                                       http://someonewhocares.org/hosts/hosts
                                       /etc/dnsgate/blacklist
-  --whitelist TEXT               
+  --whitelist TEXT
                                   whitelists(s) defaults to:/etc/dnsgate/whitelist
   --dest-ip TEXT                  IP to redirect blocked connections to (defaults to 127.0.0.1)
   --help                          Show this message and exit.
 ```
- 
+
 **dnsmasq example:**
- 
-```  $ ./dnsgate
+
+```
+$ ./dnsgate
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
-``` 
+```
 ***is equivalent to:***
- 
-```  $ ./dnsgate --show-config
+
+```
+$ ./dnsgate --show-config
 output_file: /etc/dnsgate/generated_blacklist
 output_format: dnsmasq
 debug: False
@@ -69,14 +71,16 @@ restart_dnsmasq: True
 dest_ip: 127.0.0.1
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
-``` 
+```
 **hosts example:**
- 
-```  $ ./dnsgate --output-format hosts --output-file hosts.blacklist
-``` 
+
+```
+$ ./dnsgate --output-format hosts --output-file hosts.blacklist
+```
 **is equivalent to:**
- 
-```  $ ./dnsgate --output-format hosts --output-file hosts.blacklist --show-config
+
+```
+$ ./dnsgate --output-format hosts --output-file hosts.blacklist --show-config
 output_file: hosts.blacklist
 output_format: hosts
 debug: False
@@ -91,7 +95,7 @@ blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org
 whitelist: ['/etc/dnsgate/whitelist']
 restart_dnsmasq: True
 dest_ip: 127.0.0.1
-``` 
+```
 
 `[1]:`
  `http://winhelp2002.mvps.org/hosts.txt`
