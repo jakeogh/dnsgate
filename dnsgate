@@ -27,14 +27,6 @@ DEFAULT_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',\
                              'http://someonewhocares.org/hosts/hosts', DEFAULT_BLACKLIST]
 DEFAULT_WHITELIST_SOURCES = [DEFAULT_WHITELIST]
 
-def dprint(*args, **kwargs):
-    if click_debug:
-        caller = sys._getframe(1).f_code.co_name
-        print(str("%.5f" % time.time()), os.getpid(), '{0: <15}'.format(caller+'()'), *args, file=sys.stderr, **kwargs)
-
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
 @log_prefix()
 def restart_dnsmasq_service():
     if os.path.lexists('/etc/init.d/dnsmasq'):
@@ -110,7 +102,7 @@ def get_url(url, cache=False):
         eprint("unknown url scheme:", url)
         os._exit(1)
 
-    dprint("domains in", url, ":", len(domains))
+    logger.debug("domains in %s:%s", url, len(domains))
     return domains
 
 #@log_prefix()
@@ -263,7 +255,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     if output_file == '-' or output_file == '/dev/stdout':
         output_file = '/dev/stdout'
     else:
-        dprint("using non standard output_file")
+        logger.debug("using non standard output_file")
         output_file = os.path.abspath(output_file)
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
@@ -271,7 +263,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             eprint("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting." % output_file)
             quit(1)
 
-    dprint('output_file:', output_file)
+    logger.debug('output_file: %s', output_file)
 
     if install_help:
         if mode == 'dnsmasq':
@@ -282,16 +274,16 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 #   idn='☃.net'
     if whitelist_append:
         idn = whitelist_append
-        dprint("idn:", idn)
+        logger.debug("idn: %s", idn)
         hostname = idn.encode('idna').decode('ascii')
-        dprint("appending hostname:", hostname, "to", DEFAULT_WHITELIST)
+        logger.debug("appending hostname: %s to %s", hostname, DEFAULT_WHITELIST)
         line = hostname + '\n'
         write_unique_line(line, DEFAULT_WHITELIST)
 
     if blacklist_append:
         idn = blacklist_append
         hostname = idn.encode('idna').decode('ascii')
-        dprint("appending hostname:", hostname, "to", DEFAULT_BLACKLIST)
+        logger.debug("appending hostname: %s to %s", hostname, DEFAULT_BLACKLIST)
         line = hostname + '\n'
         write_unique_line(line, DEFAULT_BLACKLIST)
 
@@ -301,7 +293,6 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         domains_whitelist = domains_whitelist|read_list_of_domains(whitelist_file)
 
     domains_combined_orig = set()   # domains from all sources, combined
-
 
     for item in blacklist:
         if item.startswith('http'):
@@ -323,9 +314,6 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             logger.debug("got %s domains from %s", domains, blacklist_file)
             if domains:
                 domains_combined_orig = domains_combined_orig|domains # union
-#           import IPython; IPython.embed()
-    
-    
 
     domains_combined_orig = domains_combined_orig - domains_whitelist  # remove exact whitelist matches
 
@@ -337,21 +325,13 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         if domains:
             domains_combined_orig = domains_combined_orig|domains # union
 
-
-
     validate_domain_list(domains_combined_orig)
-
-    
-
 
     domains_combined = copy.deepcopy(domains_combined_orig)
 
     if block_at_tld:
         domains_combined = strip_to_tld(domains_combined)
 
-#   import IPython; IPython.embed()
-
-    # re-add subdomains of whitelisted domains
     #re-add subdomains that are not explicitly whitelisted or already blocked by another rule
     for orig_domain in domains_combined_orig:
         if orig_domain not in domains_whitelist:
@@ -359,7 +339,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 orig_domain_tldextract = domain_extract(orig_domain)
                 orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
                 if orig_domain_tld not in domains_combined:
-                    dprint("re-adding:", orig_domain)
+                    logger.debug("re-adding: %s", orig_domain)
                     domains_combined.add(orig_domain)
 
     domains_combined = group_by_tld(domains_combined)
@@ -401,5 +381,5 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 if __name__ == '__main__':
     no_cache_extract = tldextract.TLDExtract(cache_file=False)
     main()
-    dprint("Exiting without error.")
+    logger.debug("Exiting without error.")
     quit(0)
