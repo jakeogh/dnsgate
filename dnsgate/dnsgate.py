@@ -371,7 +371,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
     if block_at_tld:
         domains_combined = strip_to_tld(domains_combined)
-        eprint("%d uncklisted ique domains left after stripping to TLD's",
+        eprint("%d blacliksted unique domains left after stripping to TLD's",
                 len(domains_combined), log_level=log_levels['INFO'])
         eprint("subtracting %d explicitely whitelisted domains", len(domains_whitelist), log_level=log_levels['INFO'])
         domains_combined = domains_combined - domains_whitelist

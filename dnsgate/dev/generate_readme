@@ -17,7 +17,7 @@ For example *.google.com:
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
-Has the effect of returning 127.0.0.1 for all google.com domains. Rather than return 127.0.0.1, dnsmasq can be configured to return NXDOMAIN:
+Has the effect of returning 127.0.0.1 for all google.com domains. Rather than return 127.0.0.1, dnsmasq can return NXDOMAIN:
 
 ```
 echo 'server=/.google.com/' >> /etc/dnsmasq.conf
@@ -28,10 +28,10 @@ Said another way, conventional `/etc/hosts` blocking can't use wildcards (*) and
 
 With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option strips domains to their TLD, removing the need to manually specify/track specific subdomains. `--block-at-tld` may block TLD's you want to use, so use it with `--whitelist`.
 
-**Features**
+**Features:**
 
 * **Wildcard Blocking** Optionally block full TLD's instead of individual subdomains (dnsmasq mode only).
-* **System-wide.** All programs that use the local DNS resolver benefit. 
+* **System-wide.** All programs that use the local DNS resolver benefit.
 * **Non-interactive.** Can be run as a periodic cron job.
 * **Fully Configurable.** See ./dnsgate --help (TODO, add /etc/dnsgate/config file support)
 * **Custom Lists.** Use /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
@@ -41,12 +41,12 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 * **Extensive Debugging Support.** see --verbose and --debug
 * **IDN Support.** What to block snowman? ./dnsgate --blacklist-append xn--n3h.net
 
-**Features TODO**
+**Features TODO:**
 * **Downloaded Caching.** Optionally cache and re-use downloaded blacklists instead of re-fetching each time (configurable timeout, see --cache-timeout) (partially done).
 * **Full Test Coverage.**
 * **Fully-interactive.** Can be run as an interactive wizard. See --interactive (TODO).
 
-**Dependencies**
+**Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
  - python3.x
  - [click](https://github.com/mitsuhiko/click)
@@ -57,28 +57,26 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 post='''
 
 
-**More Information**
+**More Information:**
 
  - https://news.ycombinator.com/item?id=10572700
  - https://news.ycombinator.com/item?id=10369516
 
-**Related Software**
+**Related Software:**
 
  - https://github.com/gaenserich/hostsblock (bash)
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
- - https://github.com/StevenBlack/hosts (TODO, use this)  
+ - https://github.com/StevenBlack/hosts (TODO, use this)
 
-**Simple Software**
+**Simple Software:**
 
 If you find this useful you may appreciate:
 
  - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
  - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
 
-[1]:
- - http://winhelp2002.mvps.org/hosts.txt
- - http://someonewhocares.org/hosts/hosts
+[1]: http://winhelp2002.mvps.org/hosts.txt http://someonewhocares.org/hosts/hosts
 
 '''
 
