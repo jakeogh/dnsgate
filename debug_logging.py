@@ -7,12 +7,16 @@
 
 import colorama
 from colorama import Fore
-import logging
+import logging as logging
+
 
 # http://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
-#FORMAT = "%(levelname)-7s %(lineno)4s %(filename)-41s:%(funcName)-23s : %(message)s" + Fore.RESET 
-#FORMAT = "%(levelname)-7s %(lineno)4s %(filename)-18s:%(funcName)-20s : %(message)s" + Fore.RESET 
-FORMAT = "%(levelname)-4s %(lineno)4s %(filename)-8s:%(funcName)-20s : %(message)s" + Fore.RESET 
+FORMAT = "%(levelname)-5s %(lineno)4s %(filename)-18s:%(funcName)-13s : %(message)s" + Fore.RESET 
+#FORMAT = "%(levelname)-4s %(lineno)4s %(filename)-8s:%(funcName)-20s : %(message)s" + Fore.RESET 
+QUIET_FORMAT = "%(message)s" + Fore.RESET 
+
+FORMATTER = logging.Formatter(FORMAT)
+QUIET_FORMATTER = logging.Formatter(QUIET_FORMAT)
 
 #http://docs.python.org/3/howto/logging.html
 log_levels = {
@@ -23,7 +27,7 @@ log_levels = {
 'DEBUG':   logging.DEBUG        # 10
 }
 
-logging.basicConfig(format=FORMAT, level=log_levels['WARNING'])
+#logging.basicConfig(format=FORMAT, level=log_levels['WARNING'])
 
 # Logger.setLevel() specifies the lowest-severity log message a logger will
 #   handle, where debug is the lowest built-in severity level and critical is
@@ -39,7 +43,20 @@ logging.basicConfig(format=FORMAT, level=log_levels['WARNING'])
 #   verbose for logging messages than using the log level convenience methods
 #   listed above, but this is how to log at custom log levels.
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('logging_debug')
+logger_quiet = logging.getLogger('logging_quiet')
+
+logger_ch = logging.StreamHandler()
+logger_quiet_ch = logging.StreamHandler()
+
+logger_ch.setFormatter(FORMATTER)
+logger_quiet_ch.setFormatter(QUIET_FORMATTER)
+
+logger.addHandler(logger_ch)
+logger_quiet.addHandler(logger_quiet_ch)
+
+logger.setLevel(log_levels['DEBUG'])
+logger_quiet.setLevel(log_levels['INFO'])
 
 from functools import wraps
 from functools import partial
