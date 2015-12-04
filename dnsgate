@@ -23,7 +23,7 @@ CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
 DEFAULT_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
 DEFAULT_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
-DEFAULT_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',\
+DEFAULT_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',
                              'http://someonewhocares.org/hosts/hosts', DEFAULT_BLACKLIST]
 DEFAULT_WHITELIST_SOURCES = [DEFAULT_WHITELIST]
 
@@ -49,7 +49,7 @@ def remove_comments(line):
             uncommented_line += char
         else:
             break
-    return uncommented_line    
+    return uncommented_line
 
 #@log_prefix()
 def extract_domains_from_bytes_list(domain_bytes):
@@ -80,7 +80,7 @@ def read_list_of_domains(file):
         for line in lines:
             line = line.strip()
             line = remove_comments(line)
-            line = '.'.join(list(filter(None, line.split('.')))) # ignore leading/trailing . 
+            line = '.'.join(list(filter(None, line.split('.')))) # ignore leading/trailing .
             if len(line) > 0:
                 domains.add(line)
     return domains
@@ -91,7 +91,7 @@ def get_url(url, cache=False):
         eprint("GET: %s", url, log_level=log_levels['DEBUG'])
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
         try:
-            raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,\
+            raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,
                                    stream=False, timeout=15.500).content.split(b'\n')
         except Exception as e:
             logger.exception(e)
@@ -141,10 +141,10 @@ def domain_extract(domain):
     return dom
 
 def strip_to_tld(domains):
-    '''This causes ad-serving domains to be blocked at their TLD. 
+    '''This causes ad-serving domains to be blocked at their TLD.
     Otherwise the subdomain can be changed until the --url lists are updated.
     It does not make sense to use this flag if you are generating a /etc/hosts
-    format file since the effect would be to block google.com and not 
+    format file since the effect would be to block google.com and not
     *.google.com.'''
     eprint('removing subdomains on %d domains', len(domains), log_level=log_levels['INFO'])
     domains_stripped = set()
@@ -170,7 +170,7 @@ def backup_file_if_exists(file):
                 copyfileobj(sf, df)
     except FileNotFoundError:
         pass    # skip backup is file does not exist
-            
+
 def validate_domain_list(domains):
     eprint('validating %d domains', len(domains), log_level=log_levels['INFO'])
     valid_domains = set([])
@@ -185,7 +185,7 @@ def validate_domain_list(domains):
 def dnsmasq_install_help(output_file):
     dnsmasq_config_line = '\"conf-file=' + output_file + '\"'
     print('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.' + str(time.time()), file=sys.stderr)
-    print('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo ' \
+    print('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo '
     + dnsmasq_config_line + ' >> /etc/dnsmasq.conf ; }', file=sys.stderr)
     print('    $ /etc/init.d/dnsmasq restart', file=sys.stderr)
     quit(0)
@@ -205,7 +205,7 @@ blacklist(s) defaults to:
 ''' + '\n'.join(['    {0}'.format(i) for i in DEFAULT_BLACKLIST_SOURCES])
 
 whitelist_help = '''\b
-whitelists(s) defaults to:''' + DEFAULT_WHITELIST.replace(os.path.expanduser('~'), '~') 
+whitelists(s) defaults to:''' + DEFAULT_WHITELIST.replace(os.path.expanduser('~'), '~')
 block_at_tld_help = '''
 \b
 strips subdomains, for example:
@@ -223,11 +223,11 @@ whitelist_append_help = '''Add domain to ''' + DEFAULT_WHITELIST
 # pylint: enable=invalid-name
 
 if '--debug' not in sys.argv:
-    logger.setLevel(log_levels['DEBUG']+1)  #prevent @log_prefix() on main() from printing when debug if off
+    logger.setLevel(log_levels['DEBUG'] + 1)  #prevent @log_prefix() on main() from printing when debug if off
 
 
 #https://github.com/mitsuhiko/click/issues/441
-CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns) 
+CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns)
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--mode',             is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
 @click.option('--block-at-tld',     is_flag=True,  help=block_at_tld_help)
@@ -246,8 +246,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--debug',            is_flag=True,  help=debug_help)
 @click.option('--verbose',          is_flag=True,  help=verbose_help)
 @log_prefix()
-def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber, 
-            blacklist_append, whitelist_append, blacklist, whitelist, 
+def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
+            blacklist_append, whitelist_append, blacklist, whitelist,
             cache, dest_ip, show_config, install_help, debug, verbose):
 
     if show_config:
@@ -273,8 +273,8 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     click_debug = debug
 
     if not verbose and not debug:
-        logger.setLevel(log_levels['DEBUG']+1)
-        logger_quiet.setLevel(log_levels['INFO']+1)
+        logger.setLevel(log_levels['DEBUG'] + 1)
+        logger_quiet.setLevel(log_levels['INFO'] + 1)
 
     if verbose and not debug:
         logger_quiet.setLevel(log_levels['INFO'])
@@ -378,20 +378,20 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         eprint("%d unique blacklisted domains left after subtracting the whitelist",
                 len(domains_combined), log_level=log_levels['INFO'])
 
-        eprint('iterating through the original %d blacklisted domains and re-adding subdomains' + 
+        eprint('iterating through the original %d blacklisted domains and re-adding subdomains' +
                 ' that are not whitelisted', len(domains_combined_orig), log_level=log_levels['INFO'])
         #re-add subdomains that are not explicitly whitelisted or already blocked by another rule
         for orig_domain in domains_combined_orig: #check every original full hostname
             if orig_domain not in domains_whitelist: #if it's not in the whitelist
-                if orig_domain not in domains_combined: #and it's not in the current blacklist 
+                if orig_domain not in domains_combined: #and it's not in the current blacklist
                                                         #(almost none will be if --block-at-tld)
-                    orig_domain_tldextract = domain_extract(orig_domain) #get it's tld to see if it's 
+                    orig_domain_tldextract = domain_extract(orig_domain) #get it's tld to see if it's
                                                                          #already blocked by a dnsmasq * rule
                     orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
                     if orig_domain_tld not in domains_combined: #if the tld is not already blocked
                         eprint("re-adding: %s", orig_domain, log_level=log_levels['DEBUG'])
                         domains_combined.add(orig_domain) #add the full hostname to the blacklist
-        
+
         eprint("%d unique blacklisted domains after re-adding non-explicitely blacklisted subdomains",
                 len(domains_combined), log_level=log_levels['INFO'])
 
@@ -403,7 +403,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         domains = read_list_of_domains(blacklist_file)
         eprint("got %s domains from %s", domains, blacklist_file, log_level=log_levels['DEBUG'])
         if domains:
-            domains_combined = domains_combined|domains # union
+            domains_combined = domains_combined | domains # union
 
         eprint("%d unique blacklisted domains after re-adding the custom blacklist",
                 len(domains_combined), log_level=log_levels['INFO'])

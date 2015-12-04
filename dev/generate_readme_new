@@ -1,12 +1,5 @@
 #!/bin/sh
 
-#exec stdbuf -oL ./generate_readme > README.md.new 2>&1
-#script -q -c ./generate_readme | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" > README.md.new 2>&1
-#script -q -c ./generate_readme | sed -r 's|\x1B\[[0-9]{1,2};?(;[0-9]{1,2}){,2}m||g' > README.md.new 2>&1
-#script -q -c ./generate_readme | perl -pe 's/\033\[37m//g; s/\033[0m//g' > README.md.new 2>&1
-#script -q -c ./generate_readme | sed 's/\x1b\[[0-9;]*m//g'> README.md.new 2>&1
-#script -q -c ./generate_readme | ./strip_ansi.pl > README.md.new 2>&1
-#script -q -c ./generate_readme | ./strip_ansi.pl | ~/cfg/text/replace '* Stopping dnsmasq ...' '* Stopping dnsmasq ... [ ok ]' | ~/cfg/text/replace '* Starting dnsmasq ...' '* Starting dnsmasq ... [ ok ]' | sed '/^ \[ ok \]/ d' > README.md.new 2>&1
 script -q -c ./generate_readme |\
     ./strip_ansi.pl |\
     sed -e 's/xn--n3h.net/☃.net/g' |\
@@ -14,8 +7,4 @@ script -q -c ./generate_readme |\
     sed -e 's/* Starting dnsmasq .../* Starting dnsmasq ... \[ ok \]/g' |\
     sed '/^ \[ ok \]/ d' > ../README.md.new 2>&1
 kdiff3 ../README.md ../README.md.new
-
-
-#    ~/cfg/text/replace '* Stopping dnsmasq ...' '* Stopping dnsmasq ... [ ok ]' |\
-#    ~/cfg/text/replace '* Starting dnsmasq ...' '* Starting dnsmasq ... [ ok ]' |\
 
