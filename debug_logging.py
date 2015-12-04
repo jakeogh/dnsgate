@@ -11,7 +11,8 @@ import logging
 
 # http://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
 #FORMAT = "%(levelname)-7s %(lineno)4s %(filename)-41s:%(funcName)-23s : %(message)s" + Fore.RESET 
-FORMAT = "%(levelname)-7s %(lineno)4s %(filename)-18s:%(funcName)-20s : %(message)s" + Fore.RESET 
+#FORMAT = "%(levelname)-7s %(lineno)4s %(filename)-18s:%(funcName)-20s : %(message)s" + Fore.RESET 
+FORMAT = "%(levelname)-4s %(lineno)4s %(filename)-8s:%(funcName)-20s : %(message)s" + Fore.RESET 
 
 #http://docs.python.org/3/howto/logging.html
 log_levels = {
