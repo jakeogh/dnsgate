@@ -10,7 +10,7 @@ For example *.google.com:
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
-Has the effect of returning 127.0.0.1 for all google.com domains. Rather than return 127.0.0.1, dnsmasq can be configured to return NXDOMAIN:
+Has the effect of returning 127.0.0.1 for all google.com domains. Rather than return 127.0.0.1, dnsmasq can return NXDOMAIN:
 
 ```
 echo 'server=/.google.com/' >> /etc/dnsmasq.conf
@@ -21,10 +21,10 @@ Said another way, conventional `/etc/hosts` blocking can't use wildcards (*) and
 
 With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option strips domains to their TLD, removing the need to manually specify/track specific subdomains. `--block-at-tld` may block TLD's you want to use, so use it with `--whitelist`.
 
-**Features**
+**Features:**
 
 * **Wildcard Blocking** Optionally block full TLD's instead of individual subdomains (dnsmasq mode only).
-* **System-wide.** All programs that use the local DNS resolver benefit. 
+* **System-wide.** All programs that use the local DNS resolver benefit.
 * **Non-interactive.** Can be run as a periodic cron job.
 * **Fully Configurable.** See ./dnsgate --help (TODO, add /etc/dnsgate/config file support)
 * **Custom Lists.** Use /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
@@ -34,12 +34,12 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 * **Extensive Debugging Support.** see --verbose and --debug
 * **IDN Support.** What to block snowman? ./dnsgate --blacklist-append ☃.net
 
-**Features TODO**
+**Features TODO:**
 * **Downloaded Caching.** Optionally cache and re-use downloaded blacklists instead of re-fetching each time (configurable timeout, see --cache-timeout) (partially done).
 * **Full Test Coverage.**
 * **Fully-interactive.** Can be run as an interactive wizard. See --interactive (TODO).
 
-**Dependencies**
+**Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
  - python3.x
  - [click](https://github.com/mitsuhiko/click)
@@ -136,7 +136,7 @@ reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonew
 validating 23335 domains
 23335 validated blacklisted domains
 removing subdomains on 23335 domains
-10443 uncklisted ique domains left after stripping to TLD's
+10443 blacklisted unique domains left after stripping to TLD's
 subtracting 72 explicitely whitelisted domains
 10380 unique blacklisted domains left after subtracting the whitelist
 iterating through the original 23335 blacklisted domains and re-adding subdomains that are not whitelisted
@@ -153,7 +153,7 @@ writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449207071.7264845
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449214453.8919742
     $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -206,27 +206,25 @@ $ ./dnsgate --mode hosts --install-help
 
 
 
-**More Information**
+**More Information:**
 
  - https://news.ycombinator.com/item?id=10572700
  - https://news.ycombinator.com/item?id=10369516
 
-**Related Software**
+**Related Software:**
 
  - https://github.com/gaenserich/hostsblock (bash)
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
- - https://github.com/StevenBlack/hosts (TODO, use this)  
+ - https://github.com/StevenBlack/hosts (TODO, use this)
 
-**Simple Software**
+**Simple Software:**
 
 If you find this useful you may appreciate:
 
  - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
  - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
 
-[1]:
- - http://winhelp2002.mvps.org/hosts.txt
- - http://someonewhocares.org/hosts/hosts
+[1]: http://winhelp2002.mvps.org/hosts.txt http://someonewhocares.org/hosts/hosts
 
 
