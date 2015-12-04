@@ -28,18 +28,19 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 * **Non-interactive.** Can be run as a periodic cron job.
 * **Fully Configurable.** See ./dnsgate --help (TODO, add /etc/dnsgate/config file support)
 * **Custom Lists.** Use /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
-* **Return NXDOMAIN** Rather than redirect the request to 127.0.0.1, NXDOMAIN is returned. (dnsmasq mode only).
-* **Return Custom IP** --dest-ip allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode)
-* **Installation Support** see --install-help
+* **Return NXDOMAIN.** Rather than redirect the request to 127.0.0.1, NXDOMAIN is returned. (dnsmasq mode only).
+* **Return Custom IP.** --dest-ip allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode)
+* **Installation Support.** see --install-help
 * **Extensive Debugging Support.** see --verbose and --debug
-* **IDN Support** What to block snowman? ./dnsgate --blacklist-append ☃.net
+* **IDN Support.** What to block snowman? ./dnsgate --blacklist-append ☃.net
 
 **Features TODO**
-* **Downloaded list caching** Optionally cache and re-use downloaded blacklists instead of re-fetching each time (configurable timeout, see --cache-timeout) (partially done).
-* **Full test coverage**
+* **Downloaded Caching.** Optionally cache and re-use downloaded blacklists instead of re-fetching each time (configurable timeout, see --cache-timeout) (partially done).
+* **Full Test Coverage.**
 * **Fully-interactive.** Can be run as an interactive wizard. See --interactive (TODO).
 
 **Dependencies**
+ - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
  - python3.x
  - [click](https://github.com/mitsuhiko/click)
  - [tldextract](https://github.com/john-kurkowski/tldextract)
@@ -118,6 +119,33 @@ INFO     371 dnsgate           :main                 : re-adding domains in the 
 INFO     378 dnsgate           :main                 : 23336 unique blacklisted domains after re-adding the custom blacklist
 INFO     109 dnsgate           :group_by_tld         : sorting domains by their subdomain and grouping by TLD
 INFO     381 dnsgate           :main                 : final blacklisted domain count: 23336
+INFO     402 dnsgate           :main                 : writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
+ * Stopping dnsmasq ... [ ok ]
+ * Starting dnsmasq ... [ ok ]
+``` 
+**dnsmasq example with --block-at-tld:**
+ 
+```  
+$ ./dnsgate --verbose --block-at-tld
+INFO     280 dnsgate           :main                 : using output_file: /etc/dnsgate/generated_blacklist
+INFO     307 dnsgate           :main                 : reading whitelist(s): ['/etc/dnsgate/whitelist']
+INFO     313 dnsgate           :main                 : 72 unique domains from the whitelist(s)
+INFO     316 dnsgate           :main                 : reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
+INFO     338 dnsgate           :main                 : 23337 unique domains from the blacklist(s)
+INFO     342 dnsgate           :main                 : 23335 unique blacklisted domains after subtracting the 72 whitelisted domains
+INFO     167 dnsgate           :validate_domain_list : validating 23335 domains
+INFO     345 dnsgate           :main                 : 23335 validated blacklisted domains
+INFO     141 dnsgate           :strip_to_tld         : removing subdomains on 23335 domains
+INFO     351 dnsgate           :main                 : 10443 uncklisted ique domains left after stripping to TLD's
+INFO     352 dnsgate           :main                 : subtracting 72 explicitely whitelisted domains
+INFO     354 dnsgate           :main                 : 10380 unique blacklisted domains left after subtracting the whitelist
+INFO     356 dnsgate           :main                 : iterating through the original 23335 blacklisted domains and re-adding subdomains that are not whitelisted
+INFO     367 dnsgate           :main                 : 10625 unique blacklisted domains after re-adding non-explicitely blacklisted subdomains
+INFO     371 dnsgate           :main                 : re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
+INFO     378 dnsgate           :main                 : 10628 unique blacklisted domains after re-adding the custom blacklist
+INFO     109 dnsgate           :group_by_tld         : sorting domains by their subdomain and grouping by TLD
+INFO     381 dnsgate           :main                 : final blacklisted domain count: 10628
+INFO     402 dnsgate           :main                 : writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
 ``` 
@@ -125,7 +153,7 @@ INFO     381 dnsgate           :main                 : final blacklisted domain 
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449194240.6176622
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449195527.580932
     $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -166,6 +194,7 @@ INFO     371 dnsgate           :main                 : re-adding domains in the 
 INFO     378 dnsgate           :main                 : 23336 unique blacklisted domains after re-adding the custom blacklist
 INFO     109 dnsgate           :group_by_tld         : sorting domains by their subdomain and grouping by TLD
 INFO     381 dnsgate           :main                 : final blacklisted domain count: 23336
+INFO     392 dnsgate           :main                 : writing output file: /etc/dnsgate/generated_blacklist in /etc/hosts format
 ``` 
 **for /etc/hosts install help:**
  
