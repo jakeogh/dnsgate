@@ -284,7 +284,6 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     else:
         logger.setLevel(log_levels['INFO'])
 
-
     if output_file == '-' or output_file == '/dev/stdout':
         output_file = '/dev/stdout'
     else:
@@ -338,9 +337,13 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             try:
                 eprint("trying http:// blacklist location: %s", item, log_level=log_levels['DEBUG'])
                 domains = get_url(item, cache)
-                domains_combined_orig = domains_combined_orig|domains # union
-                eprint("blacklist: %s", blacklist, log_level=log_levels['DEBUG'])
-                eprint("len(domains_combined_orig): %s", len(domains_combined_orig), log_level=log_levels['DEBUG'])
+                if domains:
+                    domains_combined_orig = domains_combined_orig|domains # union
+                    eprint("blacklist: %s", blacklist, log_level=log_levels['DEBUG'])
+                    eprint("len(domains_combined_orig): %s", len(domains_combined_orig), log_level=log_levels['DEBUG'])
+                else:
+                    logger.error('failed to get %s, skipping.', item)
+                    continue
 
             except Exception as e:
                 logger.error("Exception on blacklist url: %s", item)
