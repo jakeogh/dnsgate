@@ -99,7 +99,7 @@ def get_url(url, cache=False):
                     fh.write(line + b'\n')
         domains = extract_domains_from_bytes_list(raw_hosts_file_lines)
     else:
-        eprint("unknown url scheme:", url)
+        logger.error("unknown url scheme: %s", url)
         os._exit(1)
 
     logger.debug("domains in %s:%s", url, len(domains))
@@ -169,23 +169,22 @@ def validate_domain_list(domains):
 
 def dnsmasq_install_help(output_file):
     dnsmasq_config_line = '\"conf-file=' + output_file + '\"'
-    eprint('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.' + str(time.time()))    
-    eprint('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo ' \
-    + dnsmasq_config_line + ' >> /etc/dnsmasq.conf ; }')
-    eprint('    $ /etc/init.d/dnsmasq restart')
+    print('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.' + str(time.time()), file=sys.stderr)
+    print('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo ' \
+    + dnsmasq_config_line + ' >> /etc/dnsmasq.conf ; }', file=sys.stderr)
+    print('    $ /etc/init.d/dnsmasq restart', file=sys.stderr)
     quit(0)
 
 def hosts_install_help(output_file):
-    eprint('    $ mv -vi /etc/hosts /etc/hosts.default')
-    eprint('    $ cat /etc/hosts.default ' + output_file + ' > /etc/hosts')
+    print('    $ mv -vi /etc/hosts /etc/hosts.default', file=sys.stderr)
+    print('    $ cat /etc/hosts.default ' + output_file + ' > /etc/hosts', file=sys.stderr)
     quit(0)
 
 # pylint: disable=invalid-name
-output_file_help = '''output file (defaults to ''' + DEFAULT_OUTPUT_FILE + \
-' with --mode dnsmasq and stdout with --mode hosts)'
+output_file_help = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
 noclobber_help = '''do not overwrite existing output file'''
 backup_help = '''backup output file before overwriting'''
-install_help_help = '''show commands to configure dnsmasq or /etc/hosts'''
+install_help_help = '''show commands to configure dnsmasq or /etc/hosts (note: this does nothing else)'''
 blacklist_help = '''\b
 blacklist(s) defaults to:
 ''' + '\n'.join(['    {0}'.format(i) for i in DEFAULT_BLACKLIST_SOURCES])
@@ -196,7 +195,8 @@ block_at_tld_help = '''
 \b
 strips subdomains, for example:
     analytics.google.com -> google.com
-    Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.'''
+    Useful for dnsmasq if you are willing to maintain a --whitelist file
+    for inadvertently blocked domains.'''
 debug_help = '''print debugging information to stderr'''
 show_config_help = '''print config information to stderr'''
 cache_help = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
@@ -260,7 +260,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
         if noclobber:
-            eprint("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting." % output_file)
+            logger.error("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting.", output_file)
             quit(1)
 
     logger.debug('output_file: %s', output_file)
