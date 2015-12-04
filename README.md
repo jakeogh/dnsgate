@@ -149,11 +149,11 @@ writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
 ``` 
-**for dnsmasq install help:**
+**dnsmasq install help:**
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449204552.95879
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449207071.7264845
     $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -196,7 +196,7 @@ sorting domains by their subdomain and grouping by TLD
 final blacklisted domain count: 23336
 writing output file: /etc/dnsgate/generated_blacklist in /etc/hosts format
 ``` 
-**for /etc/hosts install help:**
+**/etc/hosts install help:**
  
 ```  
 $ ./dnsgate --mode hosts --install-help
