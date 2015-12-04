@@ -16,7 +16,7 @@ import requests
 import tldextract
 from urllib.parse import urlparse
 from shutil import copyfileobj
-from debug_logging import log_prefix, logger, print_traceback, log_levels
+from debug_logging import log_prefix, logger, logger_quiet, print_traceback, log_levels
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
@@ -27,13 +27,20 @@ DEFAULT_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',\
                              'http://someonewhocares.org/hosts/hosts', DEFAULT_BLACKLIST]
 DEFAULT_WHITELIST_SOURCES = [DEFAULT_WHITELIST]
 
+def eprint(*args, log_level, **kwargs):
+    if click_debug:
+        logger.debug(*args, **kwargs)
+    else:
+        if log_level >= log_levels['INFO']:
+            logger_quiet.info(*args, **kwargs)
+
 @log_prefix()
 def restart_dnsmasq_service():
     if os.path.lexists('/etc/init.d/dnsmasq'):
         ret = os.system('/etc/init.d/dnsmasq restart')
     else:
         ret = os.system('systemctl restart dnsmasq')    # untested
-    return ret
+    return True
 
 def remove_comments(line):
     uncommented_line = ''
@@ -81,14 +88,15 @@ def read_list_of_domains(file):
 @log_prefix()
 def get_url(url, cache=False):
     if url.startswith('http://') or url.startswith('https://'):
-        logger.debug("GET: %s", url)
+        eprint("GET: %s", url, log_level=log_levels['DEBUG'])
         user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
         try:
             raw_hosts_file_lines = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,\
                                    stream=False, timeout=15.500).content.split(b'\n')
         except Exception as e:
             logger.exception(e)
-            raise e
+            return False
+#           raise e
         if cache:
             domain = urlparse(url).netloc
             output_file = CACHE_DIRECTORY + '/' + 'dnsgate_cache_' + domain + '_hosts.' + str(time.time())
@@ -102,11 +110,11 @@ def get_url(url, cache=False):
         logger.error("unknown url scheme: %s", url)
         os._exit(1)
 
-    logger.debug("domains in %s:%s", url, len(domains))
+    eprint("domains in %s:%s", url, len(domains), log_level=log_levels['DEBUG'])
     return domains
 
 def group_by_tld(domains):
-    logger.info('sorting domains by their subdomain and grouping by TLD')
+    eprint('sorting domains by their subdomain and grouping by TLD', log_level=log_levels['INFO'])
     sorted_output = []
     reversed_domains = []
     for domain in domains:
@@ -138,7 +146,7 @@ def strip_to_tld(domains):
     It does not make sense to use this flag if you are generating a /etc/hosts
     format file since the effect would be to block google.com and not 
     *.google.com.'''
-    logger.info('removing subdomains on %d domains', len(domains))
+    eprint('removing subdomains on %d domains', len(domains), log_level=log_levels['INFO'])
     domains_stripped = set()
     for line in domains:
         line = domain_extract(line)             # get tld
@@ -164,7 +172,7 @@ def backup_file_if_exists(file):
         pass    # skip backup is file does not exist
             
 def validate_domain_list(domains):
-    logger.info('validating %d domains', len(domains))
+    eprint('validating %d domains', len(domains), log_level=log_levels['INFO'])
     valid_domains = set([])
     for hostname in domains:
         try:
@@ -173,7 +181,6 @@ def validate_domain_list(domains):
         except Exception as e:
             logger.exception(e)
     return valid_domains
-
 
 def dnsmasq_install_help(output_file):
     dnsmasq_config_line = '\"conf-file=' + output_file + '\"'
@@ -214,6 +221,10 @@ restart_dnsmasq_help = '''Restart dnsmasq service (defaults to True, ignored if 
 blacklist_append_help = '''Add domain to ''' + DEFAULT_BLACKLIST
 whitelist_append_help = '''Add domain to ''' + DEFAULT_WHITELIST
 # pylint: enable=invalid-name
+
+if '--debug' not in sys.argv:
+    logger.setLevel(log_levels['DEBUG']+1)  #prevent @log_prefix() on main() from printing when debug if off
+
 
 #https://github.com/mitsuhiko/click/issues/441
 CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns) 
@@ -258,18 +269,26 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         print("debug:", debug)
         print("verbose:", verbose)
 
-    if verbose:
-        logger.setLevel(log_levels['INFO'])
-
     global click_debug
     click_debug = debug
+
+    if not verbose and not debug:
+        logger.setLevel(log_levels['DEBUG']+1)
+        logger_quiet.setLevel(log_levels['INFO']+1)
+
+    if verbose and not debug:
+        logger_quiet.setLevel(log_levels['INFO'])
+
     if debug:
         logger.setLevel(log_levels['DEBUG'])
+    else:
+        logger.setLevel(log_levels['INFO'])
+
 
     if output_file == '-' or output_file == '/dev/stdout':
         output_file = '/dev/stdout'
     else:
-        logger.debug("using non standard output_file")
+        eprint("using non standard output_file", log_level=log_levels['DEBUG'])
         output_file = os.path.abspath(output_file)
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
@@ -277,7 +296,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             logger.error("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting.", output_file)
             quit(1)
 
-    logger.info('using output_file: %s', output_file)
+    eprint('using output_file: %s', output_file, log_level=log_levels['INFO'])
 
     if install_help:
         if mode == 'dnsmasq':
@@ -287,98 +306,107 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
 #   idn='☃.net'
     if whitelist_append:
-        logger.info("attempting to append %s to %s", whitelist_append, DEFAULT_WHITELIST)
+        eprint("attempting to append %s to %s", whitelist_append, DEFAULT_WHITELIST, log_level=log_levels['INFO'])
         idn = whitelist_append
-        logger.debug("idn: %s", idn)
+        eprint("idn: %s", idn, log_level=log_levels['DEBUG'])
         hostname = idn.encode('idna').decode('ascii')
-        logger.debug("appending hostname: %s to %s", hostname, DEFAULT_WHITELIST)
+        eprint("appending hostname: %s to %s", hostname, DEFAULT_WHITELIST, log_level=log_levels['DEBUG'])
         line = hostname + '\n'
         write_unique_line(line, DEFAULT_WHITELIST)
 
     if blacklist_append:
-        logger.info("attempting to append %s to %s", blacklist_append, DEFAULT_BLACKLIST)
+        eprint("attempting to append %s to %s", blacklist_append, DEFAULT_BLACKLIST, log_level=log_levels['INFO'])
         idn = blacklist_append
         hostname = idn.encode('idna').decode('ascii')
-        logger.debug("appending hostname: %s to %s", hostname, DEFAULT_BLACKLIST)
+        eprint("appending hostname: %s to %s", hostname, DEFAULT_BLACKLIST, log_level=log_levels['DEBUG'])
         line = hostname + '\n'
         write_unique_line(line, DEFAULT_BLACKLIST)
 
     domains_whitelist = set()
-    logger.info("reading whitelist(s): %s", str(whitelist))
+    eprint("reading whitelist(s): %s", str(whitelist), log_level=log_levels['INFO'])
     for item in whitelist:
         whitelist_file = os.path.abspath(item)
         domains_whitelist = domains_whitelist|read_list_of_domains(whitelist_file)
 
     if domains_whitelist:
-        logger.info("%d unique domains from the whitelist(s)", len(domains_whitelist))
+        eprint("%d unique domains from the whitelist(s)", len(domains_whitelist), log_level=log_levels['INFO'])
 
     domains_combined_orig = set()   # domains from all sources, combined
-    logger.info("reading blacklist(s): %s", str(blacklist))
+    eprint("reading blacklist(s): %s", str(blacklist), log_level=log_levels['INFO'])
     for item in blacklist:
         if item.startswith('http'):
             try:
-                logger.debug("trying http:// blacklist location: %s", item)
+                eprint("trying http:// blacklist location: %s", item, log_level=log_levels['DEBUG'])
                 domains = get_url(item, cache)
                 domains_combined_orig = domains_combined_orig|domains # union
-                logger.debug("blacklist: %s", blacklist)
-                logger.debug("len(domains_combined_orig): %s", len(domains_combined_orig))
+                eprint("blacklist: %s", blacklist, log_level=log_levels['DEBUG'])
+                eprint("len(domains_combined_orig): %s", len(domains_combined_orig), log_level=log_levels['DEBUG'])
 
             except Exception as e:
                 logger.error("Exception on blacklist url: %s", item)
                 logger.exception(e)
 
         else:
-            logger.debug("trying local blacklist file: %s", item)
+            eprint("trying local blacklist file: %s", item, log_level=log_levels['DEBUG'])
             blacklist_file = os.path.abspath(item)
             domains = read_list_of_domains(blacklist_file)
-            logger.debug("got %s domains from %s", domains, blacklist_file)
+            eprint("got %s domains from %s", domains, blacklist_file, log_level=log_levels['DEBUG'])
             if domains:
                 domains_combined_orig = domains_combined_orig|domains # union
 
-    logger.info("%d unique domains from the blacklist(s)", len(domains_combined_orig))
+    eprint("%d unique domains from the blacklist(s)", len(domains_combined_orig), log_level=log_levels['INFO'])
 
     domains_combined_orig = domains_combined_orig - domains_whitelist  # remove exact whitelist matches
 
-    logger.info("%d unique blacklisted domains after subtracting the %d whitelisted domains", len(domains_combined_orig), len(domains_whitelist))
+    eprint("%d unique blacklisted domains after subtracting the %d whitelisted domains",
+            len(domains_combined_orig), len(domains_whitelist), log_level=log_levels['INFO'])
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)
-    logger.info('%d validated blacklisted domains', len(domains_combined_orig))
+    eprint('%d validated blacklisted domains', len(domains_combined_orig), log_level=log_levels['INFO'])
 
     domains_combined = copy.deepcopy(domains_combined_orig)
 
     if block_at_tld:
         domains_combined = strip_to_tld(domains_combined)
-        logger.info("%d uncklisted ique domains left after stripping to TLD's", len(domains_combined))
-        logger.info("subtracting %d explicitely whitelisted domains", len(domains_whitelist))
+        eprint("%d uncklisted ique domains left after stripping to TLD's",
+                len(domains_combined), log_level=log_levels['INFO'])
+        eprint("subtracting %d explicitely whitelisted domains", len(domains_whitelist), log_level=log_levels['INFO'])
         domains_combined = domains_combined - domains_whitelist
-        logger.info("%d unique blacklisted domains left after subtracting the whitelist", len(domains_combined))
+        eprint("%d unique blacklisted domains left after subtracting the whitelist",
+                len(domains_combined), log_level=log_levels['INFO'])
 
-        logger.info('iterating through the original %d blacklisted domains and re-adding subdomains that are not whitelisted', len(domains_combined_orig))
+        eprint('iterating through the original %d blacklisted domains and re-adding subdomains' + 
+                ' that are not whitelisted', len(domains_combined_orig), log_level=log_levels['INFO'])
         #re-add subdomains that are not explicitly whitelisted or already blocked by another rule
         for orig_domain in domains_combined_orig: #check every original full hostname
             if orig_domain not in domains_whitelist: #if it's not in the whitelist
-                if orig_domain not in domains_combined: #and it's not in the current blacklist (almost none will be if --block-at-tld)
-                    orig_domain_tldextract = domain_extract(orig_domain) #get it's tld to see if it's already blocked by a dnsmasq * rule
+                if orig_domain not in domains_combined: #and it's not in the current blacklist 
+                                                        #(almost none will be if --block-at-tld)
+                    orig_domain_tldextract = domain_extract(orig_domain) #get it's tld to see if it's 
+                                                                         #already blocked by a dnsmasq * rule
                     orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
                     if orig_domain_tld not in domains_combined: #if the tld is not already blocked
-                        logger.debug("re-adding: %s", orig_domain)
+                        eprint("re-adding: %s", orig_domain, log_level=log_levels['DEBUG'])
                         domains_combined.add(orig_domain) #add the full hostname to the blacklist
         
-        logger.info("%d unique blacklisted domains after re-adding non-explicitely blacklisted subdomains", len(domains_combined))
+        eprint("%d unique blacklisted domains after re-adding non-explicitely blacklisted subdomains",
+                len(domains_combined), log_level=log_levels['INFO'])
 
     #this must happen after tld stripping
     if DEFAULT_BLACKLIST in blacklist:
-        logger.info("re-adding domains in the local blacklist %s to override the whitelist", DEFAULT_BLACKLIST)
+        eprint("re-adding domains in the local blacklist %s to override the whitelist",
+                DEFAULT_BLACKLIST, log_level=log_levels['INFO'])
         blacklist_file = os.path.abspath(DEFAULT_BLACKLIST)
         domains = read_list_of_domains(blacklist_file)
-        logger.debug("got %s domains from %s", domains, blacklist_file)
+        eprint("got %s domains from %s", domains, blacklist_file, log_level=log_levels['DEBUG'])
         if domains:
             domains_combined = domains_combined|domains # union
 
-        logger.info("%d unique blacklisted domains after re-adding the custom blacklist", len(domains_combined))
+        eprint("%d unique blacklisted domains after re-adding the custom blacklist",
+                len(domains_combined), log_level=log_levels['INFO'])
 
     domains_combined = group_by_tld(domains_combined)
-    logger.info('final blacklisted domain count: %d', len(domains_combined))
+    eprint('final blacklisted domain count: %d', len(domains_combined), log_level=log_levels['INFO'])
 
     if backup:
         backup_file_if_exists(output_file)
@@ -389,7 +417,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         pass
 
     if mode == 'hosts':
-        logger.info("writing output file: %s in /etc/hosts format", output_file)
+        eprint("writing output file: %s in /etc/hosts format", output_file, log_level=log_levels['INFO'])
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
                 if dest_ip:
@@ -399,7 +427,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 fh.write(hosts_line)
 
     elif mode == 'dnsmasq':
-        logger.info("writing output file: %s in dnsmasq format", output_file)
+        eprint("writing output file: %s in dnsmasq format", output_file, log_level=log_levels['INFO'])
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
                 if dest_ip:
@@ -416,5 +444,5 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 if __name__ == '__main__':
     no_cache_extract = tldextract.TLDExtract(cache_file=False)
     main()
-    logger.debug("Exiting without error.")
+    eprint("Exiting without error.", log_level=log_levels['DEBUG'])
     quit(0)
