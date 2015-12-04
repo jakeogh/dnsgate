@@ -389,6 +389,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         pass
 
     if mode == 'hosts':
+        logger.info("writing output file: %s in /etc/hosts format", output_file)
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
                 if dest_ip:
@@ -398,6 +399,7 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 fh.write(hosts_line)
 
     elif mode == 'dnsmasq':
+        logger.info("writing output file: %s in dnsmasq format", output_file)
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
                 if dest_ip:
@@ -405,9 +407,6 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 else:
                     dnsmasq_line = 'server=/.' + domain + '/' '\n'  #return NXDOMAIN
                 fh.write(dnsmasq_line)
-    else:
-        print("unknown mode:", mode)
-        quit(1)
 
     if restart_dnsmasq:
         if mode != 'hosts':
