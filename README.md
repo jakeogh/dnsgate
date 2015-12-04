@@ -107,19 +107,19 @@ verbose: False
  * Starting dnsmasq ... [ ok ]
   
 $ ./dnsgate --verbose
-INFO  280 dnsgate :main                 : using output_file: /etc/dnsgate/generated_blacklist
-INFO  307 dnsgate :main                 : reading whitelist(s): ['/etc/dnsgate/whitelist']
-INFO  313 dnsgate :main                 : 72 unique domains from the whitelist(s)
-INFO  316 dnsgate :main                 : reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-INFO  338 dnsgate :main                 : 23337 unique domains from the blacklist(s)
-INFO  342 dnsgate :main                 : 23335 unique blacklisted domains after subtracting the 72 whitelisted domains
-INFO  167 dnsgate :validate_domain_list : validating 23335 domains
-INFO  345 dnsgate :main                 : 23335 validated blacklisted domains
-INFO  371 dnsgate :main                 : re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
-INFO  378 dnsgate :main                 : 23336 unique blacklisted domains after re-adding the custom blacklist
-INFO  109 dnsgate :group_by_tld         : sorting domains by their subdomain and grouping by TLD
-INFO  381 dnsgate :main                 : final blacklisted domain count: 23336
-INFO  402 dnsgate :main                 : writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
+using output_file: /etc/dnsgate/generated_blacklist
+reading whitelist(s): ['/etc/dnsgate/whitelist']
+72 unique domains from the whitelist(s)
+reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
+23337 unique domains from the blacklist(s)
+23335 unique blacklisted domains after subtracting the 72 whitelisted domains
+validating 23335 domains
+23335 validated blacklisted domains
+re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
+23336 unique blacklisted domains after re-adding the custom blacklist
+sorting domains by their subdomain and grouping by TLD
+final blacklisted domain count: 23336
+writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
 ``` 
@@ -127,25 +127,25 @@ INFO  402 dnsgate :main                 : writing output file: /etc/dnsgate/gene
  
 ```  
 $ ./dnsgate --verbose --block-at-tld
-INFO  280 dnsgate :main                 : using output_file: /etc/dnsgate/generated_blacklist
-INFO  307 dnsgate :main                 : reading whitelist(s): ['/etc/dnsgate/whitelist']
-INFO  313 dnsgate :main                 : 72 unique domains from the whitelist(s)
-INFO  316 dnsgate :main                 : reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-INFO  338 dnsgate :main                 : 23337 unique domains from the blacklist(s)
-INFO  342 dnsgate :main                 : 23335 unique blacklisted domains after subtracting the 72 whitelisted domains
-INFO  167 dnsgate :validate_domain_list : validating 23335 domains
-INFO  345 dnsgate :main                 : 23335 validated blacklisted domains
-INFO  141 dnsgate :strip_to_tld         : removing subdomains on 23335 domains
-INFO  351 dnsgate :main                 : 10443 uncklisted ique domains left after stripping to TLD's
-INFO  352 dnsgate :main                 : subtracting 72 explicitely whitelisted domains
-INFO  354 dnsgate :main                 : 10380 unique blacklisted domains left after subtracting the whitelist
-INFO  356 dnsgate :main                 : iterating through the original 23335 blacklisted domains and re-adding subdomains that are not whitelisted
-INFO  367 dnsgate :main                 : 10625 unique blacklisted domains after re-adding non-explicitely blacklisted subdomains
-INFO  371 dnsgate :main                 : re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
-INFO  378 dnsgate :main                 : 10628 unique blacklisted domains after re-adding the custom blacklist
-INFO  109 dnsgate :group_by_tld         : sorting domains by their subdomain and grouping by TLD
-INFO  381 dnsgate :main                 : final blacklisted domain count: 10628
-INFO  402 dnsgate :main                 : writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
+using output_file: /etc/dnsgate/generated_blacklist
+reading whitelist(s): ['/etc/dnsgate/whitelist']
+72 unique domains from the whitelist(s)
+reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
+23337 unique domains from the blacklist(s)
+23335 unique blacklisted domains after subtracting the 72 whitelisted domains
+validating 23335 domains
+23335 validated blacklisted domains
+removing subdomains on 23335 domains
+10443 uncklisted ique domains left after stripping to TLD's
+subtracting 72 explicitely whitelisted domains
+10380 unique blacklisted domains left after subtracting the whitelist
+iterating through the original 23335 blacklisted domains and re-adding subdomains that are not whitelisted
+10625 unique blacklisted domains after re-adding non-explicitely blacklisted subdomains
+re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
+10628 unique blacklisted domains after re-adding the custom blacklist
+sorting domains by their subdomain and grouping by TLD
+final blacklisted domain count: 10628
+writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
 ``` 
@@ -153,7 +153,7 @@ INFO  402 dnsgate :main                 : writing output file: /etc/dnsgate/gene
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449195951.0902874
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449204552.95879
     $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -182,19 +182,19 @@ debug: False
 verbose: False
   
 $ ./dnsgate --mode hosts --verbose
-INFO  280 dnsgate :main                 : using output_file: /etc/dnsgate/generated_blacklist
-INFO  307 dnsgate :main                 : reading whitelist(s): ['/etc/dnsgate/whitelist']
-INFO  313 dnsgate :main                 : 72 unique domains from the whitelist(s)
-INFO  316 dnsgate :main                 : reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-INFO  338 dnsgate :main                 : 23337 unique domains from the blacklist(s)
-INFO  342 dnsgate :main                 : 23335 unique blacklisted domains after subtracting the 72 whitelisted domains
-INFO  167 dnsgate :validate_domain_list : validating 23335 domains
-INFO  345 dnsgate :main                 : 23335 validated blacklisted domains
-INFO  371 dnsgate :main                 : re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
-INFO  378 dnsgate :main                 : 23336 unique blacklisted domains after re-adding the custom blacklist
-INFO  109 dnsgate :group_by_tld         : sorting domains by their subdomain and grouping by TLD
-INFO  381 dnsgate :main                 : final blacklisted domain count: 23336
-INFO  392 dnsgate :main                 : writing output file: /etc/dnsgate/generated_blacklist in /etc/hosts format
+using output_file: /etc/dnsgate/generated_blacklist
+reading whitelist(s): ['/etc/dnsgate/whitelist']
+72 unique domains from the whitelist(s)
+reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
+23337 unique domains from the blacklist(s)
+23335 unique blacklisted domains after subtracting the 72 whitelisted domains
+validating 23335 domains
+23335 validated blacklisted domains
+re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
+23336 unique blacklisted domains after re-adding the custom blacklist
+sorting domains by their subdomain and grouping by TLD
+final blacklisted domain count: 23336
+writing output file: /etc/dnsgate/generated_blacklist in /etc/hosts format
 ``` 
 **for /etc/hosts install help:**
  
@@ -204,9 +204,6 @@ $ ./dnsgate --mode hosts --install-help
     $ cat /etc/hosts.default /etc/dnsgate/generated_blacklist > /etc/hosts
 ``` 
 
-`[1]:`
- `http://winhelp2002.mvps.org/hosts.txt`
- `http://someonewhocares.org/hosts/hosts`
 
 
 **More Information**
@@ -227,5 +224,9 @@ If you find this useful you may appreciate:
 
  - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
  - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
+
+[1]:
+ - http://winhelp2002.mvps.org/hosts.txt
+ - http://someonewhocares.org/hosts/hosts
 
 
