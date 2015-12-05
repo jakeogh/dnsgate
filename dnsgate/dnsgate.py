@@ -421,25 +421,25 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     except FileExistsError:
         pass
 
-    if mode == 'hosts':
-        eprint("writing output file: %s in /etc/hosts format", output_file, log_level=log_levels['INFO'])
+    eprint("writing output file: %s in %s format", output_file, mode, log_level=log_levels['INFO'])
+    try:
         with open(output_file, 'w') as fh:
             for domain in domains_combined:
-                if dest_ip:
-                    hosts_line = dest_ip + ' ' + domain + '\n'
-                else:
-                    hosts_line = '127.0.0.1' + ' ' + domain + '\n'
-                fh.write(hosts_line)
-
-    elif mode == 'dnsmasq':
-        eprint("writing output file: %s in dnsmasq format", output_file, log_level=log_levels['INFO'])
-        with open(output_file, 'w') as fh:
-            for domain in domains_combined:
-                if dest_ip:
-                    dnsmasq_line = 'address=/.' + domain + '/' + dest_ip + '\n'
-                else:
-                    dnsmasq_line = 'server=/.' + domain + '/' '\n'  #return NXDOMAIN
-                fh.write(dnsmasq_line)
+                if mode == 'dnsmasq':
+                    if dest_ip:
+                        dnsmasq_line = 'address=/.' + domain + '/' + dest_ip + '\n'
+                    else:
+                        dnsmasq_line = 'server=/.' + domain + '/' '\n'  #return NXDOMAIN
+                    fh.write(dnsmasq_line)
+                elif mode == 'hosts':
+                    if dest_ip:
+                        hosts_line = dest_ip + ' ' + domain + '\n'
+                    else:
+                        hosts_line = '127.0.0.1' + ' ' + domain + '\n'
+    except PermissionError as e:
+        logger.error(e)
+        logger.error("root permissions are reqired to write to %s", output_file)
+        quit(1)
 
     if restart_dnsmasq:
         if mode != 'hosts':
