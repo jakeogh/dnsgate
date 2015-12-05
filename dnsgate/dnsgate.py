@@ -20,6 +20,9 @@ from urllib.parse import urlparse
 from shutil import copyfileobj
 from debug_logging import log_prefix, logger, logger_quiet, print_traceback, log_levels
 
+if '--debug' not in sys.argv:
+    logger.setLevel(log_levels['DEBUG'] + 1)  #prevent @log_prefix() on main() from printing when debug if off
+
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
 DEFAULT_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
@@ -98,7 +101,6 @@ def get_url(url, cache=False):
         except Exception as e:
             logger.exception(e)
             return False
-#           raise e
         if cache:
             domain = urlparse(url).netloc
             output_file = CACHE_DIRECTORY + '/' + 'dnsgate_cache_' + domain + '_hosts.' + str(time.time())
@@ -197,56 +199,50 @@ def hosts_install_help(output_file):
     print('    $ cat /etc/hosts.default ' + output_file + ' > /etc/hosts', file=sys.stderr)
     quit(0)
 
-# pylint: disable=invalid-name
-output_file_help = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
-noclobber_help = '''do not overwrite existing output file'''
-backup_help = '''backup output file before overwriting'''
-install_help_help = '''show commands to configure dnsmasq or /etc/hosts (note: this does nothing else)'''
-blacklist_help = '''\b
+OUTPUT_FILE_HELP = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
+NOCLOBBER_HELP = '''do not overwrite existing output file'''
+BACKUP_HELP = '''backup output file before overwriting'''
+INSTALL_HELP_HELP = '''show commands to configure dnsmasq or /etc/hosts (note: this does nothing else)'''
+BLACKLIST_HELP = '''\b
 blacklist(s) defaults to:
 ''' + '\n'.join(['    {0}'.format(i) for i in DEFAULT_BLACKLIST_SOURCES])
 
-whitelist_help = '''\b
+WHITELIST_HELP = '''\b
 whitelists(s) defaults to:''' + DEFAULT_WHITELIST.replace(os.path.expanduser('~'), '~')
-block_at_tld_help = '''
+BLOCK_AT_TLD_HELP = '''
 \b
 strips subdomains, for example:
     analytics.google.com -> google.com
     Useful for dnsmasq if you are willing to maintain a --whitelist file
     for inadvertently blocked domains.'''
-debug_help = '''print debugging information to stderr'''
-verbose_help = '''print more information to stderr'''
-show_config_help = '''print config information to stderr'''
-cache_help = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
-dest_ip_help = '''IP to redirect blocked connections to (defaults to 127.0.0.1)'''
-restart_dnsmasq_help = '''Restart dnsmasq service (defaults to True, ignored if --mode hosts)'''
-blacklist_append_help = '''Add domain to ''' + DEFAULT_BLACKLIST
-whitelist_append_help = '''Add domain to ''' + DEFAULT_WHITELIST
-# pylint: enable=invalid-name
-
-if '--debug' not in sys.argv:
-    logger.setLevel(log_levels['DEBUG'] + 1)  #prevent @log_prefix() on main() from printing when debug if off
-
+DEBUG_HELP = '''print debugging information to stderr'''
+VERBOSE_HELP = '''print more information to stderr'''
+SHOW_CONFIG_HELP = '''print config information to stderr'''
+CACHE_HELP = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
+DEST_IP_HELP = '''IP to redirect blocked connections to (defaults to 127.0.0.1)'''
+RESTART_DNSMASQ_HELP = '''Restart dnsmasq service (defaults to True, ignored if --mode hosts)'''
+BLACKLIST_APPEND_HELP = '''Add domain to ''' + DEFAULT_BLACKLIST
+WHITELIST_APPEND_HELP = '''Add domain to ''' + DEFAULT_WHITELIST
 
 #https://github.com/mitsuhiko/click/issues/441
 CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns)
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--mode',             is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
-@click.option('--block-at-tld',     is_flag=True,  help=block_at_tld_help)
-@click.option('--restart-dnsmasq',  is_flag=True,  help=restart_dnsmasq_help,  default=True)
-@click.option('--output-file',      is_flag=False, help=output_file_help,      default=DEFAULT_OUTPUT_FILE)
-@click.option('--backup',           is_flag=True,  help=backup_help)
-@click.option('--noclobber',        is_flag=True,  help=noclobber_help)
-@click.option('--blacklist-append', is_flag=False, help=blacklist_append_help, type=str)
-@click.option('--whitelist-append', is_flag=False, help=whitelist_append_help, type=str)
-@click.option('--blacklist',        is_flag=False, help=blacklist_help, default=DEFAULT_BLACKLIST_SOURCES)
-@click.option('--whitelist',        is_flag=False, help=whitelist_help, default=DEFAULT_WHITELIST_SOURCES)
-@click.option('--cache',            is_flag=True,  help=cache_help)
-@click.option('--dest-ip',          is_flag=False, help=dest_ip_help)
-@click.option('--show-config',      is_flag=True,  help=show_config_help)
-@click.option('--install-help',     is_flag=True,  help=install_help_help)
-@click.option('--debug',            is_flag=True,  help=debug_help)
-@click.option('--verbose',          is_flag=True,  help=verbose_help)
+@click.option('--block-at-tld',     is_flag=True,  help=BLOCK_AT_TLD_HELP)
+@click.option('--restart-dnsmasq',  is_flag=True,  help=RESTART_DNSMASQ_HELP, default=True)
+@click.option('--output-file',      is_flag=False, help=OUTPUT_FILE_HELP,     default=DEFAULT_OUTPUT_FILE)
+@click.option('--backup',           is_flag=True,  help=BACKUP_HELP)
+@click.option('--noclobber',        is_flag=True,  help=NOCLOBBER_HELP)
+@click.option('--blacklist-append', is_flag=False, help=BLACKLIST_APPEND_HELP, type=str)
+@click.option('--whitelist-append', is_flag=False, help=WHITELIST_APPEND_HELP, type=str)
+@click.option('--blacklist',        is_flag=False, help=BLACKLIST_HELP, default=DEFAULT_BLACKLIST_SOURCES)
+@click.option('--whitelist',        is_flag=False, help=WHITELIST_HELP, default=DEFAULT_WHITELIST_SOURCES)
+@click.option('--cache',            is_flag=True,  help=CACHE_HELP)
+@click.option('--dest-ip',          is_flag=False, help=DEST_IP_HELP)
+@click.option('--show-config',      is_flag=True,  help=SHOW_CONFIG_HELP)
+@click.option('--install-help',     is_flag=True,  help=INSTALL_HELP_HELP)
+@click.option('--debug',            is_flag=True,  help=DEBUG_HELP)
+@click.option('--verbose',          is_flag=True,  help=VERBOSE_HELP)
 @log_prefix()
 def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             blacklist_append, whitelist_append, blacklist, whitelist,
