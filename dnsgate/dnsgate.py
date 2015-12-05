@@ -244,7 +244,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--debug',            is_flag=True,  help=DEBUG_HELP)
 @click.option('--verbose',          is_flag=True,  help=VERBOSE_HELP)
 @log_prefix()
-def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
+def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             blacklist_append, whitelist_append, blacklist, whitelist,
             cache, dest_ip, show_config, install_help, debug, verbose):
 
@@ -444,6 +444,6 @@ def main(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
 if __name__ == '__main__':
     no_cache_extract = tldextract.TLDExtract(cache_file=False)
-    main()
+    dnsgate()
     eprint("Exiting without error.", log_level=log_levels['DEBUG'])
     quit(0)
