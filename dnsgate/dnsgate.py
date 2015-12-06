@@ -413,6 +413,10 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     domains_combined = group_by_tld(domains_combined)
     eprint('final blacklisted domain count: %d', len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
+    eprint("validating final domain block list", log_level=ld.LOG_LEVELS['INFO'])
+    domains_combined = validate_domain_list(domains_combined)
+    eprint('%d validated blacklisted domains', len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
+
     if backup:
         backup_file_if_exists(output_file)
 
