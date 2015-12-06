@@ -326,9 +326,10 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     for item in whitelist:
         whitelist_file = os.path.abspath(item)
         domains_whitelist = domains_whitelist | read_list_of_domains(whitelist_file)
-
     if domains_whitelist:
         eprint("%d unique domains from the whitelist(s)", len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
+        domains_whitelist = validate_domain_list(domains_whitelist)
+        eprint('%d validated whitelist domains', len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
 
     domains_combined_orig = set()   # domains from all sources, combined
     eprint("reading blacklist(s): %s", str(blacklist), log_level=ld.LOG_LEVELS['INFO'])
@@ -363,7 +364,7 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     domains_combined_orig = validate_domain_list(domains_combined_orig)
     eprint('%d validated blacklisted domains', len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
 
-    domains_combined = copy.deepcopy(domains_combined_orig)
+    domains_combined = copy.deepcopy(domains_combined_orig) # need to iterate through _orig later
 
     if block_at_tld:
         domains_combined = strip_to_tld(domains_combined)
@@ -371,7 +372,7 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
         eprint("subtracting %d explicitely whitelisted domains so that the not explicitely whitelisted subdomains" +
-                "that existed (and were blocked) before the TLD stripping can be re-added to the generated blacklist",
+                " that existed (and were blocked) before the TLD stripping can be re-added to the generated blacklist",
                 len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
         domains_combined = domains_combined - domains_whitelist
         eprint("%d unique blacklisted domains left after subtracting the whitelist",
@@ -379,17 +380,17 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
         eprint('iterating through the original %d blacklisted domains and re-adding subdomains' +
                 ' that are not whitelisted', len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
-        #re-add subdomains that are not explicitly whitelisted or already blocked
-        for orig_domain in domains_combined_orig: #check every original full hostname
-            if orig_domain not in domains_whitelist: #if it's not in the whitelist
-                if orig_domain not in domains_combined: #and it's not in the current blacklist
-                                                        #(almost none will be if --block-at-tld)
-                    orig_domain_tldextract = domain_extract(orig_domain) #get it's tld to see if it's
-                                                                         #already blocked by a dnsmasq * rule
+        # re-add subdomains that are not explicitly whitelisted or already blocked
+        for orig_domain in domains_combined_orig: # check every original full hostname
+            if orig_domain not in domains_whitelist: # if it's not in the whitelist
+                if orig_domain not in domains_combined: # and it's not in the current blacklist
+                                                        # (almost none will be if --block-at-tld)
+                    orig_domain_tldextract = domain_extract(orig_domain) # get it's tld to see if it's
+                                                                         # already blocked by a dnsmasq * rule
                     orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
-                    if orig_domain_tld not in domains_combined: #if the tld is not already blocked
+                    if orig_domain_tld not in domains_combined: # if the tld is not already blocked
                         eprint("re-adding: %s", orig_domain, log_level=ld.LOG_LEVELS['DEBUG'])
-                        domains_combined.add(orig_domain) #add the full hostname to the blacklist
+                        domains_combined.add(orig_domain) # add the full hostname to the blacklist
 
         eprint("%d unique blacklisted domains after re-adding non-explicitely blacklisted subdomains",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
@@ -399,7 +400,7 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     eprint("%d unique blacklisted domains after subtracting the %d whitelisted domains",
             len(domains_combined), len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
 
-    #this must happen after tld stripping and after whitelist subtraction
+    # must happen after tld stripping and after whitelist subtraction
     if DEFAULT_BLACKLIST in blacklist:
         blacklist_file = os.path.abspath(DEFAULT_BLACKLIST)
         domains = read_list_of_domains(blacklist_file)
@@ -448,7 +449,6 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     if restart_dnsmasq:
         if mode != 'hosts':
             restart_dnsmasq_service()
-
 
 if __name__ == '__main__':
     dnsgate()
