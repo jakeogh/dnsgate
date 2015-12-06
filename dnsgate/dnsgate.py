@@ -4,8 +4,7 @@
 
 # PUBLIC DOMAIN
 # http://github.com/jkeogh/dnsgate
-
-__version__ = "0.1.0"
+__version__ = "0.0.1"
 
 import click
 import copy
@@ -22,7 +21,7 @@ from shutil import copyfileobj
 from logdecorator import logdecorator as ld
 
 if '--debug' not in sys.argv:
-    ld.logger.setLevel(ld.LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug if off
+    ld.logger.setLevel(ld.LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug is off
 
 no_cache_extract = tldextract.TLDExtract(cache_file=False)
 
@@ -59,7 +58,6 @@ def remove_comments(line):
             break
     return uncommented_line
 
-#@ld.log_prefix()
 def extract_domains_from_bytes_list(domain_bytes):
     domains = set()
     for line in domain_bytes:
@@ -293,7 +291,8 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
         if noclobber:
-            ld.logger.error("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting.", output_file)
+            ld.logger.error("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting.",
+                output_file)
             quit(1)
 
     eprint('using output_file: %s', output_file, log_level=ld.LOG_LEVELS['INFO'])
@@ -326,7 +325,7 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     eprint("reading whitelist(s): %s", str(whitelist), log_level=ld.LOG_LEVELS['INFO'])
     for item in whitelist:
         whitelist_file = os.path.abspath(item)
-        domains_whitelist = domains_whitelist|read_list_of_domains(whitelist_file)
+        domains_whitelist = domains_whitelist | read_list_of_domains(whitelist_file)
 
     if domains_whitelist:
         eprint("%d unique domains from the whitelist(s)", len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
@@ -339,9 +338,10 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 eprint("trying http:// blacklist location: %s", item, log_level=ld.LOG_LEVELS['DEBUG'])
                 domains = get_url(item, cache)
                 if domains:
-                    domains_combined_orig = domains_combined_orig|domains # union
+                    domains_combined_orig = domains_combined_orig | domains # union
                     eprint("blacklist: %s", blacklist, log_level=ld.LOG_LEVELS['DEBUG'])
-                    eprint("len(domains_combined_orig): %s", len(domains_combined_orig), log_level=ld.LOG_LEVELS['DEBUG'])
+                    eprint("len(domains_combined_orig): %s",
+                        len(domains_combined_orig), log_level=ld.LOG_LEVELS['DEBUG'])
                 else:
                     ld.logger.error('failed to get %s, skipping.', item)
                     continue
@@ -356,14 +356,9 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             domains = read_list_of_domains(blacklist_file)
             eprint("got %s domains from %s", domains, blacklist_file, log_level=ld.LOG_LEVELS['DEBUG'])
             if domains:
-                domains_combined_orig = domains_combined_orig|domains # union
+                domains_combined_orig = domains_combined_orig | domains # union
 
     eprint("%d unique domains from the blacklist(s)", len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
-
-    domains_combined_orig = domains_combined_orig - domains_whitelist  # remove exact whitelist matches
-
-    eprint("%d unique blacklisted domains after subtracting the %d whitelisted domains",
-            len(domains_combined_orig), len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)
     eprint('%d validated blacklisted domains', len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
@@ -374,14 +369,17 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         domains_combined = strip_to_tld(domains_combined)
         eprint("%d blacklisted unique domains left after stripping to TLD's",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
-        eprint("subtracting %d explicitely whitelisted domains", len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
+
+        eprint("subtracting %d explicitely whitelisted domains so that the not explicitely whitelisted subdomains" +
+                "that existed (and were blocked) before the TLD stripping can be re-added to the generated blacklist",
+                len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
         domains_combined = domains_combined - domains_whitelist
         eprint("%d unique blacklisted domains left after subtracting the whitelist",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
         eprint('iterating through the original %d blacklisted domains and re-adding subdomains' +
                 ' that are not whitelisted', len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
-        #re-add subdomains that are not explicitly whitelisted or already blocked by another rule
+        #re-add subdomains that are not explicitly whitelisted or already blocked
         for orig_domain in domains_combined_orig: #check every original full hostname
             if orig_domain not in domains_whitelist: #if it's not in the whitelist
                 if orig_domain not in domains_combined: #and it's not in the current blacklist
@@ -396,14 +394,21 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         eprint("%d unique blacklisted domains after re-adding non-explicitely blacklisted subdomains",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
-    #this must happen after tld stripping
+    # apply whitelist before applying local blacklist
+    domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches
+    eprint("%d unique blacklisted domains after subtracting the %d whitelisted domains",
+            len(domains_combined), len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
+
+    #this must happen after tld stripping and after whitelist subtraction
     if DEFAULT_BLACKLIST in blacklist:
-        eprint("re-adding domains in the local blacklist %s to override the whitelist",
-                DEFAULT_BLACKLIST, log_level=ld.LOG_LEVELS['INFO'])
         blacklist_file = os.path.abspath(DEFAULT_BLACKLIST)
         domains = read_list_of_domains(blacklist_file)
-        eprint("got %s domains from %s", domains, blacklist_file, log_level=ld.LOG_LEVELS['DEBUG'])
         if domains:
+            eprint("got %s domains from the DEFAULT_BLACKLIST: %s",
+                domains, blacklist_file, log_level=ld.LOG_LEVELS['DEBUG'])
+            eprint("re-adding %d domains in the local blacklist %s to override the whitelist",
+                len(domains), DEFAULT_BLACKLIST, log_level=ld.LOG_LEVELS['INFO'])
+
             domains_combined = domains_combined | domains # union
 
         eprint("%d unique blacklisted domains after re-adding the custom blacklist",
