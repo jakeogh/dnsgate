@@ -80,7 +80,7 @@ def run_command(command_list, show=False):
     command = b'\n$ ' + b' '.join(command_list)
     if command.startswith(b'\n$ ..'):
         command = command.replace(b'\n$ ..', b'\n$ .')
-        command = command.replace(b'dnsgate.py', b'dnsgate')
+        command = command.replace(b'dnsgate/dnsgate.py', b'dnsgate')
     command = command.decode('UTF8')
     if show:
         print(' ', command)
@@ -91,17 +91,17 @@ def run_command(command_list, show=False):
 
 
 if __name__ == '__main__':
-    dnsgate_help = [b'../dnsgate.py', b'--help']
-    dnsmasq_example = [b'../dnsgate.py']
-    dnsmasq_example_install_help = [b'../dnsgate.py', b'--install-help']
-    dnsmasq_example_show_config = [b'../dnsgate.py', b'--show-config']
-    dnsmasq_example_verbose = [b'../dnsgate.py', b'--verbose']
-    dnsmasq_example_verbose_block_at_tld = [b'../dnsgate.py', b'--verbose', b'--block-at-tld']
+    dnsgate_help = [b'../dnsgate/dnsgate.py', b'--help']
+    dnsmasq_example = [b'../dnsgate/dnsgate.py']
+    dnsmasq_example_install_help = [b'../dnsgate/dnsgate.py', b'--install-help']
+    dnsmasq_example_show_config = [b'../dnsgate/dnsgate.py', b'--show-config']
+    dnsmasq_example_verbose = [b'../dnsgate/dnsgate.py', b'--verbose']
+    dnsmasq_example_verbose_block_at_tld = [b'../dnsgate/dnsgate.py', b'--verbose', b'--block-at-tld']
 
-    hosts_example = [b'../dnsgate.py', b'--mode', b'hosts']
-    hosts_example_install_help = [b'../dnsgate.py', b'--mode', b'hosts', b'--install-help']
-    hosts_example_show_config = [b'../dnsgate.py', b'--mode', b'hosts', b'--show-config']
-    hosts_example_verbose = [b'../dnsgate.py', b'--mode', b'hosts', b'--verbose']
+    hosts_example = [b'../dnsgate/dnsgate.py', b'--mode', b'hosts']
+    hosts_example_install_help = [b'../dnsgate/dnsgate.py', b'--mode', b'hosts', b'--install-help']
+    hosts_example_show_config = [b'../dnsgate/dnsgate.py', b'--mode', b'hosts', b'--show-config']
+    hosts_example_verbose = [b'../dnsgate/dnsgate.py', b'--mode', b'hosts', b'--verbose']
 
     print(preamble)
     print(code_sep)

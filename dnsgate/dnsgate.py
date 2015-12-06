@@ -215,6 +215,9 @@ def extract_domain_set_from_hosts_format_bytes(hosts_format_bytes):
             domains.add(line)
     return domains
 
+def print_hex(text):
+    print(':'.join(hex(ord(x))[2:] for x in text))
+
 OUTPUT_FILE_HELP = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
 NOCLOBBER_HELP = '''do not overwrite existing output file'''
 BACKUP_HELP = '''backup output file before overwriting'''
@@ -340,7 +343,6 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 domains = extract_domain_set_from_hosts_format_url(item, cache)
                 if domains:
                     domains_combined_orig = domains_combined_orig | domains # union
-                    eprint("blacklist: %s", blacklist, log_level=ld.LOG_LEVELS['DEBUG'])
                     eprint("len(domains_combined_orig): %s",
                         len(domains_combined_orig), log_level=ld.LOG_LEVELS['DEBUG'])
                 else:
@@ -349,9 +351,9 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             except Exception as e:
                 ld.logger.error("Exception on blacklist url: %s", item)
                 ld.logger.exception(e)
-    else:
-        ld.logger.error("%s must start with http:// or https://, skipping.")
-        pass
+        else:
+            ld.logger.error("%s must start with http:// or https://, skipping.", item)
+            pass
 
     eprint("%d unique domains from the remote blacklist(s)", len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
 

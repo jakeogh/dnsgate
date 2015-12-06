@@ -15,19 +15,18 @@ Has the effect of returning 127.0.0.1 for all google.com domains. Rather than re
 ```
 echo 'server=/.google.com/' >> /etc/dnsmasq.conf
 ```
-This instead returns NXDOMAIN, which is dnsgate's default behavior in dnsmasq mode.
+This instead returns NXDOMAIN on *.google.com. Returning NXDOMAIN is dnsgate's default behavior in dnsmasq mode.
 
 Said another way, conventional `/etc/hosts` blocking can't use wildcards (*) and therefore requires the user to keep track of each subdomain / domain combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people [1] keep track of the subdomains for you. If you want to block a specific domain completely, use dnsmasq.
 
 With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option strips domains to their TLD, removing the need to manually specify/track specific subdomains. `--block-at-tld` may block TLD's you want to use, so use it with `--whitelist`.
 
 **Features:**
-
-* **Wildcard Blocking** Optionally block full TLD's instead of individual subdomains (dnsmasq mode only).
+* **Wildcard Blocking** --block-at-tld will block TLD's instead of individual subdomains (dnsmasq mode only).
 * **System-wide.** All programs that use the local DNS resolver benefit.
 * **Non-interactive.** Can be run as a periodic cron job.
 * **Fully Configurable.** See ./dnsgate --help (TODO, add /etc/dnsgate/config file support)
-* **Custom Lists.** Use /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
+* **Custom Lists.** See /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
 * **Return NXDOMAIN.** Rather than redirect the request to 127.0.0.1, NXDOMAIN is returned. (dnsmasq mode only).
 * **Return Custom IP.** --dest-ip allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode)
 * **Installation Support.** see --install-help
@@ -41,7 +40,7 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
- - python3.x
+ - python3 (tested on 3.4)
  - [click](https://github.com/mitsuhiko/click)
  - [tldextract](https://github.com/john-kurkowski/tldextract)
  - [colorama](https://github.com/tartley/colorama)
@@ -66,9 +65,6 @@ Options:
                            blacklist(s) defaults to:
                                http://winhelp2002.mvps.org/hosts.txt
                                http://someonewhocares.org/hosts/hosts
-                               /etc/dnsgate/blacklist
-  --whitelist TEXT        
-                           whitelists(s) defaults to:/etc/dnsgate/whitelist
   --cache                  cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache
   --dest-ip TEXT           IP to redirect blocked connections to (defaults to 127.0.0.1)
   --show-config            print config information to stderr
@@ -94,8 +90,7 @@ backup: False
 noclobber: False
 blacklist_append: None
 whitelist_append: None
-blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-whitelist: ['/etc/dnsgate/whitelist']
+blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 cache: False
 dest_ip: None
 debug: False
@@ -108,17 +103,22 @@ verbose: False
   
 $ ./dnsgate --verbose
 using output_file: /etc/dnsgate/generated_blacklist
-reading whitelist(s): ['/etc/dnsgate/whitelist']
-72 unique domains from the whitelist(s)
-reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-23337 unique domains from the blacklist(s)
-23335 unique blacklisted domains after subtracting the 72 whitelisted domains
-validating 23335 domains
-23335 validated blacklisted domains
-re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
+reading whitelist: /etc/dnsgate/whitelist
+74 unique domains from the whitelist
+validating 74 domains
+74 validated whitelist domains
+reading remote blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+23323 unique domains from the remote blacklist(s)
+validating 23323 domains
+23323 validated remote blacklisted domains
+23322 unique blacklisted domains after subtracting the 74 whitelisted domains
+re-adding 19 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
 23336 unique blacklisted domains after re-adding the custom blacklist
 sorting domains by their subdomain and grouping by TLD
 final blacklisted domain count: 23336
+validating final domain block list
+validating 23336 domains
+23336 validated blacklisted domains
 writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
@@ -128,23 +128,28 @@ writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
 ```  
 $ ./dnsgate --verbose --block-at-tld
 using output_file: /etc/dnsgate/generated_blacklist
-reading whitelist(s): ['/etc/dnsgate/whitelist']
-72 unique domains from the whitelist(s)
-reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-23337 unique domains from the blacklist(s)
-23335 unique blacklisted domains after subtracting the 72 whitelisted domains
-validating 23335 domains
-23335 validated blacklisted domains
-removing subdomains on 23335 domains
-10443 blacklisted unique domains left after stripping to TLD's
-subtracting 72 explicitely whitelisted domains
-10380 unique blacklisted domains left after subtracting the whitelist
-iterating through the original 23335 blacklisted domains and re-adding subdomains that are not whitelisted
-10625 unique blacklisted domains after re-adding non-explicitely blacklisted subdomains
-re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
-10628 unique blacklisted domains after re-adding the custom blacklist
+reading whitelist: /etc/dnsgate/whitelist
+74 unique domains from the whitelist
+validating 74 domains
+74 validated whitelist domains
+reading remote blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+23323 unique domains from the remote blacklist(s)
+validating 23323 domains
+23323 validated remote blacklisted domains
+removing subdomains on 23323 domains
+10438 blacklisted unique domains left after stripping to TLD's
+subtracting 74 explicitely whitelisted domains so that the not explicitely whitelisted subdomains that existed (and were blocked) before the TLD stripping can be re-added to the generated blacklist
+10375 unique blacklisted domains left after subtracting the whitelist
+iterating through the original 23323 blacklisted domains and re-adding subdomains that are not whitelisted
+10620 unique blacklisted domains after re-adding non-explicitely blacklisted subdomains
+10620 unique blacklisted domains after subtracting the 74 whitelisted domains
+re-adding 19 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
+10627 unique blacklisted domains after re-adding the custom blacklist
 sorting domains by their subdomain and grouping by TLD
-final blacklisted domain count: 10628
+final blacklisted domain count: 10627
+validating final domain block list
+validating 10627 domains
+10627 validated blacklisted domains
 writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
@@ -153,7 +158,7 @@ writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449214453.8919742
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1449432296.5588517
     $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -171,8 +176,7 @@ backup: False
 noclobber: False
 blacklist_append: None
 whitelist_append: None
-blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-whitelist: ['/etc/dnsgate/whitelist']
+blacklist: ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 cache: False
 dest_ip: None
 debug: False
@@ -183,18 +187,23 @@ verbose: False
   
 $ ./dnsgate --mode hosts --verbose
 using output_file: /etc/dnsgate/generated_blacklist
-reading whitelist(s): ['/etc/dnsgate/whitelist']
-72 unique domains from the whitelist(s)
-reading blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts', '/etc/dnsgate/blacklist']
-23337 unique domains from the blacklist(s)
-23335 unique blacklisted domains after subtracting the 72 whitelisted domains
-validating 23335 domains
-23335 validated blacklisted domains
-re-adding domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
+reading whitelist: /etc/dnsgate/whitelist
+74 unique domains from the whitelist
+validating 74 domains
+74 validated whitelist domains
+reading remote blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+23323 unique domains from the remote blacklist(s)
+validating 23323 domains
+23323 validated remote blacklisted domains
+23322 unique blacklisted domains after subtracting the 74 whitelisted domains
+re-adding 19 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist
 23336 unique blacklisted domains after re-adding the custom blacklist
 sorting domains by their subdomain and grouping by TLD
 final blacklisted domain count: 23336
-writing output file: /etc/dnsgate/generated_blacklist in /etc/hosts format
+validating final domain block list
+validating 23336 domains
+23336 validated blacklisted domains
+writing output file: /etc/dnsgate/generated_blacklist in hosts format
 ``` 
 **/etc/hosts install help:**
  
@@ -207,19 +216,16 @@ $ ./dnsgate --mode hosts --install-help
 
 
 **More Information:**
-
  - https://news.ycombinator.com/item?id=10572700
  - https://news.ycombinator.com/item?id=10369516
 
 **Related Software:**
-
  - https://github.com/gaenserich/hostsblock (bash)
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
  - https://github.com/StevenBlack/hosts (TODO, use this)
 
 **Simple Software:**
-
 If you find this useful you may appreciate:
 
  - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
