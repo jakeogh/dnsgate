@@ -56,6 +56,7 @@ def remove_comments(line):
             break
     return uncommented_line
 
+@ld.log_prefix(show_args=False)
 def extract_domains_from_bytes_list(domain_bytes):
     domains = set()
     for line in domain_bytes:
@@ -116,6 +117,7 @@ def get_url(url, cache=False):
     eprint("domains in %s:%s", url, len(domains), log_level=ld.LOG_LEVELS['DEBUG'])
     return domains
 
+@ld.log_prefix(show_args=False)
 def group_by_tld(domains):
     eprint('sorting domains by their subdomain and grouping by TLD', log_level=ld.LOG_LEVELS['INFO'])
     sorted_output = []
@@ -143,6 +145,7 @@ def domain_extract(domain):
     dom = no_cache_extract(domain)  #prevent tldextract cache update error when run as a normal user
     return dom
 
+@ld.log_prefix(show_args=False)
 def strip_to_tld(domains):
     '''This causes ad-serving domains to be blocked at their TLD.
     Otherwise the subdomain can be changed until the --url lists are updated.
@@ -174,6 +177,7 @@ def backup_file_if_exists(file):
     except FileNotFoundError:
         pass    # skip backup is file does not exist
 
+@ld.log_prefix(show_args=False)
 def validate_domain_list(domains):
     eprint('validating %d domains', len(domains), log_level=ld.LOG_LEVELS['INFO'])
     valid_domains = set([])
