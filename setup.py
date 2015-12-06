@@ -6,7 +6,7 @@ Combine and manage DNS blacklists.
 import re
 from setuptools import find_packages, setup
 
-dependencies = ['click']
+dependencies = ['click', 'requests', 'logdecorator']
 
 version = re.search(
     '^__version__\s*=\s*"(.*)"',
@@ -15,8 +15,8 @@ version = re.search(
     ).group(1)
 
 
-with open("README.rst", "rb") as f:
-    long_descr = f.read().decode("utf-8")
+#with open("README.rst", "rb") as f:
+#    long_descr = f.read().decode("utf-8")
 
 
 setup(
@@ -35,7 +35,7 @@ setup(
     install_requires=dependencies,
     entry_points={
         'console_scripts': [
-            'dnsgate = dnsgate.dnsgate:main',
+            'dnsgate = dnsgate.dnsgate:dnsgate',
         ],
     },
 #   long_description = long_descr,
