@@ -12,12 +12,10 @@ import time
 import sys
 import os
 import shutil
-import inspect
 import requests
 import tldextract
 from urllib.parse import urlparse
 from shutil import copyfileobj
-#from debug_logging import ld.log_prefix, logger, logger_quiet, print_traceback, ld.LOG_LEVELS
 from logdecorator import logdecorator as ld
 
 if '--debug' not in sys.argv:
@@ -200,6 +198,17 @@ def hosts_install_help(output_file):
     print('    $ cat /etc/hosts.default ' + output_file + ' > /etc/hosts', file=sys.stderr)
     quit(0)
 
+# idn='☃.net'
+@ld.log_prefix()
+def custom_list_append(domain_file, domain):
+    eprint("attempting to append %s to %s", domain, domain_file, log_level=ld.LOG_LEVELS['INFO'])
+    idn = domain
+    eprint("idn: %s", idn, log_level=ld.LOG_LEVELS['DEBUG'])
+    hostname = idn.encode('idna').decode('ascii')
+    eprint("appending hostname: %s to %s", hostname, domain_file, log_level=ld.LOG_LEVELS['DEBUG'])
+    line = hostname + '\n'
+    write_unique_line(line, domain_file)
+
 OUTPUT_FILE_HELP = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
 NOCLOBBER_HELP = '''do not overwrite existing output file'''
 BACKUP_HELP = '''backup output file before overwriting'''
@@ -303,23 +312,11 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         elif mode == 'hosts':
             hosts_install_help(output_file)
 
-#   idn='☃.net'
     if whitelist_append:
-        eprint("attempting to append %s to %s", whitelist_append, DEFAULT_WHITELIST, log_level=ld.LOG_LEVELS['INFO'])
-        idn = whitelist_append
-        eprint("idn: %s", idn, log_level=ld.LOG_LEVELS['DEBUG'])
-        hostname = idn.encode('idna').decode('ascii')
-        eprint("appending hostname: %s to %s", hostname, DEFAULT_WHITELIST, log_level=ld.LOG_LEVELS['DEBUG'])
-        line = hostname + '\n'
-        write_unique_line(line, DEFAULT_WHITELIST)
+        custom_list_append(DEFAULT_WHITELIST, whitelist_append)
 
     if blacklist_append:
-        eprint("attempting to append %s to %s", blacklist_append, DEFAULT_BLACKLIST, log_level=ld.LOG_LEVELS['INFO'])
-        idn = blacklist_append
-        hostname = idn.encode('idna').decode('ascii')
-        eprint("appending hostname: %s to %s", hostname, DEFAULT_BLACKLIST, log_level=ld.LOG_LEVELS['DEBUG'])
-        line = hostname + '\n'
-        write_unique_line(line, DEFAULT_BLACKLIST)
+        custom_list_append(DEFAULT_BLACKLIST, blacklist_append)
 
     domains_whitelist = set()
     eprint("reading whitelist(s): %s", str(whitelist), log_level=ld.LOG_LEVELS['INFO'])
@@ -409,9 +406,7 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
                 domains, blacklist_file, log_level=ld.LOG_LEVELS['DEBUG'])
             eprint("re-adding %d domains in the local blacklist %s to override the whitelist",
                 len(domains), DEFAULT_BLACKLIST, log_level=ld.LOG_LEVELS['INFO'])
-
             domains_combined = domains_combined | domains # union
-
         eprint("%d unique blacklisted domains after re-adding the custom blacklist",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
