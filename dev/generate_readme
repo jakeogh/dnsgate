@@ -41,7 +41,7 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 * **IDN Support.** What to block snowman? ./dnsgate --blacklist-append xn--n3h.net
 
 **Features TODO:**
-* **Downloaded Caching.** Optionally cache and re-use downloaded blacklists instead of re-fetching each time (configurable timeout, see --cache-timeout) (partially done).
+* **Download Caching.** Optionally cache and re-use downloaded blacklists instead of re-fetching each time (configurable timeout, see --cache-timeout) (partially done).
 * **Full Test Coverage.**
 * **Fully-interactive.** Can be run as an interactive wizard. See --interactive (TODO).
 

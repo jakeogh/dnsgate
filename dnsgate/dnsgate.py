@@ -9,6 +9,8 @@ __version__ = "0.0.1"
 import click
 import copy
 import time
+import glob
+import hashlib
 import sys
 import os
 import shutil
@@ -29,6 +31,7 @@ CUSTOM_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
 CUSTOM_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
 DEFAULT_REMOTE_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+DEFAULT_CACHE_EXPIRE = 3600*12  #12 hours
 
 def eprint(*args, log_level, **kwargs):
     if click_debug:
@@ -45,10 +48,18 @@ def restart_dnsmasq_service():
         ret = os.system('systemctl restart dnsmasq')    # untested
     return True
 
-def remove_comments(line):
-    uncommented_line = ''
+@ld.log_prefix()
+def hash_str(string):
+    assert(isinstance(string, str))
+    assert len(string) > 0
+    return hashlib.sha1(string.encode('utf-8')).hexdigest()
+
+def remove_comments_from_bytes(line):
+    assert isinstance(line, bytes)
+    uncommented_line = b''
     for char in line:
-        if char != '#':
+        char = bytes([char])
+        if char != b'#':
             uncommented_line += char
         else:
             break
@@ -60,18 +71,23 @@ def group_by_tld(domains):
     sorted_output = []
     reversed_domains = []
     for domain in domains:
-        rev_domain = domain.split('.')
+#       print(type(domain))
+        rev_domain = domain.split(b'.')
         rev_domain.reverse()
         reversed_domains.append(rev_domain)
     reversed_domains.sort() #sorting a list of lists by the tld
     for rev_domain in reversed_domains:
         rev_domain.reverse()
-        sorted_output.append('.'.join(rev_domain))
+        sorted_output.append(b'.'.join(rev_domain))
     return sorted_output
 
-def domain_extract(domain):
-    dom = NO_CACHE_EXTRACT(domain)  #prevent tldextract cache update error when run as a normal user
-    return dom
+def domain_tld_extract(domain):
+    dom = NO_CACHE_EXTRACT(domain.decode('utf-8'))  #prevent tldextract cache update error when run as a normal user
+    dom = dom.domain + '.' + dom.suffix
+#    print(type(dom))
+#    print(dir(dom))
+#    print(dom)
+    return dom.encode('utf-8')
 
 @ld.log_prefix(show_args=False)
 def strip_to_tld(domains):
@@ -83,8 +99,8 @@ def strip_to_tld(domains):
     eprint('removing subdomains on %d domains', len(domains), log_level=ld.LOG_LEVELS['INFO'])
     domains_stripped = set()
     for line in domains:
-        line = domain_extract(line)             # get tld
-        line = line.domain + '.' + line.suffix
+        line = domain_tld_extract(line)             # get tld
+#       line = line.domain + '.' + line.suffix
         domains_stripped.add(line)
     return domains_stripped
 
@@ -111,8 +127,9 @@ def validate_domain_list(domains):
     valid_domains = set([])
     for hostname in domains:
         try:
+            hostname = hostname.decode('utf-8')
             hostname = hostname.encode('idna').decode('ascii')
-            valid_domains.add(hostname)
+            valid_domains.add(hostname.encode('utf-8'))
         except Exception as e:
             ld.logger.exception(e)
     return valid_domains
@@ -148,14 +165,16 @@ def extract_domain_set_from_dnsgate_format_file(dnsgate_file):
     domains = set([])
     dnsgate_file = os.path.abspath(dnsgate_file)
     try:
-        lines = read_file_bytes(dnsgate_file).splitlines()
+        dnsgate_file_bytes = read_file_bytes(dnsgate_file)
     except Exception as e:
         ld.logger.exception(e)
     else:
+        lines = dnsgate_file_bytes.splitlines()
         for line in lines:
             line = line.strip()
-            line = remove_comments(line)
-            line = '.'.join(list(filter(None, line.split('.')))) # ignore leading/trailing .
+            line = remove_comments_from_bytes(line)
+#           line = line.decode('utf-8')
+            line = b'.'.join(list(filter(None, line.split(b'.')))) # ignore leading/trailing .
             if len(line) > 0:
                 domains.add(line)
     return set(domains)
@@ -163,11 +182,22 @@ def extract_domain_set_from_dnsgate_format_file(dnsgate_file):
 @ld.log_prefix()
 def read_file_bytes(file):
     if os.path.isfile(file):
-        with open(file, 'r') as fh:
+        with open(file, 'rb') as fh:
             file_bytes = fh.read()
         return file_bytes
     else:
         raise FileNotFoundError(file + ' does not exist.')
+
+@ld.log_prefix()
+def extract_domain_set_from_hosts_format_url_or_cached_copy(url, cache=False):
+    unexpired_copy = get_newest_unexpired_cached_url_copy(url)
+    print("unexpired_copy:", unexpired_copy)
+    if unexpired_copy:
+        unexpired_copy_bytes = read_file_bytes(unexpired_copy)
+        assert isinstance(unexpired_copy_bytes, bytes)
+        return extract_domain_set_from_hosts_format_bytes(unexpired_copy_bytes)
+    else:
+        return extract_domain_set_from_hosts_format_url(url, cache)
 
 @ld.log_prefix()
 def extract_domain_set_from_hosts_format_url(url, cache=False):
@@ -177,21 +207,48 @@ def extract_domain_set_from_hosts_format_url(url, cache=False):
     return domains
 
 @ld.log_prefix()
+def generate_cache_file_name(url):
+    url_hash = hash_str(url)
+    file_name = CACHE_DIRECTORY + '/' + url_hash + '_hosts.' + str(time.time())
+    return file_name
+
+@ld.log_prefix()
+def get_newest_cached_url_copy(url):
+    matches = get_matching_cached_files(url)
+    return sorted(matches, key = lambda x: int(x.split(".")[1]))[-1]
+
+@ld.log_prefix()
+def get_newest_unexpired_cached_url_copy(url):
+    newest_copy = get_newest_cached_url_copy(url)
+    newest_copy_timestamp = newest_copy.split('.')[-2:-1][0]
+    expiration_timestamp = int(newest_copy_timestamp) + int(click_cache_expire)
+    if expiration_timestamp > time.time():
+        return newest_copy
+    else:
+        return False
+
+@ld.log_prefix()
+def get_matching_cached_files(url):
+    to_glob = generate_cache_file_name(url).split('.')[0]
+    to_glob = to_glob + '*'
+    #print(to_glob)
+    return glob.glob(to_glob)
+
+@ld.log_prefix()
 def read_url_bytes(url, cache=False):
     eprint("GET: %s", url, log_level=ld.LOG_LEVELS['DEBUG'])
     user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
     try:
         raw_url_bytes = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,
-                               stream=False, timeout=15.500).content
+                        stream=False, timeout=15.500).content
     except Exception as e:
         ld.logger.exception(e)
         return False
     if cache:
-        domain = urlparse(url).netloc
-        output_file = CACHE_DIRECTORY + '/' + 'dnsgate_cache_' + domain + '_hosts.' + str(time.time())
+        output_file = generate_cache_file_name(url)
         if not os.path.isdir(CACHE_DIRECTORY):
             os.makedirs(CACHE_DIRECTORY)
-        with open(output_file, 'wb') as fh:
+        with open(output_file, 'xb') as fh:
             fh.write(raw_url_bytes)
 
     eprint("returning %d bytes from %s", len(raw_url_bytes), url, log_level=ld.LOG_LEVELS['DEBUG'])
@@ -199,24 +256,22 @@ def read_url_bytes(url, cache=False):
 
 @ld.log_prefix(show_args=False)
 def extract_domain_set_from_hosts_format_bytes(hosts_format_bytes):
+    assert isinstance(hosts_format_bytes, bytes)
     domains = set()
     hosts_format_bytes_lines = hosts_format_bytes.split(b'\n')
     for line in hosts_format_bytes_lines:
-        line = line.decode('UTF-8')
-        line = line.replace('\t', ' ')          # expand tabs
-        line = ' '.join(line.split())           # collapse whitespace
+#       line = line.decode('UTF-8')
+        line = line.replace(b'\t', b' ')          # expand tabs
+        line = b' '.join(line.split())           # collapse whitespace
         line = line.strip()
-        line = remove_comments(line)
-        if ' ' in line:                         # hosts format
-            line = line.split(' ')[1]           # get DNS name (the url's are in hosts 0.0.0.0 dom.com format)
+        line = remove_comments_from_bytes(line)
+        if b' ' in line:                         # hosts format
+            line = line.split(b' ')[1]           # get DNS name (the url's are in hosts 0.0.0.0 dom.com format)
             # pylint: disable=bad-builtin
-            line = '.'.join(list(filter(None, line.split('.'))))    # ignore leading/trailing .
+            line = b'.'.join(list(filter(None, line.split(b'.'))))    # ignore leading/trailing .
             # pylint: enable=bad-builtin
             domains.add(line)
     return domains
-
-def print_hex(text):
-    print(':'.join(hex(ord(x))[2:] for x in text))
 
 OUTPUT_FILE_HELP = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
 NOCLOBBER_HELP = '''do not overwrite existing output file'''
@@ -238,6 +293,7 @@ DEBUG_HELP = '''print debugging information to stderr'''
 VERBOSE_HELP = '''print more information to stderr'''
 SHOW_CONFIG_HELP = '''print config information to stderr'''
 CACHE_HELP = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
+CACHE_EXPIRE_HELP = '''seconds until a cached remote file is re-downloaded'''
 DEST_IP_HELP = '''IP to redirect blocked connections to (defaults to 127.0.0.1)'''
 RESTART_DNSMASQ_HELP = '''Restart dnsmasq service (defaults to True, ignored if --mode hosts)'''
 BLACKLIST_APPEND_HELP = '''Add domain to ''' + CUSTOM_BLACKLIST
@@ -256,6 +312,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--whitelist-append', is_flag=False, help=WHITELIST_APPEND_HELP, type=str)
 @click.option('--blacklist',        is_flag=False, help=BLACKLIST_HELP, default=DEFAULT_REMOTE_BLACKLIST_SOURCES)
 @click.option('--cache',            is_flag=True,  help=CACHE_HELP)
+@click.option('--cache-expire',     is_flag=False, help=CACHE_EXPIRE_HELP, type=int, default=DEFAULT_CACHE_EXPIRE)
 @click.option('--dest-ip',          is_flag=False, help=DEST_IP_HELP)
 @click.option('--show-config',      is_flag=True,  help=SHOW_CONFIG_HELP)
 @click.option('--install-help',     is_flag=True,  help=INSTALL_HELP_HELP)
@@ -263,8 +320,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--verbose',          is_flag=True,  help=VERBOSE_HELP)
 @ld.log_prefix()
 def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
-            blacklist_append, whitelist_append, blacklist,
-            cache, dest_ip, show_config, install_help, debug, verbose):
+            blacklist_append, whitelist_append, blacklist, cache, cache_expire,
+            dest_ip, show_config, install_help, debug, verbose):
 
     if show_config:
         print("mode:", mode)
@@ -283,6 +340,9 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         print("install_help:", install_help)
         print("debug:", debug)
         print("verbose:", verbose)
+
+    global click_cache_expire
+    click_cache_expire = cache_expire
 
     global click_debug
     click_debug = debug
@@ -340,7 +400,7 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         if item.startswith('http'):
             try:
                 eprint("trying http:// blacklist location: %s", item, log_level=ld.LOG_LEVELS['DEBUG'])
-                domains = extract_domain_set_from_hosts_format_url(item, cache)
+                domains = extract_domain_set_from_hosts_format_url_or_cached_copy(item, cache)
                 if domains:
                     domains_combined_orig = domains_combined_orig | domains # union
                     eprint("len(domains_combined_orig): %s",
@@ -381,9 +441,9 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
             if orig_domain not in domains_whitelist: # if it's not in the whitelist
                 if orig_domain not in domains_combined: # and it's not in the current blacklist
                                                         # (almost none will be if --block-at-tld)
-                    orig_domain_tldextract = domain_extract(orig_domain) # get it's tld to see if it's
+                    orig_domain_tld = domain_tld_extract(orig_domain) # get it's tld to see if it's
                                                                          # already blocked by a dnsmasq * rule
-                    orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
+#                   orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
                     if orig_domain_tld not in domains_combined: # if the tld is not already blocked
                         eprint("re-adding: %s", orig_domain, log_level=ld.LOG_LEVELS['DEBUG'])
                         domains_combined.add(orig_domain) # add the full hostname to the blacklist
@@ -429,19 +489,19 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
     eprint("writing output file: %s in %s format", output_file, mode, log_level=ld.LOG_LEVELS['INFO'])
     try:
-        with open(output_file, 'w') as fh:
+        with open(output_file, 'wb') as fh:
             for domain in domains_combined:
                 if mode == 'dnsmasq':
                     if dest_ip:
-                        dnsmasq_line = 'address=/.' + domain + '/' + dest_ip + '\n'
+                        dnsmasq_line = b'address=/.' + domain + b'/' + dest_ip + b'\n'
                     else:
-                        dnsmasq_line = 'server=/.' + domain + '/' '\n'  #return NXDOMAIN
+                        dnsmasq_line = b'server=/.' + domain + b'/' b'\n'  #return NXDOMAIN
                     fh.write(dnsmasq_line)
                 elif mode == 'hosts':
                     if dest_ip:
-                        hosts_line = dest_ip + ' ' + domain + '\n'
+                        hosts_line = dest_ip + b' ' + domain + b'\n'
                     else:
-                        hosts_line = '127.0.0.1' + ' ' + domain + '\n'
+                        hosts_line = b'127.0.0.1' + b' ' + domain + b'\n'
     except PermissionError as e:
         ld.logger.error(e)
         ld.logger.error("root permissions are reqired to write to %s", output_file)
