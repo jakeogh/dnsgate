@@ -71,7 +71,6 @@ def group_by_tld(domains):
     sorted_output = []
     reversed_domains = []
     for domain in domains:
-#       print(type(domain))
         rev_domain = domain.split(b'.')
         rev_domain.reverse()
         reversed_domains.append(rev_domain)
@@ -84,9 +83,6 @@ def group_by_tld(domains):
 def domain_tld_extract(domain):
     dom = NO_CACHE_EXTRACT(domain.decode('utf-8'))  #prevent tldextract cache update error when run as a normal user
     dom = dom.domain + '.' + dom.suffix
-#    print(type(dom))
-#    print(dir(dom))
-#    print(dom)
     return dom.encode('utf-8')
 
 @ld.log_prefix(show_args=False)
@@ -100,7 +96,6 @@ def strip_to_tld(domains):
     domains_stripped = set()
     for line in domains:
         line = domain_tld_extract(line)             # get tld
-#       line = line.domain + '.' + line.suffix
         domains_stripped.add(line)
     return domains_stripped
 
@@ -173,7 +168,6 @@ def extract_domain_set_from_dnsgate_format_file(dnsgate_file):
         for line in lines:
             line = line.strip()
             line = remove_comments_from_bytes(line)
-#           line = line.decode('utf-8')
             line = b'.'.join(list(filter(None, line.split(b'.')))) # ignore leading/trailing .
             if len(line) > 0:
                 domains.add(line)
@@ -191,8 +185,8 @@ def read_file_bytes(file):
 @ld.log_prefix()
 def extract_domain_set_from_hosts_format_url_or_cached_copy(url, cache=False):
     unexpired_copy = get_newest_unexpired_cached_url_copy(url)
-    print("unexpired_copy:", unexpired_copy)
     if unexpired_copy:
+        eprint("using cached copy: %s", unexpired_copy, log_level=ld.LOG_LEVELS['INFO'])
         unexpired_copy_bytes = read_file_bytes(unexpired_copy)
         assert isinstance(unexpired_copy_bytes, bytes)
         return extract_domain_set_from_hosts_format_bytes(unexpired_copy_bytes)
@@ -215,17 +209,22 @@ def generate_cache_file_name(url):
 @ld.log_prefix()
 def get_newest_cached_url_copy(url):
     matches = get_matching_cached_files(url)
-    return sorted(matches, key = lambda x: int(x.split(".")[1]))[-1]
+    try:
+        return sorted(matches, key = lambda x: int(x.split(".")[1]))[-1]
+    except IndexError:
+        return False
 
 @ld.log_prefix()
 def get_newest_unexpired_cached_url_copy(url):
     newest_copy = get_newest_cached_url_copy(url)
-    newest_copy_timestamp = newest_copy.split('.')[-2:-1][0]
-    expiration_timestamp = int(newest_copy_timestamp) + int(click_cache_expire)
-    if expiration_timestamp > time.time():
-        return newest_copy
-    else:
-        return False
+    if newest_copy:
+        newest_copy_timestamp = newest_copy.split('.')[-2:-1][0]
+        expiration_timestamp = int(newest_copy_timestamp) + int(click_cache_expire)
+        if expiration_timestamp > time.time():
+            return newest_copy
+        else:
+            return False
+    return False
 
 @ld.log_prefix()
 def get_matching_cached_files(url):
@@ -260,8 +259,7 @@ def extract_domain_set_from_hosts_format_bytes(hosts_format_bytes):
     domains = set()
     hosts_format_bytes_lines = hosts_format_bytes.split(b'\n')
     for line in hosts_format_bytes_lines:
-#       line = line.decode('UTF-8')
-        line = line.replace(b'\t', b' ')          # expand tabs
+        line = line.replace(b'\t', b' ')         # expand tabs
         line = b' '.join(line.split())           # collapse whitespace
         line = line.strip()
         line = remove_comments_from_bytes(line)

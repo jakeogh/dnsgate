@@ -31,6 +31,7 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 **Features:**
 * **Wildcard Blocking** --block-at-tld will block TLD's instead of individual subdomains (dnsmasq mode only).
 * **System-wide.** All programs that use the local DNS resolver benefit.
+* **Blacklist Caching.** Optionally cache and re-use remote blacklists (see --cache and --cache-timeout).
 * **Non-interactive.** Can be run as a periodic cron job.
 * **Fully Configurable.** See ./dnsgate --help (TODO, add /etc/dnsgate/config file support)
 * **Custom Lists.** See /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
@@ -40,10 +41,8 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option str
 * **Extensive Debugging Support.** see --verbose and --debug
 * **IDN Support.** What to block snowman? ./dnsgate --blacklist-append xn--n3h.net
 
-**Features TODO:**
-* **Download Caching.** Optionally cache and re-use downloaded blacklists instead of re-fetching each time (configurable timeout, see --cache-timeout) (partially done).
+**TODO:**
 * **Full Test Coverage.**
-* **Fully-interactive.** Can be run as an interactive wizard. See --interactive (TODO).
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)

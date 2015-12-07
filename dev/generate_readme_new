@@ -1,5 +1,5 @@
 #!/bin/sh
-
+rm -f /etc/dnsgate/cache/*
 script -q -c ./generate_readme |\
     ./strip_ansi.pl |\
     sed -e 's/xn--n3h.net/☃.net/g' |\
