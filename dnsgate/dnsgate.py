@@ -23,6 +23,8 @@ from logdecorator import logdecorator as ld
 if '--debug' not in sys.argv:
     ld.logger.setLevel(ld.LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug is off
 
+# psl_domain is a "Public Second Level Domain" extracted by using https://publicsuffix.org/
+
 NO_CACHE_EXTRACT = tldextract.TLDExtract(cache_file=False)
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
@@ -37,8 +39,10 @@ def eprint(*args, log_level, **kwargs):
     if click_debug:
         ld.logger.debug(*args, **kwargs)
     else:
-        if log_level >= ld.LOG_LEVELS['INFO']:
+        if log_level == ld.LOG_LEVELS['INFO']:
             ld.logger_quiet.info(*args, **kwargs)
+        elif log_level >= ld.LOG_LEVELS['WARNING']:
+            ld.logger_quiet.warning(*args, **kwargs)
 
 @ld.log_prefix()
 def restart_dnsmasq_service():
@@ -80,13 +84,13 @@ def group_by_tld(domains):
         sorted_output.append(b'.'.join(rev_domain))
     return sorted_output
 
-def domain_tld_extract(domain):
+def extract_psl_domain(domain):
     dom = NO_CACHE_EXTRACT(domain.decode('utf-8'))  #prevent tldextract cache update error when run as a normal user
     dom = dom.domain + '.' + dom.suffix
     return dom.encode('utf-8')
 
 @ld.log_prefix(show_args=False)
-def strip_to_tld(domains):
+def strip_to_psl(domains):
     '''This causes ad-serving domains to be blocked at their TLD.
     Otherwise the subdomain can be changed until the --url lists are updated.
     It does not make sense to use this flag if you are generating a /etc/hosts
@@ -95,7 +99,7 @@ def strip_to_tld(domains):
     eprint('removing subdomains on %d domains', len(domains), log_level=ld.LOG_LEVELS['INFO'])
     domains_stripped = set()
     for line in domains:
-        line = domain_tld_extract(line)             # get tld
+        line = extract_psl_domain(line)             # get tld
         domains_stripped.add(line)
     return domains_stripped
 
@@ -281,7 +285,7 @@ blacklist(s) defaults to:
 
 WHITELIST_HELP = '''\b
 whitelists(s) defaults to:''' + CUSTOM_WHITELIST.replace(os.path.expanduser('~'), '~')
-BLOCK_AT_TLD_HELP = '''
+BLOCK_AT_PSL_HELP = '''
 \b
 strips subdomains, for example:
     analytics.google.com -> google.com
@@ -301,7 +305,7 @@ WHITELIST_APPEND_HELP = '''Add domain to ''' + CUSTOM_WHITELIST
 CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns)
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--mode',             is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
-@click.option('--block-at-tld',     is_flag=True,  help=BLOCK_AT_TLD_HELP)
+@click.option('--block-at-psl',     is_flag=True,  help=BLOCK_AT_PSL_HELP)
 @click.option('--restart-dnsmasq',  is_flag=True,  help=RESTART_DNSMASQ_HELP, default=True)
 @click.option('--output-file',      is_flag=False, help=OUTPUT_FILE_HELP,     default=DEFAULT_OUTPUT_FILE)
 @click.option('--backup',           is_flag=True,  help=BACKUP_HELP)
@@ -317,13 +321,13 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--debug',            is_flag=True,  help=DEBUG_HELP)
 @click.option('--verbose',          is_flag=True,  help=VERBOSE_HELP)
 @ld.log_prefix()
-def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
+def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             blacklist_append, whitelist_append, blacklist, cache, cache_expire,
             dest_ip, show_config, install_help, debug, verbose):
 
     if show_config:
         print("mode:", mode)
-        print("block_at_tld:", block_at_tld)
+        print("block_at_psl:", block_at_psl)
         print("restart_dnsmasq:", restart_dnsmasq)
         print("output_file:", output_file)
         print("backup:", backup)
@@ -420,17 +424,25 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
 
     domains_combined = copy.deepcopy(domains_combined_orig) # need to iterate through _orig later
 
-    if block_at_tld:
-        domains_combined = strip_to_tld(domains_combined)
-        eprint("%d blacklisted unique domains left after stripping to TLD's",
+    if block_at_psl:
+        domains_combined = strip_to_psl(domains_combined)
+        eprint("%d blacklisted unique domains left after stripping to PSL domains",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
         eprint("subtracting %d explicitely whitelisted domains so that the not explicitely whitelisted subdomains" +
-                " that existed (and were blocked) before the TLD stripping can be re-added to the generated blacklist",
+                " that existed (and were blocked) before the subdomain stripping can be re-added to the generated blacklist",
                 len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
         domains_combined = domains_combined - domains_whitelist
         eprint("%d unique blacklisted domains left after subtracting the whitelist",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
+
+        eprint('iterating through the original %d whitelisted domains and making sure none are blocked by' +
+                ' * rules', len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
+
+        for domain in domains_whitelist:
+            domain_psl = extract_psl_domain(domain)
+            if domain_psl in domains_combined:
+                domains_combined.remove(domain_psl)
 
         eprint('iterating through the original %d blacklisted domains and re-adding subdomains' +
                 ' that are not whitelisted', len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
@@ -438,11 +450,11 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
         for orig_domain in domains_combined_orig: # check every original full hostname
             if orig_domain not in domains_whitelist: # if it's not in the whitelist
                 if orig_domain not in domains_combined: # and it's not in the current blacklist
-                                                        # (almost none will be if --block-at-tld)
-                    orig_domain_tld = domain_tld_extract(orig_domain) # get it's tld to see if it's
-                                                                         # already blocked by a dnsmasq * rule
-#                   orig_domain_tld = orig_domain_tldextract.domain + '.' + orig_domain_tldextract.suffix
-                    if orig_domain_tld not in domains_combined: # if the tld is not already blocked
+                                                        # (almost none will be if --block-at-psl)
+                    orig_domain_psl = extract_psl_domain(orig_domain) # get it's psl to see if it's
+                                                                      # already blocked by a dnsmasq * rule
+
+                    if orig_domain_psl not in domains_combined: # if the psl is not already blocked
                         eprint("re-adding: %s", orig_domain, log_level=ld.LOG_LEVELS['DEBUG'])
                         domains_combined.add(orig_domain) # add the full hostname to the blacklist
 
@@ -454,7 +466,7 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     eprint("%d unique blacklisted domains after subtracting the %d whitelisted domains",
             len(domains_combined), len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
 
-    # must happen after tld stripping and after whitelist subtraction
+    # must happen after subdomain stripping and after whitelist subtraction
     blacklist_file = os.path.abspath(CUSTOM_BLACKLIST)
     domains = extract_domain_set_from_dnsgate_format_file(blacklist_file)
     if domains:
@@ -466,12 +478,12 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     eprint("%d unique blacklisted domains after re-adding the custom blacklist",
         len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
-    domains_combined = group_by_tld(domains_combined)
-    eprint('final blacklisted domain count: %d', len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
-
     eprint("validating final domain block list", log_level=ld.LOG_LEVELS['INFO'])
     domains_combined = validate_domain_list(domains_combined)
     eprint('%d validated blacklisted domains', len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
+
+    domains_combined = group_by_tld(domains_combined) # do last, returns sorted list
+    eprint('final blacklisted domain count: %d', len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
     if backup:
         backup_file_if_exists(output_file)
@@ -484,6 +496,12 @@ def dnsgate(mode, block_at_tld, restart_dnsmasq, output_file, backup, noclobber,
     if not domains_combined:
         logger.error("the list of domains to block is empty, nothing further to do, exiting.")
         quit(1)
+
+    for domain in domains_whitelist:
+        domain_tld = extract_psl_domain(domain)
+        if domain_tld in domains_combined:
+            eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.', domain.decode('UTF8'), CUSTOM_BLACKLIST, CUSTOM_WHITELIST, log_level=ld.LOG_LEVELS['WARNING'])
+
 
     eprint("writing output file: %s in %s format", output_file, mode, log_level=ld.LOG_LEVELS['INFO'])
     try:
