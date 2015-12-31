@@ -26,10 +26,10 @@ This instead returns NXDOMAIN on *.google.com. Returning NXDOMAIN is dnsgate's d
 
 Said another way, conventional `/etc/hosts` blocking can't use wildcards (*) and therefore requires the user to keep track of each subdomain / domain combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people [1] keep track of the subdomains for you. If you want to block a specific domain completely, use dnsmasq.
 
-With `--mode dnsmasq` (default if not specified) the `--block-at-tld` option strips domains to their TLD, removing the need to manually specify/track specific subdomains. `--block-at-tld` may block TLD's you want to use, so use it with `--whitelist`.
+With `--mode dnsmasq` (default if not specified) the `--block-at-psl` option strips domains to their "Public Second Level Domain" which is the domain with any subdomain stripped, removing the need to manually specify/track specific subdomains. `--block-at-psl` may block domain's you want to use, so use it with `--whitelist`.
 
 **Features:**
-* **Wildcard Blocking** --block-at-tld will block TLD's instead of individual subdomains (dnsmasq mode only).
+* **Wildcard Blocking** --block-at-psl will block TLD's instead of individual subdomains (dnsmasq mode only).
 * **System-wide.** All programs that use the local DNS resolver benefit.
 * **Blacklist Caching.** Optionally cache and re-use remote blacklists (see --cache and --cache-timeout).
 * **Non-interactive.** Can be run as a periodic cron job.
@@ -64,6 +64,7 @@ post='''
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
  - https://github.com/StevenBlack/hosts (TODO, use this)
+ - https://github.com/Mechazawa/FuckFuckAdblock
 
 **Simple Software:**
 If you find this useful you may appreciate:
@@ -95,7 +96,7 @@ if __name__ == '__main__':
     dnsmasq_example_install_help = [b'../dnsgate/dnsgate.py', b'--install-help']
     dnsmasq_example_show_config = [b'../dnsgate/dnsgate.py', b'--show-config']
     dnsmasq_example_verbose = [b'../dnsgate/dnsgate.py', b'--verbose']
-    dnsmasq_example_verbose_block_at_tld = [b'../dnsgate/dnsgate.py', b'--verbose', b'--block-at-tld']
+    dnsmasq_example_verbose_block_at_tld = [b'../dnsgate/dnsgate.py', b'--verbose', b'--block-at-psl']
 
     hosts_example = [b'../dnsgate/dnsgate.py', b'--mode', b'hosts']
     hosts_example_install_help = [b'../dnsgate/dnsgate.py', b'--mode', b'hosts', b'--install-help']
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     print(code_sep, end='')
 
     print(' ')
-    print("**dnsmasq example with --block-at-tld:**")
+    print("**dnsmasq example with --block-at-psl:**")
     print(' ')
     print(code_sep, end='')
     run_command(dnsmasq_example_verbose_block_at_tld, show=True)

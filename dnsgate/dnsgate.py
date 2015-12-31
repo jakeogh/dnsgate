@@ -157,7 +157,7 @@ def custom_list_append(domain_file, domain):
     line = hostname + '\n'
     write_unique_line(line, domain_file)
 
-#todo add check for root domain blocks
+#todo add check for tld domain blocks
 
 @ld.log_prefix()
 def extract_domain_set_from_dnsgate_format_file(dnsgate_file):
@@ -417,7 +417,8 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             ld.logger.error("%s must start with http:// or https://, skipping.", item)
             pass
 
-    eprint("%d unique domains from the remote blacklist(s)", len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
+    eprint("%d unique domains from the remote blacklist(s)",
+        len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)
     eprint('%d validated remote blacklisted domains', len(domains_combined_orig), log_level=ld.LOG_LEVELS['INFO'])
@@ -429,8 +430,8 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         eprint("%d blacklisted unique domains left after stripping to PSL domains",
                 len(domains_combined), log_level=ld.LOG_LEVELS['INFO'])
 
-        eprint("subtracting %d explicitely whitelisted domains so that the not explicitely whitelisted subdomains" +
-                " that existed (and were blocked) before the subdomain stripping can be re-added to the generated blacklist",
+        eprint("subtracting %d explicitely whitelisted domains so not explicitely whitelisted subdomains" +
+                " that existed (and were blocked) before the subdomain stripping can be re-added",
                 len(domains_whitelist), log_level=ld.LOG_LEVELS['INFO'])
         domains_combined = domains_combined - domains_whitelist
         eprint("%d unique blacklisted domains left after subtracting the whitelist",
@@ -500,7 +501,8 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     for domain in domains_whitelist:
         domain_tld = extract_psl_domain(domain)
         if domain_tld in domains_combined:
-            eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.', domain.decode('UTF8'), CUSTOM_BLACKLIST, CUSTOM_WHITELIST, log_level=ld.LOG_LEVELS['WARNING'])
+            eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.',
+                domain.decode('UTF8'), CUSTOM_BLACKLIST, CUSTOM_WHITELIST, log_level=ld.LOG_LEVELS['WARNING'])
 
 
     eprint("writing output file: %s in %s format", output_file, mode, log_level=ld.LOG_LEVELS['INFO'])
