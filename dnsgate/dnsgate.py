@@ -35,7 +35,7 @@ CUSTOM_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
 DEFAULT_REMOTE_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',
                                     'http://someonewhocares.org/hosts/hosts']
-DEFAULT_CACHE_EXPIRE = 3600*12  #12 hours
+DEFAULT_CACHE_EXPIRE = 3600*24  #24 hours
 
 def eprint(*args, level, **kwargs):
     if click_debug:
@@ -107,8 +107,12 @@ def strip_to_psl(domains):
 
 @ld.log_prefix()
 def write_unique_line(line, file):
-    with open(file, 'r+') as fh:
-        if line not in fh:
+    try:
+        with open(file, 'r+') as fh:
+            if line not in fh:
+                fh.write(line)
+    except FileNotFoundError:
+        with open(file, 'a') as fh:
             fh.write(line)
 
 @ld.log_prefix()
@@ -186,7 +190,7 @@ def read_file_bytes(file):
         raise FileNotFoundError(file + ' does not exist.')
 
 @ld.log_prefix()
-def extract_domain_set_from_hosts_format_url_or_cached_copy(url, cache=False):
+def extract_domain_set_from_hosts_format_url_or_cached_copy(url, no_cache=False):
     unexpired_copy = get_newest_unexpired_cached_url_copy(url)
     if unexpired_copy:
         eprint("Using cached copy: %s", unexpired_copy, level=LOG_LEVELS['INFO'])
@@ -194,11 +198,11 @@ def extract_domain_set_from_hosts_format_url_or_cached_copy(url, cache=False):
         assert isinstance(unexpired_copy_bytes, bytes)
         return extract_domain_set_from_hosts_format_bytes(unexpired_copy_bytes)
     else:
-        return extract_domain_set_from_hosts_format_url(url, cache)
+        return extract_domain_set_from_hosts_format_url(url, no_cache)
 
 @ld.log_prefix()
-def extract_domain_set_from_hosts_format_url(url, cache=False):
-    url_bytes = read_url_bytes(url, cache)
+def extract_domain_set_from_hosts_format_url(url, no_cache=False):
+    url_bytes = read_url_bytes(url, no_cache)
     domains = extract_domain_set_from_hosts_format_bytes(url_bytes)
     eprint("Domains in %s:%s", url, len(domains), level=LOG_LEVELS['DEBUG'])
     return domains
@@ -206,22 +210,14 @@ def extract_domain_set_from_hosts_format_url(url, cache=False):
 @ld.log_prefix()
 def generate_cache_file_name(url):
     url_hash = hash_str(url)
-    file_name = CACHE_DIRECTORY + '/' + url_hash + '_hosts.' + str(time.time())
+    file_name = CACHE_DIRECTORY + '/' + url_hash + '_hosts'
     return file_name
 
 @ld.log_prefix()
-def get_newest_cached_url_copy(url):
-    matches = get_matching_cached_files(url)
-    try:
-        return sorted(matches, key = lambda x: int(x.split(".")[1]))[-1]
-    except IndexError:
-        return False
-
-@ld.log_prefix()
 def get_newest_unexpired_cached_url_copy(url):
-    newest_copy = get_newest_cached_url_copy(url)
+    newest_copy = get_matching_cached_file(url)
     if newest_copy:
-        newest_copy_timestamp = newest_copy.split('.')[-2:-1][0]
+        newest_copy_timestamp = os.stat(newest_copy).st_mtime
         expiration_timestamp = int(newest_copy_timestamp) + int(click_cache_expire)
         if expiration_timestamp > time.time():
             return newest_copy
@@ -230,14 +226,16 @@ def get_newest_unexpired_cached_url_copy(url):
     return False
 
 @ld.log_prefix()
-def get_matching_cached_files(url):
-    to_glob = generate_cache_file_name(url).split('.')[0]
-    to_glob = to_glob + '*'
-    #print(to_glob)
-    return glob.glob(to_glob)
+def get_matching_cached_file(url):
+    name = generate_cache_file_name(url)
+    matching_cached_file = glob.glob(name)
+    if matching_cached_file:
+        return matching_cached_file[0]
+    else:
+        return False
 
 @ld.log_prefix()
-def read_url_bytes(url, cache=False):
+def read_url_bytes(url, no_cache=False):
     eprint("GET: %s", url, level=LOG_LEVELS['DEBUG'])
     user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
     try:
@@ -246,12 +244,16 @@ def read_url_bytes(url, cache=False):
     except Exception as e:
         ld.logger.exception(e)
         return False
-    if cache:
-        output_file = generate_cache_file_name(url)
+    if not no_cache:
+        cache_index_file = CACHE_DIRECTORY + '/sha1_index'
+        cache_file = generate_cache_file_name(url)
         if not os.path.isdir(CACHE_DIRECTORY):
             os.makedirs(CACHE_DIRECTORY)
-        with open(output_file, 'xb') as fh:
+        with open(cache_file, 'xb') as fh:
             fh.write(raw_url_bytes)
+
+        line_to_write = cache_file + ' ' + url + '\n'
+        write_unique_line(line_to_write, cache_index_file)
 
     eprint("Returning %d bytes from %s", len(raw_url_bytes), url, level=LOG_LEVELS['DEBUG'])
     return raw_url_bytes
@@ -293,8 +295,8 @@ strips subdomains, for example:
 DEBUG_HELP = '''print debugging information to stderr'''
 VERBOSE_HELP = '''print more information to stderr'''
 SHOW_CONFIG_HELP = '''print config information to stderr'''
-CACHE_HELP = '''cache --url files as dnsgate_cache_domain_hosts.(timestamp) to ~/.dnsgate/cache'''
-CACHE_EXPIRE_HELP = '''seconds until a cached remote file is re-downloaded'''
+NO_CACHE_HELP = '''do not cache --url files as sha1(url) to ~/.dnsgate/cache/'''
+CACHE_EXPIRE_HELP = '''seconds until a cached remote file is re-downloaded (defaults to 24 hours)'''
 DEST_IP_HELP = '''IP to redirect blocked connections to (defaults to 127.0.0.1)'''
 RESTART_DNSMASQ_HELP = '''Restart dnsmasq service (defaults to True, ignored if --mode hosts)'''
 BLACKLIST_APPEND_HELP = '''Add domain to ''' + CUSTOM_BLACKLIST
@@ -312,7 +314,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--blacklist-append', is_flag=False, help=BLACKLIST_APPEND_HELP, type=str)
 @click.option('--whitelist-append', is_flag=False, help=WHITELIST_APPEND_HELP, type=str)
 @click.option('--blacklist',        is_flag=False, help=BLACKLIST_HELP, default=DEFAULT_REMOTE_BLACKLIST_SOURCES)
-@click.option('--cache',            is_flag=True,  help=CACHE_HELP)
+@click.option('--no-cache',         is_flag=True,  help=NO_CACHE_HELP)
 @click.option('--cache-expire',     is_flag=False, help=CACHE_EXPIRE_HELP, type=int, default=DEFAULT_CACHE_EXPIRE)
 @click.option('--dest-ip',          is_flag=False, help=DEST_IP_HELP)
 @click.option('--show-config',      is_flag=True,  help=SHOW_CONFIG_HELP)
@@ -321,7 +323,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--verbose',          is_flag=True,  help=VERBOSE_HELP)
 @ld.log_prefix()
 def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
-            blacklist_append, whitelist_append, blacklist, cache, cache_expire,
+            blacklist_append, whitelist_append, blacklist, no_cache, cache_expire,
             dest_ip, show_config, install_help, debug, verbose):
 
     if show_config:
@@ -334,7 +336,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         print("blacklist_append:", blacklist_append)
         print("whitelist_append:", whitelist_append)
         print("blacklist:", blacklist)
-        print("cache:", cache)
+        print("no_cache:", no_cache)
         print("dest_ip:", dest_ip)
         print("debug:", debug)
         print("show_config:", show_config)
@@ -363,7 +365,6 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     if output_file == '-' or output_file == '/dev/stdout':
         output_file = '/dev/stdout'
     else:
-        eprint("Using non standard output_file", level=LOG_LEVELS['DEBUG'])
         output_file = os.path.abspath(output_file)
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
@@ -401,7 +402,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         if item.startswith('http'):
             try:
                 eprint("Trying http:// blacklist location: %s", item, level=LOG_LEVELS['DEBUG'])
-                domains = extract_domain_set_from_hosts_format_url_or_cached_copy(item, cache)
+                domains = extract_domain_set_from_hosts_format_url_or_cached_copy(item, no_cache)
                 if domains:
                     domains_combined_orig = domains_combined_orig | domains # union
                     eprint("len(domains_combined_orig): %s",
@@ -472,7 +473,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     if domains:
         eprint("Got %s domains from the CUSTOM_BLACKLIST: %s",
             domains, blacklist_file, level=LOG_LEVELS['DEBUG'])
-        eprint("Ee-adding %d domains in the local blacklist %s to override the whitelist.",
+        eprint("Re-adding %d domains in the local blacklist %s to override the whitelist.",
             len(domains), CUSTOM_BLACKLIST, level=LOG_LEVELS['INFO'])
         domains_combined = domains_combined | domains # union
     eprint("%d blacklisted domains after re-adding the custom blacklist.",
