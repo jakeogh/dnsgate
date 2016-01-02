@@ -105,7 +105,8 @@ $ ./dnsgate --verbose
 Using output_file: /etc/dnsgate/generated_blacklist
 Reading whitelist: /etc/dnsgate/whitelist
 76 validated whitelist domains.
-Reading remote blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+Reading remote blacklist(s):
+['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 23685 domains from the remote blacklist(s).
 23685 validated remote blacklisted domains.
 23684 blacklisted domains after subtracting the 76 whitelisted domains
@@ -124,7 +125,8 @@ $ ./dnsgate --verbose --block-at-psl
 Using output_file: /etc/dnsgate/generated_blacklist
 Reading whitelist: /etc/dnsgate/whitelist
 76 validated whitelist domains.
-Reading remote blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+Reading remote blacklist(s):
+['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 23685 domains from the remote blacklist(s).
 23685 validated remote blacklisted domains.
 Removing subdomains on 23685 domains.
@@ -147,7 +149,7 @@ Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1451720343.942626
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1451720931.200133
     $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -178,7 +180,8 @@ $ ./dnsgate --mode hosts --verbose
 Using output_file: /etc/dnsgate/generated_blacklist
 Reading whitelist: /etc/dnsgate/whitelist
 76 validated whitelist domains.
-Reading remote blacklist(s): ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
+Reading remote blacklist(s):
+['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 23685 domains from the remote blacklist(s).
 23685 validated remote blacklisted domains.
 23684 blacklisted domains after subtracting the 76 whitelisted domains

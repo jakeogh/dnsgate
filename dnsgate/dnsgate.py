@@ -397,7 +397,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         eprint('%d validated whitelist domains.', len(domains_whitelist), level=LOG_LEVELS['INFO'])
 
     domains_combined_orig = set()   # domains from all sources, combined
-    eprint("Reading remote blacklist(s): %s", str(blacklist), level=LOG_LEVELS['INFO'])
+    eprint("Reading remote blacklist(s):\n%s", str(blacklist), level=LOG_LEVELS['INFO'])
     for item in blacklist:
         if item.startswith('http'):
             try:
