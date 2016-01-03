@@ -24,8 +24,7 @@ LOG_LEVELS = ld.LOG_LEVELS
 if '--debug' not in sys.argv:
     ld.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug is off
 
-# psl_domain is "Public Second Level Domain" extracted using https://publicsuffix.org/
-
+# "psl domain" is "Public Second Level Domain" extracted using https://publicsuffix.org/
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
@@ -35,7 +34,7 @@ CUSTOM_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
 DEFAULT_REMOTE_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',
                                     'http://someonewhocares.org/hosts/hosts']
-DEFAULT_CACHE_EXPIRE = 3600*24  #24 hours
+DEFAULT_CACHE_EXPIRE = 3600 * 24  #24 hours
 TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
 
 def eprint(*args, level, **kwargs):
@@ -286,7 +285,7 @@ def prune_redundant_rules(domains_combined):
             domain_parts.pop(0)
             parent_domain = b'.'.join(domain_parts)
             if parent_domain in domains_combined:
-                eprint("removing: %s because parent_domain: %s is already blocked", domain, parent_domain,
+                eprint("removing: %s because it's parent domain: %s is already blocked", domain, parent_domain,
                     level=LOG_LEVELS['DEBUG'])
                 domains_combined.remove(domain)
     return domains_combined
@@ -467,8 +466,8 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             if orig_domain not in domains_whitelist: # if it's not in the whitelist
                 if orig_domain not in domains_combined: # and it's not in the current blacklist
                                                         # (almost none will be if --block-at-psl)
-                    orig_domain_psl = extract_psl_domain(orig_domain) # get it's psl to see if it's
-                                                                      # already blocked by a dnsmasq * rule
+                    orig_domain_psl = extract_psl_domain(orig_domain)   # get it's psl to see if it's
+                                                                        # already blocked by a dnsmasq * rule
 
                     if orig_domain_psl not in domains_combined: # if the psl is not already blocked
                         eprint("Re-adding: %s", orig_domain, level=LOG_LEVELS['DEBUG'])
@@ -498,13 +497,10 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     domains_combined = validate_domain_list(domains_combined)
     eprint('%d validated blacklisted domains.', len(domains_combined), level=LOG_LEVELS['DEBUG'])
 
-
     domains_combined = prune_redundant_rules(domains_combined)
 
     domains_combined = group_by_tld(domains_combined) # do last, returns sorted list
     eprint('Final blacklisted domain count: %d', len(domains_combined), level=LOG_LEVELS['INFO'])
-
-
 
     if backup:
         backup_file_if_exists(output_file)
@@ -523,7 +519,6 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         if domain_tld in domains_combined:
             eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.',
                 domain.decode('UTF8'), CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG_LEVELS['WARNING'])
-
 
     eprint("Writing output file: %s in %s format", output_file, mode, level=LOG_LEVELS['INFO'])
     try:
