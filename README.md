@@ -10,14 +10,14 @@ For example *.google.com:
 ```
 echo 'address=/.google.com/127.0.0.1' >> /etc/dnsmasq.conf
 ```
-Has the effect of returning 127.0.0.1 for all google.com domains. Rather than return 127.0.0.1, dnsmasq can return NXDOMAIN:
+Returnins 127.0.0.1 for all google.com domains. Rather than return 127.0.0.1 and make the application chack if port 80/443/whatever is open, dnsmasq has another advantage; it can return NXDOMAIN:
 
 ```
 echo 'server=/.google.com/' >> /etc/dnsmasq.conf
 ```
-This instead returns NXDOMAIN on *.google.com. Returning NXDOMAIN is dnsgate's default behavior in dnsmasq mode.
+This instead returns NXDOMAIN on *.google.com. Returning NXDOMAIN instead of localhost is default in dnsmasq output mode.
 
-Said another way, conventional `/etc/hosts` blocking can't use wildcards (*) and therefore requires the user to keep track of each subdomain / domain combination they want to block. This is not necessarily a problem. Even if you don't use dnsmasq, other people [1] keep track of the subdomains for you. If you want to block a specific domain completely, use dnsmasq.
+Said another way, conventional `/etc/hosts` blocking can not use wildcards * and therefore someone must keep track of each subdomain / domain combination that should be blocked. This is not necessarily a problem. Even if you don't use dnsmasq, other people [1] keep track of the subdomains for you. If you want to block a specific domain completely, you must use dnsmasq.
 
 With `--mode dnsmasq` (default if not specified) the `--block-at-psl` option strips domains to their "Public Second Level Domain" which is the domain with any subdomain stripped, removing the need to manually specify/track specific subdomains. `--block-at-psl` may block domain's you want to use, so use it with `--whitelist`.
 
@@ -110,10 +110,10 @@ Reading remote blacklist(s):
 23685 domains from the remote blacklist(s).
 23685 validated remote blacklisted domains.
 23684 blacklisted domains after subtracting the 76 whitelisted domains
-Re-adding 19 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-23698 blacklisted domains after re-adding the custom blacklist.
+Re-adding 49 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
+23728 blacklisted domains after re-adding the custom blacklist.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 23698
+Final blacklisted domain count: 17674
 Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
@@ -137,10 +137,10 @@ Iterating through the original 76 whitelisted domains andmaking sure none are bl
 Iterating through original 23685 blacklisted domains and re-adding subdomains that are not whitelisted
 10765 blacklisted domains after re-adding non-explicitely blacklisted subdomains
 10765 blacklisted domains after subtracting the 76 whitelisted domains
-Re-adding 19 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-10771 blacklisted domains after re-adding the custom blacklist.
+Re-adding 49 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
+10801 blacklisted domains after re-adding the custom blacklist.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 10771
+Final blacklisted domain count: 10375
 Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
@@ -149,7 +149,7 @@ Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1451720931.200133
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1451800134.3570955
     $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -185,10 +185,10 @@ Reading remote blacklist(s):
 23685 domains from the remote blacklist(s).
 23685 validated remote blacklisted domains.
 23684 blacklisted domains after subtracting the 76 whitelisted domains
-Re-adding 19 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-23698 blacklisted domains after re-adding the custom blacklist.
+Re-adding 49 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
+23728 blacklisted domains after re-adding the custom blacklist.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 23698
+Final blacklisted domain count: 17998
 Writing output file: /etc/dnsgate/generated_blacklist in hosts format
 ``` 
 **/etc/hosts install help:**
