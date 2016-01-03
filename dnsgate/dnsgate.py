@@ -26,16 +26,17 @@ if '--debug' not in sys.argv:
 
 # psl_domain is "Public Second Level Domain" extracted using https://publicsuffix.org/
 
-NO_CACHE_EXTRACT = tldextract.TLDExtract(cache_file=False)
 
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
+TLDEXTRACT_CACHE = CACHE_DIRECTORY + '/tldextract_cache'
 CUSTOM_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
 CUSTOM_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
 DEFAULT_REMOTE_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',
                                     'http://someonewhocares.org/hosts/hosts']
 DEFAULT_CACHE_EXPIRE = 3600*24  #24 hours
+TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
 
 def eprint(*args, level, **kwargs):
     if click_debug:
@@ -87,7 +88,7 @@ def group_by_tld(domains):
     return sorted_output
 
 def extract_psl_domain(domain):
-    dom = NO_CACHE_EXTRACT(domain.decode('utf-8'))  #prevent tldextract cache update error when run as a normal user
+    dom = TLD_EXTRACT(domain.decode('utf-8'))
     dom = dom.domain + '.' + dom.suffix
     return dom.encode('utf-8')
 
@@ -275,6 +276,20 @@ def extract_domain_set_from_hosts_format_bytes(hosts_format_bytes):
             # pylint: enable=bad-builtin
             domains.add(line)
     return domains
+
+@ld.log_prefix(show_args=False)
+def prune_redundant_rules(domains_combined):
+    domains_combined_orig = copy.deepcopy(domains_combined) # need to iterate through _orig later
+    for domain in domains_combined_orig:
+        if b'.' in domain:
+            domain_parts = domain.split(b'.')
+            domain_parts.pop(0)
+            parent_domain = b'.'.join(domain_parts)
+            if parent_domain in domains_combined:
+                eprint("removing: %s because parent_domain: %s is already blocked", domain, parent_domain,
+                    level=LOG_LEVELS['DEBUG'])
+                domains_combined.remove(domain)
+    return domains_combined
 
 OUTPUT_FILE_HELP = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
 NOCLOBBER_HELP = '''do not overwrite existing output file'''
@@ -483,8 +498,13 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     domains_combined = validate_domain_list(domains_combined)
     eprint('%d validated blacklisted domains.', len(domains_combined), level=LOG_LEVELS['DEBUG'])
 
+
+    domains_combined = prune_redundant_rules(domains_combined)
+
     domains_combined = group_by_tld(domains_combined) # do last, returns sorted list
     eprint('Final blacklisted domain count: %d', len(domains_combined), level=LOG_LEVELS['INFO'])
+
+
 
     if backup:
         backup_file_if_exists(output_file)
