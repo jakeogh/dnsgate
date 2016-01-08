@@ -21,8 +21,8 @@ from shutil import copyfileobj
 from logdecorator import logdecorator as ld
 LOG_LEVELS = ld.LOG_LEVELS
 
-logger_quiet = ld.logmaker(output_format=ld.QUIET_FORMAT, name="logging_quiet2", level=ld.LOG_LEVELS['INFO'])
-logger_debug = ld.logmaker(output_format=ld.FORMAT, name="logging_debug2", level=ld.LOG_LEVELS['DEBUG'])
+logger_quiet = ld.logmaker(output_format=ld.QUIET_FORMAT, name="logging_quiet", level=ld.LOG_LEVELS['INFO'])
+logger_debug = ld.logmaker(output_format=ld.FORMAT, name="logging_debug", level=ld.LOG_LEVELS['DEBUG'])
 
 if '--debug' not in sys.argv:
     ld.log_prefix_logger.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug is off
@@ -298,9 +298,9 @@ OUTPUT_FILE_HELP = '''output file defaults to ''' + DEFAULT_OUTPUT_FILE
 NOCLOBBER_HELP = '''do not overwrite existing output file'''
 BACKUP_HELP = '''backup output file before overwriting'''
 INSTALL_HELP_HELP = '''show commands to configure dnsmasq or /etc/hosts (note: this does nothing else)'''
-BLACKLIST_HELP = '''\b
-blacklist(s) defaults to:
-''' + '\n'.join(['    {0}'.format(i) for i in DEFAULT_REMOTE_BLACKLIST_SOURCES])
+SOURCE_HELP = '''\b
+blacklist(s) to get rules from. Must be used for each remote path. Defaults to:\n  dnsgate \\
+''' + ' \\ \n'.join(['   --source {0}'.format(i) for i in DEFAULT_REMOTE_BLACKLIST_SOURCES])
 
 WHITELIST_HELP = '''\b
 whitelists(s) defaults to:''' + CUSTOM_WHITELIST.replace(os.path.expanduser('~'), '~')
@@ -333,7 +333,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--noclobber',        is_flag=True,  help=NOCLOBBER_HELP)
 @click.option('--blacklist-append', is_flag=False, help=BLACKLIST_APPEND_HELP, type=str)
 @click.option('--whitelist-append', is_flag=False, help=WHITELIST_APPEND_HELP, type=str)
-@click.option('--blacklist',        is_flag=False, help=BLACKLIST_HELP, default=DEFAULT_REMOTE_BLACKLIST_SOURCES)
+@click.option('--source',           is_flag=False, help=SOURCE_HELP, multiple=True, default=DEFAULT_REMOTE_BLACKLIST_SOURCES)
 @click.option('--no-cache',         is_flag=True,  help=NO_CACHE_HELP)
 @click.option('--cache-expire',     is_flag=False, help=CACHE_EXPIRE_HELP, type=int, default=DEFAULT_CACHE_EXPIRE)
 @click.option('--dest-ip',          is_flag=False, help=DEST_IP_HELP)
@@ -344,7 +344,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 # pylint: enable=C0326
 @ld.log_prefix()
 def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
-            blacklist_append, whitelist_append, blacklist, no_cache, cache_expire,
+            blacklist_append, whitelist_append, source, no_cache, cache_expire,
             dest_ip, show_config, install_help, debug, verbose):
 
     if show_config:
@@ -356,7 +356,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         print("noclobber:", noclobber)
         print("blacklist_append:", blacklist_append)
         print("whitelist_append:", whitelist_append)
-        print("blacklist:", blacklist)
+        print("source:", source)
         print("no_cache:", no_cache)
         print("dest_ip:", dest_ip)
         print("debug:", debug)
@@ -421,8 +421,8 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         eprint('%d validated whitelist domains.', len(domains_whitelist), level=LOG_LEVELS['INFO'])
 
     domains_combined_orig = set()   # domains from all sources, combined
-    eprint("Reading remote blacklist(s):\n%s", str(blacklist), level=LOG_LEVELS['INFO'])
-    for item in blacklist:
+    eprint("Reading remote blacklist(s):\n%s", str(source), level=LOG_LEVELS['INFO'])
+    for item in source:
         if item.startswith('http'):
             try:
                 eprint("Trying http:// blacklist location: %s", item, level=LOG_LEVELS['DEBUG'])
@@ -446,7 +446,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
 
     if len(domains_combined_orig) == 0:
         logger_debug.logger.error("WARNING: 0 domains were retrieved from " +
-            "remote blacklists, only the local " + CUSTOM_BLACKLIST +
+            "remote sources, only the local " + CUSTOM_BLACKLIST +
             " will be used.")
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)

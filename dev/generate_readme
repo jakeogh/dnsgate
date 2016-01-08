@@ -67,6 +67,7 @@ post='''
  - https://github.com/Mechazawa/FuckFuckAdblock
 
 **Simple Software:**
+
 If you find this useful you may appreciate:
 
  - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
@@ -77,7 +78,7 @@ If you find this useful you may appreciate:
 '''
 
 def run_command(command_list, show=False):
-    os.system('rm -rf /etc/dnsgate/cache')
+    os.system('rm -rf /etc/dnsgate/cache/*')
     command = b'\n$ ' + b' '.join(command_list)
     if command.startswith(b'\n$ ..'):
         command = command.replace(b'\n$ ..', b'\n$ .')
