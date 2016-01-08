@@ -299,7 +299,7 @@ NOCLOBBER_HELP = '''do not overwrite existing output file'''
 BACKUP_HELP = '''backup output file before overwriting'''
 INSTALL_HELP_HELP = '''show commands to configure dnsmasq or /etc/hosts (note: this does nothing else)'''
 SOURCE_HELP = '''\b
-blacklist(s) to get rules from. Must be used for each remote path. Defaults to:\n  dnsgate \\
+blacklist(s) to get rules from. Must be used for each remote path. Defaults to:\n   dnsgate \\
 ''' + ' \\ \n'.join(['   --source {0}'.format(i) for i in DEFAULT_REMOTE_BLACKLIST_SOURCES])
 
 WHITELIST_HELP = '''\b
