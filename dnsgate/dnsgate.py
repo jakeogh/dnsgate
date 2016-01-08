@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# tab-width:4
 # pylint: disable=missing-docstring
 
 # PUBLIC DOMAIN
@@ -16,13 +16,16 @@ import os
 import shutil
 import requests
 import tldextract
-from urllib.parse import urlparse
+#from urllib.parse import urlparse
 from shutil import copyfileobj
 from logdecorator import logdecorator as ld
 LOG_LEVELS = ld.LOG_LEVELS
 
+logger_quiet = ld.logmaker(output_format=ld.QUIET_FORMAT, name="logging_quiet2", level=ld.LOG_LEVELS['INFO'])
+logger_debug = ld.logmaker(output_format=ld.FORMAT, name="logging_debug2", level=ld.LOG_LEVELS['DEBUG'])
+
 if '--debug' not in sys.argv:
-    ld.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug is off
+    ld.log_prefix_logger.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug is off
 
 # "psl domain" is "Public Second Level Domain" extracted using https://publicsuffix.org/
 
@@ -34,24 +37,24 @@ CUSTOM_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
 DEFAULT_REMOTE_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',
                                     'http://someonewhocares.org/hosts/hosts']
-DEFAULT_CACHE_EXPIRE = 3600 * 24  #24 hours
+DEFAULT_CACHE_EXPIRE = 3600 * 24  # 24 hours
 TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
 
 def eprint(*args, level, **kwargs):
     if click_debug:
-        ld.logger.debug(*args, **kwargs)
+        logger_debug.logger.debug(*args, **kwargs)
     else:
         if level == LOG_LEVELS['INFO']:
-            ld.logger_quiet.info(*args, **kwargs)
+            logger_quiet.logger.info(*args, **kwargs)
         elif level >= LOG_LEVELS['WARNING']:
-            ld.logger_quiet.warning(*args, **kwargs)
+            logger_quiet.logger.warning(*args, **kwargs)
 
 @ld.log_prefix()
 def restart_dnsmasq_service():
     if os.path.lexists('/etc/init.d/dnsmasq'):
         os.system('/etc/init.d/dnsmasq restart')
     else:
-        os.system('systemctl restart dnsmasq')    # untested
+        os.system('systemctl restart dnsmasq')  # untested
     return True
 
 @ld.log_prefix()
@@ -138,7 +141,7 @@ def validate_domain_list(domains):
             hostname = hostname.encode('idna').decode('ascii')
             valid_domains.add(hostname.encode('utf-8'))
         except Exception as e:
-            ld.logger.exception(e)
+            logger_debug.logger.exception(e)
     return valid_domains
 
 def dnsmasq_install_help(output_file):
@@ -171,7 +174,7 @@ def extract_domain_set_from_dnsgate_format_file(dnsgate_file):
     try:
         dnsgate_file_bytes = read_file_bytes(dnsgate_file)
     except Exception as e:
-        ld.logger.exception(e)
+        logger_debug.logger.exception(e)
     else:
         lines = dnsgate_file_bytes.splitlines()
         for line in lines:
@@ -203,13 +206,6 @@ def extract_domain_set_from_hosts_format_url_or_cached_copy(url, no_cache=False)
         return extract_domain_set_from_hosts_format_url(url, no_cache)
 
 @ld.log_prefix()
-def extract_domain_set_from_hosts_format_url(url, no_cache=False):
-    url_bytes = read_url_bytes(url, no_cache)
-    domains = extract_domain_set_from_hosts_format_bytes(url_bytes)
-    eprint("Domains in %s:%s", url, len(domains), level=LOG_LEVELS['DEBUG'])
-    return domains
-
-@ld.log_prefix()
 def generate_cache_file_name(url):
     url_hash = hash_str(url)
     file_name = CACHE_DIRECTORY + '/' + url_hash + '_hosts'
@@ -224,6 +220,7 @@ def get_newest_unexpired_cached_url_copy(url):
         if expiration_timestamp > time.time():
             return newest_copy
         else:
+            os.rename(newest_copy, newest_copy + '.old')
             return False
     return False
 
@@ -244,7 +241,7 @@ def read_url_bytes(url, no_cache=False):
         raw_url_bytes = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, \
             stream=False, timeout=15.500).content
     except Exception as e:
-        ld.logger.exception(e)
+        logger_debug.logger.exception(e)
         return False
     if not no_cache:
         cache_index_file = CACHE_DIRECTORY + '/sha1_index'
@@ -276,6 +273,13 @@ def extract_domain_set_from_hosts_format_bytes(hosts_format_bytes):
             line = b'.'.join(list(filter(None, line.split(b'.'))))    # ignore leading/trailing .
             # pylint: enable=bad-builtin
             domains.add(line)
+    return domains
+
+@ld.log_prefix()
+def extract_domain_set_from_hosts_format_url(url, no_cache=False):
+    url_bytes = read_url_bytes(url, no_cache)
+    domains = extract_domain_set_from_hosts_format_bytes(url_bytes)
+    eprint("Domains in %s:%s", url, len(domains), level=LOG_LEVELS['DEBUG'])
     return domains
 
 @ld.log_prefix(show_args=False)
@@ -370,16 +374,16 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     click_debug = debug
 
     if not verbose and not debug:
-        ld.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)
-        ld.logger_quiet.setLevel(LOG_LEVELS['INFO'] + 1)
+        logger_debug.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)
+        logger_quiet.logger.setLevel(LOG_LEVELS['INFO'] + 1)
 
     if verbose and not debug:
-        ld.logger_quiet.setLevel(LOG_LEVELS['INFO'])
+        logger_quiet.logger.setLevel(LOG_LEVELS['INFO'])
 
     if debug:
-        ld.logger.setLevel(LOG_LEVELS['DEBUG'])
+        logger_debug.logger.setLevel(LOG_LEVELS['DEBUG'])
     else:
-        ld.logger.setLevel(LOG_LEVELS['INFO'])
+        logger_debug.logger.setLevel(LOG_LEVELS['INFO'])
 
     if output_file == '-' or output_file == '/dev/stdout':
         output_file = '/dev/stdout'
@@ -388,7 +392,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
         if noclobber:
-            ld.logger.error("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting.", \
+            logger_debug.logger.error("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting.", \
                 output_file)
             quit(1)
 
@@ -427,13 +431,13 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
                     eprint("len(domains_combined_orig): %s", \
                         len(domains_combined_orig), level=LOG_LEVELS['DEBUG'])
                 else:
-                    ld.logger.error('Failed to get %s, skipping.', item)
+                    logger_debug.logger.error('Failed to get %s, skipping.', item)
                     continue
             except Exception as e:
-                ld.logger.error("Exception on blacklist url: %s", item)
-                ld.logger.exception(e)
+                logger_debug.logger.error("Exception on blacklist url: %s", item)
+                logger_debug.logger.exception(e)
         else:
-            ld.logger.error("%s must start with http:// or https://, skipping.", item)
+            logger_debug.logger.error("%s must start with http:// or https://, skipping.", item)
             pass
 
     eprint("%d domains from the remote blacklist(s).", \
@@ -519,7 +523,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         pass
 
     if not domains_combined:
-        ld.logger.error("The list of domains to block is empty, nothing to do, exiting.")
+        logger_debug.logger.error("The list of domains to block is empty, nothing to do, exiting.")
         quit(1)
 
     for domain in domains_whitelist:
@@ -528,7 +532,8 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.', \
                 domain.decode('UTF8'), CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG_LEVELS['WARNING'])
 
-    eprint("Writing output file: %s in %s format", output_file, mode, level=LOG_LEVELS['INFO'])
+    eprint("Writing output file: %s in %s format", output_file, mode, \
+        level=LOG_LEVELS['INFO'])
     try:
         with open(output_file, 'wb') as fh:
             for domain in domains_combined:
@@ -545,8 +550,8 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
                         hosts_line = b'127.0.0.1' + b' ' + domain + b'\n'
                     fh.write(hosts_line)
     except PermissionError as e:
-        ld.logger.error(e)
-        ld.logger.error("root permissions are reqired to write to %s", output_file)
+        logger_debug.logger.error(e)
+        logger_debug.logger.error("root permissions are reqired to write to %s", output_file)
         quit(1)
 
     if restart_dnsmasq:
@@ -554,6 +559,9 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             restart_dnsmasq_service()
 
 if __name__ == '__main__':
+    # pylint: disable=no-value-for-parameter
     dnsgate()
+    # pylint: enable=no-value-for-parameter
     eprint("Exiting without error.", level=LOG_LEVELS['DEBUG'])
     quit(0)
+
