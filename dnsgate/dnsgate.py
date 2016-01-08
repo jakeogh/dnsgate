@@ -246,8 +246,6 @@ def read_url_bytes(url, no_cache=False):
     if not no_cache:
         cache_index_file = CACHE_DIRECTORY + '/sha1_index'
         cache_file = generate_cache_file_name(url)
-        if not os.path.isdir(CACHE_DIRECTORY):
-            os.makedirs(CACHE_DIRECTORY)
         with open(cache_file, 'xb') as fh:
             fh.write(raw_url_bytes)
 
@@ -367,6 +365,9 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         print("debug:", debug)
         print("verbose:", verbose)
 
+    if not os.path.isdir(CACHE_DIRECTORY):
+        os.makedirs(CACHE_DIRECTORY)
+
     global click_cache_expire
     click_cache_expire = cache_expire
 
@@ -392,7 +393,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
         if noclobber:
-            logger_debug.logger.error("File '%s' exists. Refusing to overwrite because --noclobber was used. Exiting.", \
+            logger_debug.logger.error("File '%s' exists. Refusing to overwrite since --noclobber was used. Exiting.", \
                 output_file)
             quit(1)
 
@@ -438,10 +439,15 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
                 logger_debug.logger.exception(e)
         else:
             logger_debug.logger.error("%s must start with http:// or https://, skipping.", item)
-            pass
 
-    eprint("%d domains from the remote blacklist(s).", \
+
+    eprint("%d domains from remote blacklist(s).", \
         len(domains_combined_orig), level=LOG_LEVELS['INFO'])
+
+    if len(domains_combined_orig) == 0:
+        logger_debug.logger.error("WARNING: 0 domains were retrieved from " +
+            "remote blacklists, only the local " + CUSTOM_BLACKLIST +
+            " will be used.")
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)
     eprint('%d validated remote blacklisted domains.', \
