@@ -422,13 +422,13 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output_file, backup, no
                 output_file.name)
             quit(1)
 
-    eprint('Using output_file: %s', output_file, level=LOG_LEVELS['INFO'])
+    eprint('Using output_file: %s', output_file.name, level=LOG_LEVELS['INFO'])
 
     if install_help:
         if mode == 'dnsmasq':
-            dnsmasq_install_help(output_file)
+            dnsmasq_install_help(output_file.name)
         elif mode == 'hosts':
-            hosts_install_help(output_file)
+            hosts_install_help(output_file.name)
 
     if whitelist_append:
         custom_list_append(CUSTOM_WHITELIST, whitelist_append)
@@ -567,7 +567,7 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output_file, backup, no
             eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.',
                 domain.decode('UTF8'), CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG_LEVELS['WARNING'])
 
-    eprint("Writing output file: %s in %s format", output_file, mode,
+    eprint("Writing output file: %s in %s format", output_file.name, mode,
         level=LOG_LEVELS['INFO'])
 
     output_file.write(make_output_file_header(config_dict))
