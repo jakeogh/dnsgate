@@ -17,7 +17,6 @@ import os
 import shutil
 import requests
 import tldextract
-#from urllib.parse import urlparse
 from shutil import copyfileobj
 from logdecorator import logdecorator as ld
 LOG_LEVELS = ld.LOG_LEVELS
@@ -126,11 +125,11 @@ def write_unique_line(line, file):
             fh.write(line)
 
 @ld.log_prefix()
-def backup_file_if_exists(file):
+def backup_file_if_exists(file_to_backup):
     timestamp = str(time.time())
-    dest_file = file + '.bak.' + timestamp
+    dest_file = file_to_backup.name + '.bak.' + timestamp
     try:
-        with open(file, 'r') as sf:
+        with open(file_to_backup.name, 'r') as sf:
             with open(dest_file, 'x') as df:
                 copyfileobj(sf, df)
     except FileNotFoundError:
