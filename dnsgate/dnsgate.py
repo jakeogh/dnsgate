@@ -24,8 +24,9 @@ LOG_LEVELS = ld.LOG_LEVELS
 logger_quiet = ld.logmaker(output_format=ld.QUIET_FORMAT, name="logging_quiet", level=ld.LOG_LEVELS['INFO'])
 logger_debug = ld.logmaker(output_format=ld.FORMAT, name="logging_debug", level=ld.LOG_LEVELS['DEBUG'])
 
+# prevent @ld.log_prefix() on main() from printing when debug is off
 if '--debug' not in sys.argv:
-    ld.log_prefix_logger.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)  #prevent @ld.log_prefix() on main() from printing when debug is off
+    ld.log_prefix_logger.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)
 
 # "psl domain" is "Public Second Level Domain" extracted using https://publicsuffix.org/
 
@@ -35,8 +36,7 @@ TLDEXTRACT_CACHE = CACHE_DIRECTORY + '/tldextract_cache'
 CUSTOM_BLACKLIST = CONFIG_DIRECTORY + '/blacklist'
 CUSTOM_WHITELIST = CONFIG_DIRECTORY + '/whitelist'
 DEFAULT_OUTPUT_FILE = CONFIG_DIRECTORY + '/generated_blacklist'
-DEFAULT_REMOTE_BLACKLIST_SOURCES = ['http://winhelp2002.mvps.org/hosts.txt',
-                                    'http://someonewhocares.org/hosts/hosts']
+DEFAULT_REMOTE_BLACKLISTS = ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
 DEFAULT_CACHE_EXPIRE = 3600 * 24  # 24 hours
 TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
 
@@ -76,7 +76,7 @@ def remove_comments_from_bytes(line):
 
 @ld.log_prefix(show_args=False)
 def group_by_tld(domains):
-    eprint('Sorting domains by their subdomain and grouping by TLD.', \
+    eprint('Sorting domains by their subdomain and grouping by TLD.',
         level=LOG_LEVELS['INFO'])
     sorted_output = []
     reversed_domains = []
@@ -84,7 +84,7 @@ def group_by_tld(domains):
         rev_domain = domain.split(b'.')
         rev_domain.reverse()
         reversed_domains.append(rev_domain)
-    reversed_domains.sort() #sorting a list of lists by the tld
+    reversed_domains.sort() # sorting a list of lists by the tld
     for rev_domain in reversed_domains:
         rev_domain.reverse()
         sorted_output.append(b'.'.join(rev_domain))
@@ -102,7 +102,7 @@ def strip_to_psl(domains):
     It does not make sense to use this flag if you are generating a /etc/hosts
     format file since the effect would be to block google.com and not
     *.google.com.'''
-    eprint('Removing subdomains on %d domains.', len(domains), \
+    eprint('Removing subdomains on %d domains.', len(domains),
         level=LOG_LEVELS['INFO'])
     domains_stripped = set()
     for line in domains:
@@ -147,7 +147,7 @@ def validate_domain_list(domains):
 def dnsmasq_install_help(output_file):
     dnsmasq_config_line = '\"conf-file=' + output_file + '\"'
     print('    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.' + str(time.time()), file=sys.stderr)
-    print('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo ' \
+    print('    $ grep ' + dnsmasq_config_line + ' /etc/dnsmasq.conf || { echo '
         + dnsmasq_config_line + ' >> /etc/dnsmasq.conf ; }', file=sys.stderr)
     print('    $ /etc/init.d/dnsmasq restart', file=sys.stderr)
     quit(0)
@@ -238,7 +238,7 @@ def read_url_bytes(url, no_cache=False):
     eprint("GET: %s", url, level=LOG_LEVELS['DEBUG'])
     user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
     try:
-        raw_url_bytes = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True, \
+        raw_url_bytes = requests.get(url, headers={'User-Agent': user_agent}, allow_redirects=True,
             stream=False, timeout=15.500).content
     except Exception as e:
         logger_debug.logger.exception(e)
@@ -289,7 +289,7 @@ def prune_redundant_rules(domains_combined):
             domain_parts.pop(0)
             parent_domain = b'.'.join(domain_parts)
             if parent_domain in domains_combined:
-                eprint("removing: %s because it's parent domain: %s is already blocked", domain, parent_domain, \
+                eprint("removing: %s because it's parent domain: %s is already blocked", domain, parent_domain,
                     level=LOG_LEVELS['DEBUG'])
                 domains_combined.remove(domain)
     return domains_combined
@@ -300,7 +300,7 @@ BACKUP_HELP = '''backup output file before overwriting'''
 INSTALL_HELP_HELP = '''show commands to configure dnsmasq or /etc/hosts (does nothing else)'''
 SOURCE_HELP = '''\b
 blacklist(s) to get rules from. Must be used for each remote path. Defaults to:\n   dnsgate \\
-''' + ' \\ \n'.join(['   --source {0}'.format(i) for i in DEFAULT_REMOTE_BLACKLIST_SOURCES])
+''' + ' \\ \n'.join(['   --source {0}'.format(i) for i in DEFAULT_REMOTE_BLACKLISTS])
 
 WHITELIST_HELP = '''\b
 whitelists(s) defaults to:''' + CUSTOM_WHITELIST.replace(os.path.expanduser('~'), '~')
@@ -320,7 +320,7 @@ RESTART_DNSMASQ_HELP = '''Restart dnsmasq service (defaults to True, ignored if 
 BLACKLIST_APPEND_HELP = '''Add domain to ''' + CUSTOM_BLACKLIST
 WHITELIST_APPEND_HELP = '''Add domain to ''' + CUSTOM_WHITELIST
 
-#https://github.com/mitsuhiko/click/issues/441
+# https://github.com/mitsuhiko/click/issues/441
 CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns)
 @click.command(context_settings=CONTEXT_SETTINGS)
 # pylint: disable=C0326
@@ -333,7 +333,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--noclobber',        is_flag=True,  help=NOCLOBBER_HELP)
 @click.option('--blacklist-append', is_flag=False, help=BLACKLIST_APPEND_HELP, type=str)
 @click.option('--whitelist-append', is_flag=False, help=WHITELIST_APPEND_HELP, type=str)
-@click.option('--source',           is_flag=False, help=SOURCE_HELP, multiple=True, default=DEFAULT_REMOTE_BLACKLIST_SOURCES)
+@click.option('--source',           is_flag=False, help=SOURCE_HELP, multiple=True, default=DEFAULT_REMOTE_BLACKLISTS)
 @click.option('--no-cache',         is_flag=True,  help=NO_CACHE_HELP)
 @click.option('--cache-expire',     is_flag=False, help=CACHE_EXPIRE_HELP, type=int, default=DEFAULT_CACHE_EXPIRE)
 @click.option('--dest-ip',          is_flag=False, help=DEST_IP_HELP)
@@ -393,7 +393,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
 
     if os.path.isfile(output_file) and output_file != '/dev/stdout':
         if noclobber:
-            logger_debug.logger.error("File '%s' exists. Refusing to overwrite since --noclobber was used. Exiting.", \
+            logger_debug.logger.error("File '%s' exists. Refusing to overwrite since --noclobber was used. Exiting.",
                 output_file)
             quit(1)
 
@@ -429,7 +429,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
                 domains = extract_domain_set_from_hosts_format_url_or_cached_copy(item, no_cache)
                 if domains:
                     domains_combined_orig = domains_combined_orig | domains # union
-                    eprint("len(domains_combined_orig): %s", \
+                    eprint("len(domains_combined_orig): %s",
                         len(domains_combined_orig), level=LOG_LEVELS['DEBUG'])
                 else:
                     logger_debug.logger.error('Failed to get %s, skipping.', item)
@@ -440,8 +440,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
         else:
             logger_debug.logger.error("%s must start with http:// or https://, skipping.", item)
 
-
-    eprint("%d domains from remote blacklist(s).", \
+    eprint("%d domains from remote blacklist(s).",
         len(domains_combined_orig), level=LOG_LEVELS['INFO'])
 
     if len(domains_combined_orig) == 0:
@@ -450,24 +449,24 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             " will be used.")
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)
-    eprint('%d validated remote blacklisted domains.', \
+    eprint('%d validated remote blacklisted domains.',
         len(domains_combined_orig), level=LOG_LEVELS['INFO'])
 
     domains_combined = copy.deepcopy(domains_combined_orig) # need to iterate through _orig later
 
     if block_at_psl:
         domains_combined = strip_to_psl(domains_combined)
-        eprint("%d blacklisted domains left after stripping to PSL domains.", \
+        eprint("%d blacklisted domains left after stripping to PSL domains.",
             len(domains_combined), level=LOG_LEVELS['INFO'])
 
-        eprint("Subtracting %d whitelisted domains.", \
+        eprint("Subtracting %d whitelisted domains.",
             len(domains_whitelist), level=LOG_LEVELS['INFO'])
         domains_combined = domains_combined - domains_whitelist
-        eprint("%d blacklisted domains left after subtracting the whitelist.", \
+        eprint("%d blacklisted domains left after subtracting the whitelist.",
             len(domains_combined), level=LOG_LEVELS['INFO'])
 
-        eprint('Iterating through the original %d whitelisted domains and' + \
-            'making sure none are blocked by * rules.', \
+        eprint('Iterating through the original %d whitelisted domains and' +
+            'making sure none are blocked by * rules.',
             len(domains_whitelist), level=LOG_LEVELS['INFO'])
 
         for domain in domains_whitelist:
@@ -475,49 +474,48 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             if domain_psl in domains_combined:
                 domains_combined.remove(domain_psl)
 
-        eprint('Iterating through original %d blacklisted domains to re-add subdomains' + \
-                ' that are not whitelisted', len(domains_combined_orig), level=LOG_LEVELS['INFO'])
+        eprint('Iterating through original %d blacklisted domains to re-add subdomains' +
+            ' that are not whitelisted', len(domains_combined_orig), level=LOG_LEVELS['INFO'])
         # re-add subdomains that are not explicitly whitelisted or already blocked
         for orig_domain in domains_combined_orig: # check every original full hostname
             if orig_domain not in domains_whitelist: # if it's not in the whitelist
                 if orig_domain not in domains_combined: # and it's not in the current blacklist
                                                         # (almost none will be if --block-at-psl)
-                    orig_domain_psl = extract_psl_domain(orig_domain)   # get it's psl to see if it's
-                                                                        # already blocked by a dnsmasq * rule
+                    orig_domain_psl = extract_psl_domain(orig_domain)   # get it's psl to see if it's already blocked
 
                     if orig_domain_psl not in domains_combined: # if the psl is not already blocked
                         eprint("Re-adding: %s", orig_domain, level=LOG_LEVELS['DEBUG'])
                         domains_combined.add(orig_domain) # add the full hostname to the blacklist
 
-        eprint('%d blacklisted domains after re-adding non-explicitely blacklisted subdomains', \
+        eprint('%d blacklisted domains after re-adding non-explicitely blacklisted subdomains',
             len(domains_combined), level=LOG_LEVELS['INFO'])
 
     # apply whitelist before applying local blacklist
     domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches
-    eprint("%d blacklisted domains after subtracting the %d whitelisted domains", \
+    eprint("%d blacklisted domains after subtracting the %d whitelisted domains",
         len(domains_combined), len(domains_whitelist), level=LOG_LEVELS['INFO'])
 
     # must happen after subdomain stripping and after whitelist subtraction
     blacklist_file = os.path.abspath(CUSTOM_BLACKLIST)
     domains = extract_domain_set_from_dnsgate_format_file(blacklist_file)
     if domains:
-        eprint("Got %s domains from the CUSTOM_BLACKLIST: %s", \
+        eprint("Got %s domains from the CUSTOM_BLACKLIST: %s",
             domains, blacklist_file, level=LOG_LEVELS['DEBUG'])
-        eprint("Re-adding %d domains in the local blacklist %s to override the whitelist.", \
+        eprint("Re-adding %d domains in the local blacklist %s to override the whitelist.",
             len(domains), CUSTOM_BLACKLIST, level=LOG_LEVELS['INFO'])
         domains_combined = domains_combined | domains # union
-    eprint("%d blacklisted domains after re-adding the custom blacklist.", \
+    eprint("%d blacklisted domains after re-adding the custom blacklist.",
         len(domains_combined), level=LOG_LEVELS['INFO'])
 
     eprint("Validating final domain block list.", level=LOG_LEVELS['DEBUG'])
     domains_combined = validate_domain_list(domains_combined)
-    eprint('%d validated blacklisted domains.', len(domains_combined), \
+    eprint('%d validated blacklisted domains.', len(domains_combined),
         level=LOG_LEVELS['DEBUG'])
 
     domains_combined = prune_redundant_rules(domains_combined)
 
     domains_combined = group_by_tld(domains_combined) # do last, returns sorted list
-    eprint('Final blacklisted domain count: %d', len(domains_combined), \
+    eprint('Final blacklisted domain count: %d', len(domains_combined),
         level=LOG_LEVELS['INFO'])
 
     if backup:
@@ -535,10 +533,10 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     for domain in domains_whitelist:
         domain_tld = extract_psl_domain(domain)
         if domain_tld in domains_combined:
-            eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.', \
+            eprint('%s is listed in both %s and %s, the local blacklist always takes precedence.',
                 domain.decode('UTF8'), CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG_LEVELS['WARNING'])
 
-    eprint("Writing output file: %s in %s format", output_file, mode, \
+    eprint("Writing output file: %s in %s format", output_file, mode,
         level=LOG_LEVELS['INFO'])
     try:
         with open(output_file, 'wb') as fh:
@@ -547,7 +545,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
                     if dest_ip:
                         dnsmasq_line = b'address=/.' + domain + b'/' + dest_ip + b'\n'
                     else:
-                        dnsmasq_line = b'server=/.' + domain + b'/' b'\n'  #return NXDOMAIN
+                        dnsmasq_line = b'server=/.' + domain + b'/' b'\n'  # return NXDOMAIN
                     fh.write(dnsmasq_line)
                 elif mode == 'hosts':
                     if dest_ip:
@@ -570,4 +568,3 @@ if __name__ == '__main__':
     # pylint: enable=no-value-for-parameter
     eprint("Exiting without error.", level=LOG_LEVELS['DEBUG'])
     quit(0)
-
