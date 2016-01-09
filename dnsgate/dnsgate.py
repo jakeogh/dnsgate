@@ -4,6 +4,7 @@
 
 # PUBLIC DOMAIN
 # http://github.com/jkeogh/dnsgate
+# "psl domain" is "Public Second Level Domain" extracted using https://publicsuffix.org/
 __version__ = "0.0.1"
 
 import click
@@ -28,8 +29,6 @@ logger_debug = ld.logmaker(output_format=ld.FORMAT, name="logging_debug", level=
 if '--debug' not in sys.argv:
     ld.log_prefix_logger.logger.setLevel(LOG_LEVELS['DEBUG'] + 1)
 
-# "psl domain" is "Public Second Level Domain" extracted using https://publicsuffix.org/
-
 CONFIG_DIRECTORY = '/etc/dnsgate'
 CACHE_DIRECTORY = CONFIG_DIRECTORY + '/cache'
 TLDEXTRACT_CACHE = CACHE_DIRECTORY + '/tldextract_cache'
@@ -43,7 +42,6 @@ TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
 class Config():
     def __init__(self):
         self.cache_expire = DEFAULT_CACHE_EXPIRE
-        self.debug = False
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
 
@@ -460,7 +458,7 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output_file, backup, no
 
     domains_combined = copy.deepcopy(domains_combined_orig) # need to iterate through _orig later
 
-    if block_at_psl:
+    if block_at_psl and mode != 'hosts':
         domains_combined = strip_to_psl(domains_combined)
         eprint("%d blacklisted domains left after stripping to PSL domains.",
             len(domains_combined), level=LOG_LEVELS['INFO'])
@@ -495,6 +493,10 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output_file, backup, no
 
         eprint('%d blacklisted domains after re-adding non-explicitly blacklisted subdomains',
             len(domains_combined), level=LOG_LEVELS['INFO'])
+
+    elif block_at_psl and mode == 'hosts':
+        logger_debug.logger.error("ERROR: --block-at-psl is not possible in hosts mode. Exiting.")
+        quit(1)
 
     # apply whitelist before applying local blacklist
     domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches
