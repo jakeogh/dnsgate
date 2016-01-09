@@ -40,6 +40,13 @@ DEFAULT_REMOTE_BLACKLISTS = ['http://winhelp2002.mvps.org/hosts.txt', 'http://so
 DEFAULT_CACHE_EXPIRE = 3600 * 24  # 24 hours
 TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
 
+class Config():
+    def __init__(self):
+        self.cache_expire = DEFAULT_CACHE_EXPIRE
+        self.debug = False
+
+pass_config = click.make_pass_decorator(Config, ensure=True)
+
 def eprint(*args, level, **kwargs):
     if click_debug:
         logger_debug.logger.debug(*args, **kwargs)
@@ -196,7 +203,7 @@ def read_file_bytes(file):
 
 @ld.log_prefix()
 def extract_domain_set_from_hosts_format_url_or_cached_copy(url, no_cache=False):
-    unexpired_copy = get_newest_unexpired_cached_url_copy(url)
+    unexpired_copy = get_newest_unexpired_cached_url_copy(url=url)
     if unexpired_copy:
         eprint("Using cached copy: %s", unexpired_copy, level=LOG_LEVELS['INFO'])
         unexpired_copy_bytes = read_file_bytes(unexpired_copy)
@@ -212,15 +219,16 @@ def generate_cache_file_name(url):
     return file_name
 
 @ld.log_prefix()
-def get_newest_unexpired_cached_url_copy(url):
+@pass_config
+def get_newest_unexpired_cached_url_copy(config, url):
     newest_copy = get_matching_cached_file(url)
     if newest_copy:
         newest_copy_timestamp = os.stat(newest_copy).st_mtime
-        expiration_timestamp = int(newest_copy_timestamp) + int(click_cache_expire)
+        expiration_timestamp = int(newest_copy_timestamp) + int(config.cache_expire)
         if expiration_timestamp > time.time():
             return newest_copy
         else:
-            os.rename(newest_copy, newest_copy + '.old')
+            os.rename(newest_copy, newest_copy + '.expired')
             return False
     return False
 
@@ -294,6 +302,7 @@ def prune_redundant_rules(domains_combined):
                 domains_combined.remove(domain)
     return domains_combined
 
+
 OUTPUT_FILE_HELP = '''output file (defaults to ''' + DEFAULT_OUTPUT_FILE + ')'
 NOCLOBBER_HELP = '''do not overwrite existing output file'''
 BACKUP_HELP = '''backup output file before overwriting'''
@@ -328,7 +337,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--mode',             is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
 @click.option('--block-at-psl',     is_flag=True,  help=BLOCK_AT_PSL_HELP)
 @click.option('--restart-dnsmasq',  is_flag=True,  help=RESTART_DNSMASQ_HELP, default=True)
-@click.option('--output-file',      is_flag=False, help=OUTPUT_FILE_HELP, default=DEFAULT_OUTPUT_FILE)
+@click.option('--output-file',      is_flag=False, help=OUTPUT_FILE_HELP,
+    type=click.File(mode='wb', atomic=True), default=DEFAULT_OUTPUT_FILE)
 @click.option('--backup',           is_flag=True,  help=BACKUP_HELP)
 @click.option('--noclobber',        is_flag=True,  help=NOCLOBBER_HELP)
 @click.option('--blacklist-append', is_flag=False, help=BLACKLIST_APPEND_HELP, multiple=True, type=str)
@@ -343,7 +353,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--verbose',          is_flag=True,  help=VERBOSE_HELP)
 # pylint: enable=C0326
 @ld.log_prefix()
-def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
+@pass_config
+def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             blacklist_append, whitelist_append, source, no_cache, cache_expire,
             dest_ip, show_config, install_help, debug, verbose):
     """dnsgate combines, deduplicates, and optionally modifies local and remote DNS blacklists."""
@@ -369,8 +380,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     if not os.path.isdir(CACHE_DIRECTORY):
         os.makedirs(CACHE_DIRECTORY)
 
-    global click_cache_expire
-    click_cache_expire = cache_expire
+    config.cache_expire = cache_expire
 
     global click_debug
     click_debug = debug
@@ -387,15 +397,10 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     else:
         logger_debug.logger.setLevel(LOG_LEVELS['INFO'])
 
-    if output_file == '-' or output_file == '/dev/stdout':
-        output_file = '/dev/stdout'
-    else:
-        output_file = os.path.abspath(output_file)
-
-    if os.path.isfile(output_file) and output_file != '/dev/stdout':
+    if os.path.isfile(output_file.name) and output_file.name != '/dev/stdout' and output_file.name != '<stdout>':
         if noclobber:
             logger_debug.logger.error("File '%s' exists. Refusing to overwrite since --noclobber was used. Exiting.",
-                output_file)
+                output_file.name)
             quit(1)
 
     eprint('Using output_file: %s', output_file, level=LOG_LEVELS['INFO'])
@@ -519,7 +524,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
     eprint('Final blacklisted domain count: %d', len(domains_combined),
         level=LOG_LEVELS['INFO'])
 
-    if backup:
+    if backup: # todo: unit test
         backup_file_if_exists(output_file)
 
     try:
@@ -539,25 +544,20 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
 
     eprint("Writing output file: %s in %s format", output_file, mode,
         level=LOG_LEVELS['INFO'])
-    try:
-        with open(output_file, 'wb') as fh:
-            for domain in domains_combined:
-                if mode == 'dnsmasq':
-                    if dest_ip:
-                        dnsmasq_line = b'address=/.' + domain + b'/' + dest_ip + b'\n'
-                    else:
-                        dnsmasq_line = b'server=/.' + domain + b'/' b'\n'  # return NXDOMAIN
-                    fh.write(dnsmasq_line)
-                elif mode == 'hosts':
-                    if dest_ip:
-                        hosts_line = dest_ip + b' ' + domain + b'\n'
-                    else:
-                        hosts_line = b'127.0.0.1' + b' ' + domain + b'\n'
-                    fh.write(hosts_line)
-    except PermissionError as e:
-        logger_debug.logger.error(e)
-        logger_debug.logger.error("root permissions are required to write to %s", output_file)
-        quit(1)
+
+    for domain in domains_combined:
+        if mode == 'dnsmasq':
+            if dest_ip:
+                dnsmasq_line = b'address=/.' + domain + b'/' + dest_ip + b'\n'
+            else:
+                dnsmasq_line = b'server=/.' + domain + b'/' b'\n'  # return NXDOMAIN
+            output_file.write(dnsmasq_line)
+        elif mode == 'hosts':
+            if dest_ip:
+                hosts_line = dest_ip + b' ' + domain + b'\n'
+            else:
+                hosts_line = b'127.0.0.1' + b' ' + domain + b'\n'
+            output_file.write(hosts_line)
 
     if restart_dnsmasq:
         if mode != 'hosts':
