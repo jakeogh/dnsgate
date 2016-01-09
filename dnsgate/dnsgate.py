@@ -346,6 +346,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             blacklist_append, whitelist_append, source, no_cache, cache_expire,
             dest_ip, show_config, install_help, debug, verbose):
+"""dnsgate combines, deduplicates, and optionally modifies local and remote DNS blacklists."""
 
     if show_config:
         print("mode:", mode)
@@ -487,7 +488,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
                         eprint("Re-adding: %s", orig_domain, level=LOG_LEVELS['DEBUG'])
                         domains_combined.add(orig_domain) # add the full hostname to the blacklist
 
-        eprint('%d blacklisted domains after re-adding non-explicitely blacklisted subdomains',
+        eprint('%d blacklisted domains after re-adding non-explicitly blacklisted subdomains',
             len(domains_combined), level=LOG_LEVELS['INFO'])
 
     # apply whitelist before applying local blacklist
@@ -555,7 +556,7 @@ def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
                     fh.write(hosts_line)
     except PermissionError as e:
         logger_debug.logger.error(e)
-        logger_debug.logger.error("root permissions are reqired to write to %s", output_file)
+        logger_debug.logger.error("root permissions are required to write to %s", output_file)
         quit(1)
 
     if restart_dnsmasq:
