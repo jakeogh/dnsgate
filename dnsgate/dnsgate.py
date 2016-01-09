@@ -346,7 +346,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 def dnsgate(mode, block_at_psl, restart_dnsmasq, output_file, backup, noclobber,
             blacklist_append, whitelist_append, source, no_cache, cache_expire,
             dest_ip, show_config, install_help, debug, verbose):
-"""dnsgate combines, deduplicates, and optionally modifies local and remote DNS blacklists."""
+    """dnsgate combines, deduplicates, and optionally modifies local and remote DNS blacklists."""
 
     if show_config:
         print("mode:", mode)
