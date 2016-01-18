@@ -406,31 +406,24 @@ DNSMASQ_CONFIG_HELP = 'dnsmasq config file (defaults to ' + DNSMASQ_CONFIG_FILE 
 NOCLOBBER_HELP = 'do not overwrite existing output file'
 BACKUP_HELP = 'backup output file before overwriting'
 INSTALL_HELP_HELP = 'show commands to configure dnsmasq or /etc/hosts (does nothing else)'
-SOURCE_HELP = '''\b
-blacklist(s) to get rules from. Must be used for each remote path. Defaults to:\n   dnsgate \\
-''' + ' \\ \n'.join(['   --source {0}'.format(i) for i in DEFAULT_REMOTE_BLACKLISTS])
-
+SOURCE_HELP = 'remote blacklist(s) to get rules from. Must be used for each path. Defaults to: ' + ' '.join(DEFAULT_REMOTE_BLACKLISTS)
 WHITELIST_HELP = '''\b
 whitelists(s) defaults to:''' + CUSTOM_WHITELIST.replace(os.path.expanduser('~'), '~')
-BLOCK_AT_PSL_HELP = '''
-\b
-strips subdomains, for example:
-    analytics.google.com -> google.com
-    Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.'''
+BLOCK_AT_PSL_HELP = '''strips subdomains, for example: analytics.google.com -> google.com (must manually --whitelist inadvertently blocked domains)'''
 DEBUG_HELP = 'print debugging information to stderr'
 VERBOSE_HELP = 'print more information to stderr'
 SHOW_CONFIG_HELP = 'print config information to stderr'
 NO_CACHE_HELP = 'do not cache --url files as sha1(url) to ~/.dnsgate/cache/'
 CACHE_EXPIRE_HELP = 'seconds until a cached remote file is re-downloaded (defaults to 24 hours)'
-DEST_IP_HELP = 'IP to redirect blocked connections to (defaults to' + \
+DEST_IP_HELP = 'IP to redirect blocked connections to (defaults to ' + \
     '127.0.0.1 in hosts mode, specifying this in dnsmasq mode causes lookups to resolve rather than return NXDOMAIN)'
 RESTART_DNSMASQ_HELP = 'Restart dnsmasq service (defaults to True, ignored if --mode hosts)'
 BLACKLIST_HELP = 'Add domain to ' + CUSTOM_BLACKLIST
 WHITELIST_HELP = 'Add domain to ' + CUSTOM_WHITELIST
-DISABLE_HELP = 'Comment out ' + DEFAULT_OUTPUT_FILE + \
-    ' in /etc/dnsmasq.conf and restart the service (does nothing else)'
-ENABLE_HELP = 'Uncomment ' + DEFAULT_OUTPUT_FILE + \
-    ' in /etc/dnsmasq.conf and restart the service (does nothing else)'
+DISABLE_HELP = 'Disable ' + DEFAULT_OUTPUT_FILE.split('/')[-1] + \
+    ' in /etc/dnsmasq.conf (does nothing else)'
+ENABLE_HELP = 'Enable ' + DEFAULT_OUTPUT_FILE.split('/')[-1] + \
+    ' in /etc/dnsmasq.conf (does nothing else)'
 
 # https://github.com/mitsuhiko/click/issues/441
 CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns)
@@ -438,6 +431,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 # pylint: disable=C0326
 # http://pylint-messages.wikidot.com/messages:c0326
 @click.option('--mode',            is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
+@click.option('--source',          is_flag=False, help=SOURCE_HELP, multiple=True, default=DEFAULT_REMOTE_BLACKLISTS)
 @click.option('--block-at-psl',    is_flag=True,  help=BLOCK_AT_PSL_HELP)
 @click.option('--restart-dnsmasq', is_flag=True,  help=RESTART_DNSMASQ_HELP, default=True)
 @click.option('--output',          is_flag=False, help=OUTPUT_FILE_HELP,
@@ -448,7 +442,6 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_
 @click.option('--noclobber',       is_flag=True,  help=NOCLOBBER_HELP)
 @click.option('--blacklist',       is_flag=False, help=BLACKLIST_HELP, multiple=True, type=str)
 @click.option('--whitelist',       is_flag=False, help=WHITELIST_HELP, multiple=True, type=str)
-@click.option('--source',          is_flag=False, help=SOURCE_HELP, multiple=True, default=DEFAULT_REMOTE_BLACKLISTS)
 @click.option('--no-cache',        is_flag=True,  help=NO_CACHE_HELP)
 @click.option('--cache-expire',    is_flag=False, help=CACHE_EXPIRE_HELP, type=int, default=DEFAULT_CACHE_EXPIRE)
 @click.option('--dest-ip',         is_flag=False, help=DEST_IP_HELP)
