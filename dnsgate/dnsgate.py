@@ -406,7 +406,7 @@ DNSMASQ_CONFIG_HELP = 'dnsmasq config file (defaults to ' + DNSMASQ_CONFIG_FILE 
 NOCLOBBER_HELP = 'do not overwrite existing output file'
 BACKUP_HELP = 'backup output file before overwriting'
 INSTALL_HELP_HELP = 'show commands to configure dnsmasq or /etc/hosts (does nothing else)'
-SOURCE_HELP = 'remote blacklist(s) to get rules from. Must be used for each path. Defaults to: ' + ' '.join(DEFAULT_REMOTE_BLACKLISTS)
+SOURCE_HELP = 'remote blacklist(s) to get rules from. Must be used for each. Defaults to: ' + ' '.join(DEFAULT_REMOTE_BLACKLISTS)
 WHITELIST_HELP = '''\b
 whitelists(s) defaults to:''' + CUSTOM_WHITELIST.replace(os.path.expanduser('~'), '~')
 BLOCK_AT_PSL_HELP = '''strips subdomains, for example: analytics.google.com -> google.com (must manually --whitelist inadvertently blocked domains)'''

@@ -1,6 +1,6 @@
 #!/bin/sh
 rm -f /etc/dnsgate/cache/*
-COLUMNS=108; LINES=90; export COLUMNS LINES;
+COLUMNS=107; LINES=90; export COLUMNS LINES;
 script -q -c ./generate_readme |\
     ./strip_ansi.pl |\
     sed -e 's/xn--n3h.net/☃.net/g' |\
