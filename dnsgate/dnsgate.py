@@ -94,6 +94,16 @@ def remove_comments_from_bytes(line):
 
 @ld.log_prefix()
 def comment_out_line_in_file(fh, line_to_match):
+    '''
+    add a # to the beginning of all instances of line_to_match
+    iff there is not already a # preceding line_to_match and
+        line_to_match is the only thing on the line
+            except possibly a preceeding # and/or whitespace
+
+    if line_to_match is found and all instances are commented out return True
+    if line_to_match is found and all instances are already commented out return True
+    if line_to_match is not found return False
+    '''
     with open(fh.name, 'r') as rfh:
         lines = rfh.read().splitlines()
     newlines = []
@@ -115,16 +125,25 @@ def comment_out_line_in_file(fh, line_to_match):
                     continue
         else:
             newlines.append(line)
-
     if lines != newlines:
         fh.write('\n'.join(newlines) + '\n')
         return True
-    if commented:
+    elif commented:
         return True
     return False
 
 @ld.log_prefix()
 def uncomment_line_in_file(fh, line_to_match):
+    '''
+    remove # from the beginning of all instances of line_to_match
+    iff there is already a # preceding line_to_match and
+        line_to_match is the only thing on the line
+            except possibly a preceeding # and/or whitespace
+
+    if line_to_match is found and all instances are uncommented return True
+    if line_to_match is found and all instances are already uncommented return True
+    if line_to_match is not found return False
+    '''
     with open(fh.name, 'r') as rfh:
         lines = rfh.read().splitlines()
     newlines = []
@@ -191,13 +210,16 @@ def strip_to_psl(domains):
     return domains_stripped
 
 @ld.log_prefix()
-def write_unique_line(line, file):
+def write_unique_line(line, file_to_write):
+    '''
+    Write line to file_to_write iff line not in file_to_write.
+    '''
     try:
-        with open(file, 'r+') as fh:
+        with open(file_to_write, 'r+') as fh:
             if line not in fh:
                 fh.write(line)
     except FileNotFoundError:
-        with open(file, 'a') as fh:
+        with open(file_to_write, 'a') as fh:
             fh.write(line)
 
 @ld.log_prefix()
@@ -209,7 +231,7 @@ def backup_file_if_exists(file_to_backup):
             with open(dest_file, 'x') as df:
                 copyfileobj(sf, df)
     except FileNotFoundError:
-        pass    # skip backup is file does not exist
+        pass    # skip backup if file does not exist
 
 @ld.log_prefix(show_args=False)
 def validate_domain_list(domains):
@@ -224,10 +246,12 @@ def validate_domain_list(domains):
             logger_debug.logger.exception(e)
     return valid_domains
 
+@ld.log_prefix()
 def generate_dnsmasq_config_line(output_file):
     dnsmasq_config_line = 'conf-file=' + output_file
     return dnsmasq_config_line
 
+@ld.log_prefix()
 def dnsmasq_install_help(output_file, dnsmasq_config):
     dnsmasq_config_line = generate_dnsmasq_config_line(output_file)
     print('    $ cp -vi ' + dnsmasq_config + ' ' + dnsmasq_config + '.bak.' + str(time.time()), file=sys.stderr)
@@ -235,15 +259,15 @@ def dnsmasq_install_help(output_file, dnsmasq_config):
         + dnsmasq_config_line + ' >> dnsmasq_config ; }', file=sys.stderr)
     print('    $ /etc/init.d/dnsmasq restart', file=sys.stderr)
 
+@ld.log_prefix()
 def hosts_install_help(output_file):
     print('    $ mv -vi /etc/hosts /etc/hosts.default', file=sys.stderr)
     print('    $ cat /etc/hosts.default ' + output_file + ' > /etc/hosts', file=sys.stderr)
 
 @ld.log_prefix()
-def custom_list_append(domain_file, idns):
+def append_to_local_rule_file(rule_file, idns):
     for idn in idns:
         eprint("attempting to append %s to %s", idn, domain_file, level=LOG_LEVELS['INFO'])
-        eprint("idn: %s", idn, level=LOG_LEVELS['DEBUG'])
         hostname = idn.encode('idna').decode('ascii')
         eprint("appending hostname: %s to %s", hostname, domain_file, level=LOG_LEVELS['DEBUG'])
         line = hostname + '\n'
@@ -392,51 +416,53 @@ BLOCK_AT_PSL_HELP = '''
 \b
 strips subdomains, for example:
     analytics.google.com -> google.com
-    Useful for dnsmasq if you are willing to maintain a --whitelist file
-    for inadvertently blocked domains.'''
+    Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.'''
 DEBUG_HELP = 'print debugging information to stderr'
 VERBOSE_HELP = 'print more information to stderr'
 SHOW_CONFIG_HELP = 'print config information to stderr'
 NO_CACHE_HELP = 'do not cache --url files as sha1(url) to ~/.dnsgate/cache/'
 CACHE_EXPIRE_HELP = 'seconds until a cached remote file is re-downloaded (defaults to 24 hours)'
-DEST_IP_HELP = 'IP to redirect blocked connections to (defaults to 127.0.0.1)'
+DEST_IP_HELP = 'IP to redirect blocked connections to (defaults to' + \
+    '127.0.0.1 in hosts mode, specifying this in dnsmasq mode causes lookups to resolve rather than return NXDOMAIN)'
 RESTART_DNSMASQ_HELP = 'Restart dnsmasq service (defaults to True, ignored if --mode hosts)'
-BLACKLIST_APPEND_HELP = 'Add domain to ' + CUSTOM_BLACKLIST
-WHITELIST_APPEND_HELP = 'Add domain to ' + CUSTOM_WHITELIST
-DISABLE_HELP = 'Comment out ' + DEFAULT_OUTPUT_FILE + 'in /etc/dnsmasq.conf and restart the service'
-ENABLE_HELP = 'Uncomment ' + DEFAULT_OUTPUT_FILE + 'in /etc/dnsmasq.conf and restart the service'
+BLACKLIST_HELP = 'Add domain to ' + CUSTOM_BLACKLIST
+WHITELIST_HELP = 'Add domain to ' + CUSTOM_WHITELIST
+DISABLE_HELP = 'Comment out ' + DEFAULT_OUTPUT_FILE + \
+    ' in /etc/dnsmasq.conf and restart the service (does nothing else)'
+ENABLE_HELP = 'Uncomment ' + DEFAULT_OUTPUT_FILE + \
+    ' in /etc/dnsmasq.conf and restart the service (does nothing else)'
 
 # https://github.com/mitsuhiko/click/issues/441
 CONTEXT_SETTINGS = dict(help_option_names=['--help'], terminal_width=shutil.get_terminal_size((80, 20)).columns)
 @click.command(context_settings=CONTEXT_SETTINGS)
 # pylint: disable=C0326
 # http://pylint-messages.wikidot.com/messages:c0326
-@click.option('--mode',             is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
-@click.option('--block-at-psl',     is_flag=True,  help=BLOCK_AT_PSL_HELP)
-@click.option('--restart-dnsmasq',  is_flag=True,  help=RESTART_DNSMASQ_HELP, default=True)
-@click.option('--output',           is_flag=False, help=OUTPUT_FILE_HELP,
+@click.option('--mode',            is_flag=False, type=click.Choice(['dnsmasq', 'hosts']), default='dnsmasq')
+@click.option('--block-at-psl',    is_flag=True,  help=BLOCK_AT_PSL_HELP)
+@click.option('--restart-dnsmasq', is_flag=True,  help=RESTART_DNSMASQ_HELP, default=True)
+@click.option('--output',          is_flag=False, help=OUTPUT_FILE_HELP,
     type=click.File(mode='wb', atomic=True), default=DEFAULT_OUTPUT_FILE)
-@click.option('--dnsmasq-config',   is_flag=False, help=DNSMASQ_CONFIG_HELP,
+@click.option('--dnsmasq-config',  is_flag=False, help=DNSMASQ_CONFIG_HELP,
     type=click.File(mode='w', atomic=True), default=DNSMASQ_CONFIG_FILE)
-@click.option('--backup',           is_flag=True,  help=BACKUP_HELP)
-@click.option('--noclobber',        is_flag=True,  help=NOCLOBBER_HELP)
-@click.option('--blacklist-append', is_flag=False, help=BLACKLIST_APPEND_HELP, multiple=True, type=str)
-@click.option('--whitelist-append', is_flag=False, help=WHITELIST_APPEND_HELP, multiple=True, type=str)
-@click.option('--source',           is_flag=False, help=SOURCE_HELP, multiple=True, default=DEFAULT_REMOTE_BLACKLISTS)
-@click.option('--no-cache',         is_flag=True,  help=NO_CACHE_HELP)
-@click.option('--cache-expire',     is_flag=False, help=CACHE_EXPIRE_HELP, type=int, default=DEFAULT_CACHE_EXPIRE)
-@click.option('--dest-ip',          is_flag=False, help=DEST_IP_HELP)
-@click.option('--show-config',      is_flag=True,  help=SHOW_CONFIG_HELP)
-@click.option('--install-help',     is_flag=True,  help=INSTALL_HELP_HELP)
-@click.option('--debug',            is_flag=True,  help=DEBUG_HELP)
-@click.option('--verbose',          is_flag=True,  help=VERBOSE_HELP)
-@click.option('--disable',          is_flag=True,  help=DISABLE_HELP)
-@click.option('--enable',           is_flag=True,  help=ENABLE_HELP)
+@click.option('--backup',          is_flag=True,  help=BACKUP_HELP)
+@click.option('--noclobber',       is_flag=True,  help=NOCLOBBER_HELP)
+@click.option('--blacklist',       is_flag=False, help=BLACKLIST_HELP, multiple=True, type=str)
+@click.option('--whitelist',       is_flag=False, help=WHITELIST_HELP, multiple=True, type=str)
+@click.option('--source',          is_flag=False, help=SOURCE_HELP, multiple=True, default=DEFAULT_REMOTE_BLACKLISTS)
+@click.option('--no-cache',        is_flag=True,  help=NO_CACHE_HELP)
+@click.option('--cache-expire',    is_flag=False, help=CACHE_EXPIRE_HELP, type=int, default=DEFAULT_CACHE_EXPIRE)
+@click.option('--dest-ip',         is_flag=False, help=DEST_IP_HELP)
+@click.option('--show-config',     is_flag=True,  help=SHOW_CONFIG_HELP)
+@click.option('--install-help',    is_flag=True,  help=INSTALL_HELP_HELP)
+@click.option('--debug',           is_flag=True,  help=DEBUG_HELP)
+@click.option('--verbose',         is_flag=True,  help=VERBOSE_HELP)
+@click.option('--disable',         is_flag=True,  help=DISABLE_HELP)
+@click.option('--enable',          is_flag=True,  help=ENABLE_HELP)
 # pylint: enable=C0326
 @ld.log_prefix()
 @pass_config
 def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output, backup, noclobber,
-            blacklist_append, whitelist_append, source, no_cache, cache_expire,
+            blacklist, whitelist, source, no_cache, cache_expire,
             dest_ip, show_config, install_help, debug, verbose, disable, dnsmasq_config, enable):
     """dnsgate combines, deduplicates, and optionally modifies local and remote DNS blacklists."""
 
@@ -447,8 +473,8 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output, backup, noclobb
         "output": output.name,
         "backup": backup,
         "noclobber": noclobber,
-        "blacklist_append": blacklist_append,
-        "whitelist_append": whitelist_append,
+        "blacklist": blacklist,
+        "whitelist": whitelist,
         "source": source,
         "no_cache": no_cache,
         "dest_ip": dest_ip,
@@ -487,11 +513,9 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output, backup, noclobb
 
     if os.path.isfile(output.name) and output.name != '/dev/stdout' and output.name != '<stdout>':
         if noclobber:
-            logger_debug.logger.error("File '%s' exists. Refusing to overwrite since --noclobber was used. Exiting.",
-                output.name)
+            eprint("ERROR: File '" + output.name +
+                "' exists. Refusing to overwrite since --noclobber was used. Exiting.", level=LOG_LEVELS['ERROR'])
             quit(1)
-
-    eprint('Using output: %s', output.name, level=LOG_LEVELS['INFO'])
 
     if install_help:
         if mode == 'dnsmasq':
@@ -505,21 +529,32 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output, backup, noclobb
         dnsmasq_config.close()
         restart_dnsmasq_service()
         if len(sys.argv) > 2:
-            logger_debug.logger.warning("exiting before blacklist modification because --disable was used.")
+            eprint("WARNING: exiting before any other modifications because --disable was used.",
+                level=LOG_LEVELS['WARNING'])
         quit(0)
     elif disable:
-        logger_debug.logger.error("--disable is only available with --mode dnsmasq. Exiting.")
+        eprint("ERROR: --disable is only available with --mode dnsmasq. Exiting.", level=LOG_LEVELS['ERROR'])
         quit(1)
 
-    if enable and mode != 'dnsmasq':
-        logger_debug.logger.error("--enable is only available with --mode dnsmasq. Exiting.")
+    if enable and mode == 'dnsmasq':
+        uncomment_line_in_file(dnsmasq_config, generate_dnsmasq_config_line(output.name))
+        dnsmasq_config.close()
+        restart_dnsmasq_service()
+        if len(sys.argv) > 2:
+            eprint("WARNING: exiting before any other modifications because --enable was used.",
+                level=LOG_LEVELS['WARNING'])
+        quit(0)
+    elif enable:
+        eprint("ERROR: --enable is only available with --mode dnsmasq. Exiting.", level=LOG_LEVELS['ERROR'])
         quit(1)
 
-    if whitelist_append:
-        custom_list_append(CUSTOM_WHITELIST, whitelist_append)
+    eprint('Using output file: %s', output.name, level=LOG_LEVELS['INFO'])
 
-    if blacklist_append:
-        custom_list_append(CUSTOM_BLACKLIST, blacklist_append)
+    if whitelist:
+        append_to_local_rule_file(CUSTOM_WHITELIST, whitelist)
+
+    if blacklist:
+        append_to_local_rule_file(CUSTOM_BLACKLIST, blacklist)
 
     domains_whitelist = set()
     eprint("Reading whitelist: %s", str(CUSTOM_WHITELIST), level=LOG_LEVELS['INFO'])
@@ -542,21 +577,20 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output, backup, noclobb
                     eprint("len(domains_combined_orig): %s",
                         len(domains_combined_orig), level=LOG_LEVELS['DEBUG'])
                 else:
-                    logger_debug.logger.error('Failed to get %s, skipping.', item)
+                    eprint('ERROR: Failed to get ' + item + ', skipping.', level=LOG_LEVELS['ERROR'])
                     continue
             except Exception as e:
                 logger_debug.logger.error("Exception on blacklist url: %s", item)
                 logger_debug.logger.exception(e)
         else:
-            logger_debug.logger.error("%s must start with http:// or https://, skipping.", item)
+            eprint('ERROR: ' + item + ' must start with http:// or https://, skipping.', level=LOG_LEVELS['ERROR'])
 
-    eprint("%d domains from remote blacklist(s).",
-        len(domains_combined_orig), level=LOG_LEVELS['INFO'])
+    eprint("%d domains from remote blacklist(s).", len(domains_combined_orig), level=LOG_LEVELS['INFO'])
 
     if len(domains_combined_orig) == 0:
-        logger_debug.logger.warning("0 domains were retrieved from " +
+        eprint("WARNING: 0 domains were retrieved from " +
             "remote sources, only the local " + CUSTOM_BLACKLIST +
-            " will be used.")
+            " will be used.", level=LOG_LEVELS['WARNING'])
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)
     eprint('%d validated remote blacklisted domains.',
@@ -671,13 +705,6 @@ def dnsgate(config, mode, block_at_psl, restart_dnsmasq, output, backup, noclobb
             output.write(hosts_line)
 
     output.close() # make sure file is written before restarting dnsmasq
-
-    if enable and mode == 'dnsmasq':
-        uncomment_line_in_file(dnsmasq_config, generate_dnsmasq_config_line(output.name))
-        dnsmasq_config.close()
-    elif enable:
-        logger_debug.logger.error("--enable is only available with --mode dnsmasq. Exiting.")
-        quit(1)
 
     if restart_dnsmasq:
         if mode != 'hosts':

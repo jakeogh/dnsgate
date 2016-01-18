@@ -40,6 +40,7 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-psl` option str
 * **Installation Support.** see --install-help
 * **Extensive Debugging Support.** see --verbose and --debug
 * **IDN Support.** What to block snowman? ./dnsgate --blacklist-append xn--n3h.net
+* **Enable/Disable Support.** see --enable and --disable
 
 **TODO:**
 * **Full Test Coverage.**

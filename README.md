@@ -33,6 +33,7 @@ With `--mode dnsmasq` (default if not specified) the `--block-at-psl` option str
 * **Installation Support.** see --install-help
 * **Extensive Debugging Support.** see --verbose and --debug
 * **IDN Support.** What to block snowman? ./dnsgate --blacklist-append ☃.net
+* **Enable/Disable Support.** see --enable and --disable
 
 **TODO:**
 * **Full Test Coverage.**
@@ -51,30 +52,32 @@ Usage: dnsgate [OPTIONS]
 
 Options:
   --mode [dnsmasq|hosts]
-  --block-at-psl          
-                           strips subdomains, for example:
-                               analytics.google.com -> google.com
-                               Useful for dnsmasq if you are willing to maintain a --whitelist file
-                               for inadvertently blocked domains.
-  --restart-dnsmasq        Restart dnsmasq service (defaults to True, ignored if --mode hosts)
-  --output-file FILENAME   output file (defaults to /etc/dnsgate/generated_blacklist)
-  --backup                 backup output file before overwriting
-  --noclobber              do not overwrite existing output file
-  --blacklist-append TEXT  Add domain to /etc/dnsgate/blacklist
-  --whitelist-append TEXT  Add domain to /etc/dnsgate/whitelist
-  --source TEXT           
-                           blacklist(s) to get rules from. Must be used for each remote path. Defaults to:
-                              dnsgate \
-                              --source http://winhelp2002.mvps.org/hosts.txt \ 
-                              --source http://someonewhocares.org/hosts/hosts
-  --no-cache               do not cache --url files as sha1(url) to ~/.dnsgate/cache/
-  --cache-expire INTEGER   seconds until a cached remote file is re-downloaded (defaults to 24 hours)
-  --dest-ip TEXT           IP to redirect blocked connections to (defaults to 127.0.0.1)
-  --show-config            print config information to stderr
-  --install-help           show commands to configure dnsmasq or /etc/hosts (does nothing else)
-  --debug                  print debugging information to stderr
-  --verbose                print more information to stderr
-  --help                   Show this message and exit.
+  --block-at-psl            
+                             strips subdomains, for example:
+                                 analytics.google.com -> google.com
+                                 Useful for dnsmasq if you are willing to maintain a --whitelist file for inadvertently blocked domains.
+  --restart-dnsmasq          Restart dnsmasq service (defaults to True, ignored if --mode hosts)
+  --output FILENAME          output file (defaults to /etc/dnsgate/generated_blacklist)
+  --dnsmasq-config FILENAME  dnsmasq config file (defaults to /etc/dnsmasq.conf)
+  --backup                   backup output file before overwriting
+  --noclobber                do not overwrite existing output file
+  --blacklist TEXT           Add domain to /etc/dnsgate/blacklist
+  --whitelist TEXT           Add domain to /etc/dnsgate/whitelist
+  --source TEXT             
+                             blacklist(s) to get rules from. Must be used for each remote path. Defaults to:
+                                dnsgate \
+                                --source http://winhelp2002.mvps.org/hosts.txt \ 
+                                --source http://someonewhocares.org/hosts/hosts
+  --no-cache                 do not cache --url files as sha1(url) to ~/.dnsgate/cache/
+  --cache-expire INTEGER     seconds until a cached remote file is re-downloaded (defaults to 24 hours)
+  --dest-ip TEXT             IP to redirect blocked connections to (defaults to127.0.0.1 in hosts mode, specifying this in dnsmasq mode causes lookups to resolve rather than return NXDOMAIN)
+  --show-config              print config information to stderr
+  --install-help             show commands to configure dnsmasq or /etc/hosts (does nothing else)
+  --debug                    print debugging information to stderr
+  --verbose                  print more information to stderr
+  --disable                  Comment out /etc/dnsgate/generated_blacklist in /etc/dnsmasq.conf and restart the service (does nothing else)
+  --enable                   Uncomment /etc/dnsgate/generated_blacklist in /etc/dnsmasq.conf and restart the service (does nothing else)
+  --help                     Show this message and exit.
 ```
  
 **three dnsmasq examples that do the same thing:**
@@ -86,38 +89,41 @@ $ ./dnsgate
   
 $ ./dnsgate --show-config
 {'backup': False,
- 'blacklist_append': (),
+ 'blacklist': (),
  'block_at_psl': False,
  'debug': False,
  'dest_ip': None,
+ 'disable': False,
+ 'dnsmasq_config': '/etc/dnsmasq.conf',
+ 'enable': False,
  'install_help': False,
  'mode': 'dnsmasq',
  'no_cache': False,
  'noclobber': False,
- 'output_file': '/etc/dnsgate/generated_blacklist',
+ 'output': '/etc/dnsgate/generated_blacklist',
  'restart_dnsmasq': True,
  'show_config': True,
  'source': ('http://winhelp2002.mvps.org/hosts.txt',
             'http://someonewhocares.org/hosts/hosts'),
  'verbose': False,
- 'whitelist_append': ()}
+ 'whitelist': ()}
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
   
 $ ./dnsgate --verbose
-Using output_file: /etc/dnsgate/generated_blacklist
+Using output file: /etc/dnsgate/generated_blacklist
 Reading whitelist: /etc/dnsgate/whitelist
-80 validated whitelist domains.
+90 validated whitelist domains.
 Reading remote blacklist(s):
 ('http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts')
-23639 domains from remote blacklist(s).
-23639 validated remote blacklisted domains.
-23638 blacklisted domains after subtracting the 80 whitelisted domains
-Re-adding 64 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-23697 blacklisted domains after re-adding the custom blacklist.
-18331 balcklisted domains after removing redundant rules.
+23646 domains from remote blacklist(s).
+23646 validated remote blacklisted domains.
+23645 blacklisted domains after subtracting the 90 whitelisted domains
+Re-adding 65 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
+23705 blacklisted domains after re-adding the custom blacklist.
+17405 balcklisted domains after removing redundant rules.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 18331
+Final blacklisted domain count: 17405
 Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
@@ -126,26 +132,26 @@ Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate --verbose --block-at-psl
-Using output_file: /etc/dnsgate/generated_blacklist
+Using output file: /etc/dnsgate/generated_blacklist
 Reading whitelist: /etc/dnsgate/whitelist
-80 validated whitelist domains.
+90 validated whitelist domains.
 Reading remote blacklist(s):
 ('http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts')
-23639 domains from remote blacklist(s).
-23639 validated remote blacklisted domains.
-Removing subdomains on 23639 domains.
-10540 blacklisted domains left after stripping to PSL domains.
-Subtracting 80 whitelisted domains.
-10473 blacklisted domains left after subtracting the whitelist.
-Iterating through the original 80 whitelisted domains and making sure none are blocked by * rules.
-Iterating through original 23639 blacklisted domains to re-add subdomains that are not whitelisted
-10750 blacklisted domains after re-adding non-explicitly blacklisted subdomains
-10750 blacklisted domains after subtracting the 80 whitelisted domains
-Re-adding 64 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-10801 blacklisted domains after re-adding the custom blacklist.
-10378 balcklisted domains after removing redundant rules.
+23646 domains from remote blacklist(s).
+23646 validated remote blacklisted domains.
+Removing subdomains on 23646 domains.
+10545 blacklisted domains left after stripping to PSL domains.
+Subtracting 90 whitelisted domains.
+10474 blacklisted domains left after subtracting the whitelist.
+Iterating through the original 90 whitelisted domains and making sure none are blocked by * rules.
+Iterating through original 23646 blacklisted domains to re-add subdomains that are not whitelisted
+10762 blacklisted domains after re-adding non-explicitly blacklisted subdomains
+10762 blacklisted domains after subtracting the 90 whitelisted domains
+Re-adding 65 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
+10814 blacklisted domains after re-adding the custom blacklist.
+10389 balcklisted domains after removing redundant rules.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 10378
+Final blacklisted domain count: 10389
 Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
@@ -154,8 +160,8 @@ Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate --install-help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1452383147.896407
-    $ grep "conf-file=/etc/dnsgate/generated_blacklist" /etc/dnsmasq.conf || { echo "conf-file=/etc/dnsgate/generated_blacklist" >> /etc/dnsmasq.conf ; }
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1453157765.7356126
+    $ grep conf-file=/etc/dnsgate/generated_blacklist /etc/dnsmasq.conf|| { echo conf-file=/etc/dnsgate/generated_blacklist >> dnsmasq_config ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
 **three hosts examples that do the same thing:**
@@ -165,36 +171,39 @@ $ ./dnsgate --mode hosts
   
 $ ./dnsgate --mode hosts --show-config
 {'backup': False,
- 'blacklist_append': (),
+ 'blacklist': (),
  'block_at_psl': False,
  'debug': False,
  'dest_ip': None,
+ 'disable': False,
+ 'dnsmasq_config': '/etc/dnsmasq.conf',
+ 'enable': False,
  'install_help': False,
  'mode': 'hosts',
  'no_cache': False,
  'noclobber': False,
- 'output_file': '/etc/dnsgate/generated_blacklist',
+ 'output': '/etc/dnsgate/generated_blacklist',
  'restart_dnsmasq': True,
  'show_config': True,
  'source': ('http://winhelp2002.mvps.org/hosts.txt',
             'http://someonewhocares.org/hosts/hosts'),
  'verbose': False,
- 'whitelist_append': ()}
+ 'whitelist': ()}
   
 $ ./dnsgate --mode hosts --verbose
-Using output_file: /etc/dnsgate/generated_blacklist
+Using output file: /etc/dnsgate/generated_blacklist
 Reading whitelist: /etc/dnsgate/whitelist
-80 validated whitelist domains.
+90 validated whitelist domains.
 Reading remote blacklist(s):
 ('http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts')
-23639 domains from remote blacklist(s).
-23639 validated remote blacklisted domains.
-23638 blacklisted domains after subtracting the 80 whitelisted domains
-Re-adding 64 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-23697 blacklisted domains after re-adding the custom blacklist.
-18371 balcklisted domains after removing redundant rules.
+23646 domains from remote blacklist(s).
+23646 validated remote blacklisted domains.
+23645 blacklisted domains after subtracting the 90 whitelisted domains
+Re-adding 65 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
+23705 blacklisted domains after re-adding the custom blacklist.
+18349 balcklisted domains after removing redundant rules.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 18371
+Final blacklisted domain count: 18349
 Writing output file: /etc/dnsgate/generated_blacklist in hosts format
 ``` 
 **/etc/hosts install help:**
