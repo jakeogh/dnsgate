@@ -267,11 +267,11 @@ def hosts_install_help(output_file):
 @ld.log_prefix()
 def append_to_local_rule_file(rule_file, idns):
     for idn in idns:
-        eprint("attempting to append %s to %s", idn, domain_file, level=LOG_LEVELS['INFO'])
+        eprint("attempting to append %s to %s", idn, rule_file, level=LOG_LEVELS['INFO'])
         hostname = idn.encode('idna').decode('ascii')
-        eprint("appending hostname: %s to %s", hostname, domain_file, level=LOG_LEVELS['DEBUG'])
+        eprint("appending hostname: %s to %s", hostname, rule_file, level=LOG_LEVELS['DEBUG'])
         line = hostname + '\n'
-        write_unique_line(line, domain_file)
+        write_unique_line(line, rule_file)
 
 @ld.log_prefix()
 def extract_domain_set_from_dnsgate_format_file(dnsgate_file):
