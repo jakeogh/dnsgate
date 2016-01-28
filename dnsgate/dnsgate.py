@@ -439,6 +439,52 @@ def prune_redundant_rules(domains):
                     domain, domain_to_check, level=LOG['DEBUG'])
                 domains.remove(domain)
 
+def is_broken_symlink(path):
+    if os.path.islink(path):
+        return not os.path.exists(path) # returns False for broken symlinks
+    return False # path isnt a symlink
+
+def is_unbroken_symlink(path):
+    if os.path.islink(path): # path is a symlink
+        return os.path.exists(path) # returns False for broken symlinks
+    return False # path isnt a symlink
+
+def get_symlink_abs_target(link): # assumes link is unbroken
+    target = os.readlink(file)
+    target_joined = os.path.join(os.path.dirname(file), target)
+    target_file = os.path.realpath(target_joined)
+    return target_file
+
+def is_unbroken_symlink_to_target(target, link):    #bug, should not assume unicode paths
+    if is_unbroken_symlink(link):
+        link_target = get_symlink_abs_target(link)
+        if link_target == target:
+            return True
+    return False
+
+def symlink_relative(target, link_name):
+    target = os.path.abspath(target)
+    link_name = os.path.abspath(link_name)
+    if not path_exists(target):
+        eprint('target: %s does not exist. Refusing to make broken symlink. Exiting.',
+            target, level=LOG['ERROR'])
+        quit(1)
+
+    if is_broken_symlink(link_name):
+        eprint('ERROR: %s exists as a broken symlink. ' +
+            'Remove it before trying to make a new symlink. Exiting.',
+            link_name, level=LOG['ERROR'])
+        quit(1)
+
+    link_name_folder = '/'.join(link_name.split('/')[:-1])
+    if not os.path.isdir(link_name_folder):
+        eprint('link_name_folder: %s does not exist. Exiting.',
+            link_name_folder, level=LOG['ERROR'])
+        quit(1)
+
+    relative_target = os.path.relpath(target, link_name_folder)
+    os.symlink(relative_target, link_name)
+
 OUTPUT_FILE_HELP = '(for testing) output file (defaults to ' + DEFAULT_OUTPUT_FILE + ')'
 DNSMASQ_CONFIG_HELP = 'dnsmasq config file (defaults to ' + DNSMASQ_CONFIG_FILE + ')'
 BACKUP_HELP = 'backup output file before overwriting'
@@ -544,51 +590,6 @@ def install_help(config):
         hosts_install_help()
     quit(0)
 
-def is_broken_symlink(path):
-    if os.path.islink(path):
-        return not os.path.exists(path) # returns False for broken symlinks
-    return False # path isnt a symlink
-
-def is_unbroken_symlink(path):
-    if os.path.islink(path): # path is a symlink
-        return os.path.exists(path) # returns False for broken symlinks
-    return False # path isnt a symlink
-
-def get_symlink_abs_target(link): # assumes link is unbroken
-    target = os.readlink(file)
-    target_joined = os.path.join(os.path.dirname(file), target)
-    target_file = os.path.realpath(target_joined)
-    return target_file
-
-def is_unbroken_symlink_to_target(target, link):    #bug, should not assume unicode paths
-    if is_unbroken_symlink(link):
-        link_target = get_symlink_abs_target(link)
-        if link_target == target:
-            return True
-    return False
-
-def symlink_relative(target, link_name):
-    target = os.path.abspath(target)
-    link_name = os.path.abspath(link_name)
-    if not path_exists(target):
-        eprint('target: %s does not exist. Refusing to make broken symlink. Exiting.',
-            target, level=LOG['ERROR'])
-        quit(1)
-
-    if is_broken_symlink(link_name):
-        eprint('ERROR: %s exists as a broken symlink. ' +
-            'Remove it before trying to make a new symlink. Exiting.',
-            link_name, level=LOG['ERROR'])
-        quit(1)
-
-    link_name_folder = '/'.join(link_name.split('/')[:-1])
-    if not os.path.isdir(link_name_folder):
-        eprint('link_name_folder: %s does not exist. Exiting.',
-            link_name_folder, level=LOG['ERROR'])
-        quit(1)
-
-    relative_target = os.path.relpath(target, link_name_folder)
-    os.symlink(relative_target, link_name)
 
 @dnsgate.command(help=ENABLE_HELP)
 @click.pass_obj
