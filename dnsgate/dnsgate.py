@@ -450,8 +450,8 @@ def is_unbroken_symlink(path):
     return False # path isnt a symlink
 
 def get_symlink_abs_target(link): # assumes link is unbroken
-    target = os.readlink(file)
-    target_joined = os.path.join(os.path.dirname(file), target)
+    target = os.readlink(link)
+    target_joined = os.path.join(os.path.dirname(link), target)
     target_file = os.path.realpath(target_joined)
     return target_file
 
@@ -461,6 +461,9 @@ def is_unbroken_symlink_to_target(target, link):    #bug, should not assume unic
         if link_target == target:
             return True
     return False
+
+def path_exists(path):
+    return os.path.lexists(path) #returns True for broken symlinks
 
 def symlink_relative(target, link_name):
     target = os.path.abspath(target)
@@ -561,7 +564,7 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
 
             ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
                 dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                backup=backup)
+                dnsmasq_config_file=dnsmasq_config_file, backup=backup)
 
             os.makedirs(CACHE_DIRECTORY, exist_ok=True)
 
@@ -590,23 +593,26 @@ def install_help(config):
         hosts_install_help()
     quit(0)
 
-
 @dnsgate.command(help=ENABLE_HELP)
 @click.pass_obj
 def enable(config):
     if config.mode == 'dnsmasq':
-        uncomment_line_in_file(config.dnsmasq_config_file, generate_dnsmasq_config_file_line())
+        uncomment_line_in_file(config.dnsmasq_config_file,
+            generate_dnsmasq_config_file_line())
         config.dnsmasq_config_file.close()
         symlink = DNSMASQ_CONFIG_SYMLINK
-        if not is_unbroken_symlink_to_target(DEFAULT_OUTPUT_FILE, symlink):
-            if os.path.islink(symlink): #hm, a broken symlink, ok, fix it
-                eprint("WARNING: removing broken symlink: %s", dnsmasq, level=LOG['WARNING'])
-                os.remove(symlink)
-                symlink_relative(DEFAULT_OUTPUT, symlink)
-        else: # not a symlink
+        if is_unbroken_symlink_to_target(DEFAULT_OUTPUT_FILE, symlink): # all good then
+            return True
+        if is_broken_symlink(symlink): #hm, a broken symlink, ok, remove it
+            eprint("WARNING: removing broken symlink: %s", dnsmasq, level=LOG['WARNING'])
+            os.remove(symlink)
+
+        if os.path.exists(symlink):
             eprint("ERROR: " + symlink + " exists and is not a symlink. " +
                 "You need to manually delete it. Exiting.", level=LOG['ERROR'])
             quit(1)
+        else:
+            symlink_relative(DEFAULT_OUTPUT_FILE, symlink)
         restart_dnsmasq_service()
         if len(sys.argv) > 2:
             eprint("WARNING: exiting before any other modifications because --enable was used.",
@@ -624,6 +630,13 @@ def disable(config):
         comment_out_line_in_file(config.dnsmasq_config_file,
             generate_dnsmasq_config_file_line())
         config.dnsmasq_config_file.close()
+        symlink = DNSMASQ_CONFIG_SYMLINK
+        if os.path.islink(symlink):
+            os.remove(symlink)
+        else:
+            eprint("ERROR: " + symlink + " exists and is not a symlink. " +
+                "You need to manually delete it. Exiting.", level=LOG['ERROR'])
+            quit(1)
         restart_dnsmasq_service()
         if len(sys.argv) > 2:
             eprint("WARNING: exiting before any other modifications because " +
