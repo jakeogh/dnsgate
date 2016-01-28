@@ -188,8 +188,6 @@ def comment_out_line_in_file(fh, line_to_match):
     return False
 
 def uncomment_line_in_file(fh, line_to_match):
-#    print(line_to_match)
-#    os.system('ls -alh /etc/dnsmasq.conf')
     '''
     remove # from the beginning of all instances of line_to_match
     iff there is already a # preceding line_to_match and
@@ -202,14 +200,12 @@ def uncomment_line_in_file(fh, line_to_match):
     '''
     with open(fh.name, 'r') as rfh:
         lines = rfh.read().splitlines()
-#        print(len(lines))
     newlines = []
     uncommented = False
     for line in lines:
         if line_to_match in line:
             line_stripped = line.strip()
             if line_stripped.startswith('#'):
-#                print("found commented out match")
                 newlines.append(line[1:])
                 uncommented = True
                 continue
@@ -224,13 +220,8 @@ def uncomment_line_in_file(fh, line_to_match):
         else:
             newlines.append(line)
 
- #   print(len(newlines))
- #   os.system('ls -alh /etc/dnsmasq.conf')
     if lines != newlines:
- #       os.system('ls -alh /etc/dnsmasq.conf')
- #       print("writing newlines")
         fh.write('\n'.join(newlines) + '\n')
- #       os.system('ls -alh /etc/dnsmasq.conf')
         return True
     if uncommented:
         return True
@@ -392,7 +383,6 @@ def read_url_bytes(url, no_cache=False):
         cache_file = generate_cache_file_name(url)
         with open(cache_file, 'xb') as fh:
             fh.write(raw_url_bytes)
-
         line_to_write = cache_file + ' ' + url + '\n'
         write_unique_line(line_to_write, cache_index_file)
 
@@ -422,25 +412,15 @@ def extract_domain_set_from_hosts_format_url(url, no_cache=False):
     eprint("Domains in %s:%s", url, len(domains), level=LOG_LEVELS['DEBUG'])
     return domains
 
-#this is broken because 'tw.adserver.yahoo.com' might get .removed() from domains_combined before 'vip1.tw.adserver.yahoo.com' is removed too
-
-def prune_redundant_rules(domains_combined):
-    domains_combined_orig = copy.deepcopy(domains_combined) # need to iterate through _orig later
-#   assert len(domains_combined_orig) == 10824
-    for domain in domains_combined_orig:
-        if b'vip1.tw.adserver.yahoo.com' in domain:
-            print('vip1.tw.adserver.yahoo.com')
-        if b'.' in domain:
-            domain_parts = domain.split(b'.')
-            domain_parts.pop(0)
-            parent_domain = b'.'.join(domain_parts)
-            if parent_domain in domains_combined_orig: # this should be checking to see if the parent domain is in domains_combined_orig otherwise order matters
-#               if b'vip1.tw.adserver.yahoo.com' in domain:
-                if b'adserver.yahoo.com' in domain:
-                    eprint("removing: %s because it's parent domain: %s is already blocked", domain, parent_domain, level=LOG_LEVELS['INFO'])
-                domains_combined.remove(domain)
-    #print(len(domains_combined))
-    #return domains_combined #pointless return unless a copy of domains_combined is passsed in
+def prune_redundant_rules(domains):
+    domains_orig = copy.deepcopy(domains) # need to iterate through _orig later
+    for domain in domains_orig:
+        domain_parts_msb = list(reversed(domain.split(b'.'))) # start with the TLD
+        for index in range(len(domain_parts_msb)):
+            domain_to_check = b'.'.join(domain_parts_msb[0:index])
+            if domain_to_check in domains_orig:
+                eprint("removing: %s because it's parent domain: %s is already blocked", domain, domain_to_check, level=LOG_LEVELS['DEBUG'])
+                domains.remove(domain)
 
 OUTPUT_FILE_HELP = '(for testing only) output file (defaults to ' + DEFAULT_OUTPUT_FILE + ')'
 DNSMASQ_CONFIG_HELP = 'dnsmasq config file (defaults to ' + DNSMASQ_CONFIG_FILE + ')'
@@ -512,7 +492,6 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
 
             os.makedirs(CACHE_DIRECTORY, exist_ok=True)
 
-
 @dnsgate.command(help=WHITELIST_HELP)
 @click.argument('domains', required=True, nargs=-1)
 def whitelist(domains):
@@ -538,13 +517,10 @@ def install_help(config):
         hosts_install_help()
     quit(0)
 
-
 def is_broken_symlink(path):
     if os.path.islink(path):
-        if not os.path.exists(path):
-            return True
-    return False
-
+        return not os.path.exists(path) # returns False for broken symlinks
+    return False # path isnt a symlink
 
 def is_unbroken_symlink(path):
     if os.path.islink(path): # path is a symlink
@@ -564,37 +540,29 @@ def is_unbroken_symlink_to_target(target, link):    #bug, should not assume unic
             return True
     return False
 
-
 def symlink_relative(target, link_name):
     target = os.path.abspath(target)
     link_name = os.path.abspath(link_name)
-
     if not path_exists(target):
-        #logger.critical('target: %s does not exist. Refusing to make broken symlink. Exiting.', target)
-        os._exit(1)
+        eprint('target: %s does not exist. Refusing to make broken symlink. Exiting.',
+            target, level=LOG_LEVELS['ERROR'])
+        quit(1)
 
-    if path_exists(link_name):  #this returns false for broken symlinks (fixme)
-        #logger.debug('link_name: %s already exists, Skipping.', link_name)
-        return True
+#   if path_exists(link_name):  #this returns false for broken symlinks (fixme)
+#       return True
 
-    if os.path.islink(link_name):
-        if not os.path.exists(link_name):
-            #logger.critical('link_name: %s exists as a broken symlink. Remove it before trying to make a new symlink. Exiting.', link_name)
-            os._exit(1)
+    if is_broken_symlink(link_name):
+        eprint('link_name: %s exists as a broken symlink. Remove it before trying to make a new symlink. Exiting.',
+            link_name, level=LOG_LEVELS['ERROR'])
+        quit(1)
 
     link_name_folder = '/'.join(link_name.split('/')[:-1])
     if not os.path.isdir(link_name_folder):
-        #logger.critical('link_name_folder: %s does not exist. Exiting.', link_name_folder)
-        os._exit(1)
+        eprint('link_name_folder: %s does not exist. Exiting.', link_name_folder, level=LOG_LEVELS['ERROR'])
+        quit(1)
 
     relative_target = os.path.relpath(target, link_name_folder)
-    #logger.debugv("relative_target: %s", relative_target)
-
-    try:
-        os.symlink(relative_target, link_name)
-        return True
-    except:
-        return False
+    os.symlink(relative_target, link_name)
 
 
 @dnsgate.command(help=ENABLE_HELP)
@@ -752,21 +720,21 @@ def generate(config, sources, no_cache, cache_expire, output):
         eprint("%d blacklisted domains left after stripping to PSL domains.",
             len(domains_combined), level=LOG_LEVELS['INFO'])
 
-        eprint("Subtracting %d whitelisted domains.",
-            len(domains_whitelist), level=LOG_LEVELS['INFO'])
-        domains_combined = domains_combined - domains_whitelist
-        eprint("%d blacklisted domains left after subtracting the whitelist.",
-            len(domains_combined), level=LOG_LEVELS['INFO'])
+        if domains_whitelist:
+            eprint("Subtracting %d whitelisted domains.",
+                len(domains_whitelist), level=LOG_LEVELS['INFO'])
+            domains_combined = domains_combined - domains_whitelist
+            eprint("%d blacklisted domains left after subtracting the whitelist.",
+                len(domains_combined), level=LOG_LEVELS['INFO'])
+            eprint('Iterating through the original %d whitelisted domains and ' +
+                'making sure none are blocked by * rules.',
+                len(domains_whitelist), level=LOG_LEVELS['INFO'])
+            for domain in domains_whitelist:
+                domain_psl = extract_psl_domain(domain)
+                if domain_psl in domains_combined:
+                    domains_combined.remove(domain_psl)
 
-        eprint('Iterating through the original %d whitelisted domains and ' +
-            'making sure none are blocked by * rules.',
-            len(domains_whitelist), level=LOG_LEVELS['INFO'])
-
-        for domain in domains_whitelist:
-            domain_psl = extract_psl_domain(domain)
-            if domain_psl in domains_combined:
-                domains_combined.remove(domain_psl)
-
+        # this needs to happen even if len(whitelisted_domains) == 0
         eprint('Iterating through original %d blacklisted domains to re-add subdomains' +
             ' that are not whitelisted', len(domains_combined_orig), level=LOG_LEVELS['INFO'])
         # re-add subdomains that are not explicitly whitelisted or already blocked
