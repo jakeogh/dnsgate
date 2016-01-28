@@ -52,11 +52,10 @@ Usage: dnsgate [OPTIONS] COMMAND [ARGS]...
   (command) --help" for more information.
 
 Options:
-  --no-restart-dnsmasq       do not restart the dnsmasq service
-  --dnsmasq-config FILENAME  dnsmasq config file (defaults to /etc/dnsmasq.conf)
-  --backup                   backup output file before overwriting
-  --verbose                  print debug information to stderr
-  --help                     Show this message and exit.
+  --no-restart-dnsmasq  do not restart the dnsmasq service
+  --backup              backup output file before overwriting
+  --verbose             print debug information to stderr
+  --help                Show this message and exit.
 
 Commands:
   blacklist     Add domain(s) to /etc/dnsgate/blacklist
@@ -82,18 +81,17 @@ $ ./dnsgate generate
   
 $ ./dnsgate --verbose generate
 Using output file: /etc/dnsgate/generated_blacklist
-Reading whitelist: /etc/dnsgate/whitelist
-98 validated whitelist domains.
+102 validated whitelist domains.
 Reading remote blacklist(s):
 ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
-23644 domains from remote blacklist(s).
-23644 validated remote blacklisted domains.
-23643 blacklisted domains after subtracting the 98 whitelisted domains
+23647 domains from remote blacklist(s).
+23647 validated remote blacklisted domains.
+23646 blacklisted domains after subtracting the 102 whitelisted domains
 Re-adding 64 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-23702 blacklisted domains after re-adding the custom blacklist.
-17402 balcklisted domains after removing redundant rules.
+23705 blacklisted domains after re-adding the custom blacklist.
+8445 blacklisted domains after removing redundant rules.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 17402
+Final blacklisted domain count: 8445
 Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
@@ -102,8 +100,8 @@ Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate install_help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1453677881.7668338
-    $ grep conf-file=/etc/dnsgate/generated_blacklist /etc/dnsmasq.conf|| { echo conf-file=/etc/dnsgate/generated_blacklist >> dnsmasq_config ; }
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1453965802.894224
+    $ grep conf-dir=/etc/dnsmasq.d /etc/dnsmasq.conf|| { echo conf-dir=/etc/dnsmasq.d >> dnsmasq_config_file ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
 **create dnsgate configuration file for --mode hosts:**
@@ -118,18 +116,17 @@ $ ./dnsgate generate
   
 $ ./dnsgate --verbose generate
 Using output file: /etc/dnsgate/generated_blacklist
-Reading whitelist: /etc/dnsgate/whitelist
-98 validated whitelist domains.
+102 validated whitelist domains.
 Reading remote blacklist(s):
 ['http://winhelp2002.mvps.org/hosts.txt', 'http://someonewhocares.org/hosts/hosts']
-23644 domains from remote blacklist(s).
-23644 validated remote blacklisted domains.
-23643 blacklisted domains after subtracting the 98 whitelisted domains
+23647 domains from remote blacklist(s).
+23647 validated remote blacklisted domains.
+23646 blacklisted domains after subtracting the 102 whitelisted domains
 Re-adding 64 domains in the local blacklist /etc/dnsgate/blacklist to override the whitelist.
-23702 blacklisted domains after re-adding the custom blacklist.
-17911 balcklisted domains after removing redundant rules.
+23705 blacklisted domains after re-adding the custom blacklist.
+8445 blacklisted domains after removing redundant rules.
 Sorting domains by their subdomain and grouping by TLD.
-Final blacklisted domain count: 17911
+Final blacklisted domain count: 8445
 Writing output file: /etc/dnsgate/generated_blacklist in hosts format
 ``` 
 **/etc/hosts install help:**

@@ -299,7 +299,7 @@ def generate_dnsmasq_config_file_line():
     return 'conf-dir=' + DNSMASQ_CONFIG_INCLUDE_DIRECTORY
 
 def dnsmasq_install_help(dnsmasq_config_file, output_file=DEFAULT_OUTPUT_FILE):
-    dnsmasq_config_file_line = generate_dnsmasq_config_file_line(output_file)
+    dnsmasq_config_file_line = generate_dnsmasq_config_file_line()
     print('    $ cp -vi ' + dnsmasq_config_file + ' ' + dnsmasq_config_file + '.bak.' + str(time.time()), file=sys.stderr)
     print('    $ grep ' + dnsmasq_config_file_line + ' ' + dnsmasq_config_file + '|| { echo '
         + dnsmasq_config_file_line + ' >> dnsmasq_config_file ; }', file=sys.stderr)
@@ -488,7 +488,7 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
 
             ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
                 dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                backup=backup, dnsmasq_config_file=dnsmasq_config_file)
+                backup=backup)
 
             os.makedirs(CACHE_DIRECTORY, exist_ok=True)
 
@@ -512,7 +512,7 @@ def blacklist(domains):
 @click.pass_obj
 def install_help(config):
     if config.mode == 'dnsmasq':
-        dnsmasq_install_help(config.dnsmasq_config_file.name)
+        dnsmasq_install_help(DNSMASQ_CONFIG_FILE)
     elif config.mode == 'hosts':
         hosts_install_help()
     quit(0)
