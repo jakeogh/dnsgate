@@ -133,6 +133,7 @@ class Dnsgate_Config():
         self.block_at_psl = block_at_psl
         self.dest_ip = dest_ip
 
+# todo, check return code, run disable() and try again if the service fails
 def restart_dnsmasq_service():
     if os.path.lexists('/etc/init.d/dnsmasq'):
         os.system('/etc/init.d/dnsmasq restart 1>&2')
@@ -597,29 +598,39 @@ def install_help(config):
 @click.pass_obj
 def enable(config):
     if config.mode == 'dnsmasq':
-        uncomment_line_in_file(config.dnsmasq_config_file,
-            generate_dnsmasq_config_file_line())
+        # verify generate() was last run in dnsmasq mode so dnsmasq does
+        # fail when the service is restarted
+        with open(DEFAULT_OUTPUT_FILE, 'r') as fh:
+            file_content = fh.read(550) #just check the header
+            if 'mode: dnsmasq' not in file_content:
+                eprint('ERROR: %s was not generated in dnsmasq mode, ' +
+                    'run "dnsgate generate --help" to fix. Exiting.',
+                    DEFAULT_OUTPUT_FILE, level=LOG['ERROR'])
+                quit(1)
+
+        dnsmasq_config_line = generate_dnsmasq_config_file_line()
+        if not uncomment_line_in_file(config.dnsmasq_config_file, dnsmasq_config_line):
+            write_unique_line(dnsmasq_config_line, config.dnsmasq_config_file.name)
+
         config.dnsmasq_config_file.close()
         symlink = DNSMASQ_CONFIG_SYMLINK
-        if is_unbroken_symlink_to_target(DEFAULT_OUTPUT_FILE, symlink): # all good then
-            return True
+        if not os.path.islink(symlink): # not a symlink
+            if os.path.exists(symlink): # but exists
+                eprint("ERROR: " + symlink + " exists and is not a symlink. " +
+                    "You need to manually delete it. Exiting.", level=LOG['ERROR'])
+                quit(1)
         if is_broken_symlink(symlink): #hm, a broken symlink, ok, remove it
             eprint("WARNING: removing broken symlink: %s", dnsmasq, level=LOG['WARNING'])
             os.remove(symlink)
-
-        if os.path.exists(symlink):
-            eprint("ERROR: " + symlink + " exists and is not a symlink. " +
-                "You need to manually delete it. Exiting.", level=LOG['ERROR'])
-            quit(1)
-        else:
+        if not is_unbroken_symlink_to_target(DEFAULT_OUTPUT_FILE, symlink):
+            try:
+                os.remove(symlink) # maybe it was symlink to somewhere else
+            except FileNotFoundError:
+                pass    # that's ok
             symlink_relative(DEFAULT_OUTPUT_FILE, symlink)
         restart_dnsmasq_service()
-        if len(sys.argv) > 2:
-            eprint("WARNING: exiting before any other modifications because --enable was used.",
-                level=LOG['WARNING'])
-        quit(0)
     else:
-        eprint("ERROR: --enable is only available with --mode dnsmasq. Exiting.",
+        eprint("ERROR: enable is only available with --mode dnsmasq. Exiting.",
             level=LOG['ERROR'])
         quit(1)
 
@@ -633,17 +644,14 @@ def disable(config):
         symlink = DNSMASQ_CONFIG_SYMLINK
         if os.path.islink(symlink):
             os.remove(symlink)
-        else:
-            eprint("ERROR: " + symlink + " exists and is not a symlink. " +
-                "You need to manually delete it. Exiting.", level=LOG['ERROR'])
-            quit(1)
+        if not os.path.islink(symlink): # not a symlink
+            if os.path.exists(symlink): # but exists
+                eprint("ERROR: " + symlink + " exists and is not a symlink. " +
+                    "You need to manually delete it. Exiting.", level=LOG['ERROR'])
+                quit(1)
         restart_dnsmasq_service()
-        if len(sys.argv) > 2:
-            eprint("WARNING: exiting before any other modifications because " +
-                "--disable was used.", level=LOG['WARNING'])
-        quit(0)
     else:
-        eprint("ERROR: --disable is only available with --mode dnsmasq. Exiting.",
+        eprint("ERROR: disable is only available with --mode dnsmasq. Exiting.",
             level=LOG['ERROR'])
         quit(1)
 
@@ -699,6 +707,7 @@ def generate(config, sources, no_cache, cache_expire, output):
 
     eprint('Using output file: %s', output.name, level=LOG['INFO'])
     config_dict = {
+        'mode': config.mode,
         'sources': sources,
         'block_at_psl': config.block_at_psl,
         'no_cache': no_cache,
