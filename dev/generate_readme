@@ -44,7 +44,8 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **Enable/Disable Support.** See enable and disable (dnsmasq mode only)
 
 **TODO:**
-* **Tests.**
+* **Test on distros other than gentoo**
+* **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
 * **Use https://github.com/StevenBlack/hosts**
 
@@ -61,9 +62,11 @@ post='''
 **More Information:**
  - https://news.ycombinator.com/item?id=10572700
  - https://news.ycombinator.com/item?id=10369516
+ - https://news.ycombinator.com/item?id=11084968
 
 **Related Software:**
  - https://github.com/gaenserich/hostsblock (bash)
+ - https://github.com/jdoss/dockerhole
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
  - https://github.com/StevenBlack/hosts (TODO, use this)
@@ -75,6 +78,7 @@ If you find this useful you may appreciate:
 
  - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
  - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
+ - https://wiki.gentoo.org/wiki/Project:Hardened_musl/Bluedragon
 
 [1]: http://winhelp2002.mvps.org/hosts.txt http://someonewhocares.org/hosts/hosts
 
