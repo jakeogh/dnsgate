@@ -301,7 +301,8 @@ def validate_domain_list(domains):
             hostname = hostname.encode('idna').decode('ascii')
             valid_domains.add(hostname.encode('utf-8'))
         except Exception as e:
-            logger_quiet.logger.exception(e)
+            eprint("WARNING: %s is not a valud domain. Skipping", hostname,
+                level=LOG['WARNING'])
     return valid_domains
 
 def generate_dnsmasq_config_file_line():
@@ -391,7 +392,7 @@ def read_url_bytes(url, no_cache=False):
         raw_url_bytes = requests.get(url, headers={'User-Agent': user_agent},
             allow_redirects=True, stream=False, timeout=15.500).content
     except Exception as e:
-        logger_quiet.logger.exception(e)
+        eprint(e, level=LOG['WARNING'])
         return False
     if not no_cache:
         cache_index_file = CACHE_DIRECTORY + '/sha1_index'
@@ -548,6 +549,9 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             block_at_psl = config['DEFAULT'].getboolean('block_at_psl')
             dest_ip = config['DEFAULT']['dest_ip'] # todo validate ip or False/None
             if mode == 'dnsmasq':
+                ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
+                    dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
+                    dnsmasq_config_file=dnsmasq_config_file, backup=backup)
                 try:
                     dnsmasq_config_file = \
                         click.open_file(config['DEFAULT']['dnsmasq_config_file'], 'w',
@@ -559,13 +563,13 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
                         "run 'dnsmasq configure --help' to fix. Exiting.",
                         level=LOG['ERROR'])
                     quit(1)
+            else:
+                ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
+                    dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
+                    backup=backup)
 
             if dest_ip == 'False':
                 dest_ip = None
-
-            ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
-                dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                dnsmasq_config_file=dnsmasq_config_file, backup=backup)
 
             os.makedirs(CACHE_DIRECTORY, exist_ok=True)
 
@@ -598,7 +602,7 @@ def install_help(config):
 @click.pass_obj
 def enable(config):
     if config.mode == 'dnsmasq':
-        # verify generate() was last run in dnsmasq mode so dnsmasq does
+        # verify generate() was last run in dnsmasq mode so dnsmasq does not
         # fail when the service is restarted
         with open(DEFAULT_OUTPUT_FILE, 'r') as fh:
             file_content = fh.read(550) #just check the header
@@ -754,8 +758,8 @@ def generate(config, sources, no_cache, cache_expire, output):
                     print('ERROR: Failed to get ' + item + ', skipping.', level=LOG['ERROR'])
                     continue
             except Exception as e:
-                logger_quiet.logger.error("Exception on blacklist url: %s", item)
-                logger_quiet.logger.exception(e)
+                eprint("Exception on blacklist url: %s", item, level=LOG['ERROR'])
+                eprint(e, level=LOG['ERROR'])
         else:
             eprint('ERROR: ' + item +
                 ' must start with http:// or https://, skipping.', level=LOG['ERROR'])
