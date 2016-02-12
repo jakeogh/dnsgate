@@ -22,25 +22,27 @@ Said another way, conventional `/etc/hosts` blocking can not use wildcards * and
 With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to their "Public Second Level Domain" which is the top public domain with any subdomain stripped, removing the need to manually specify/track specific subdomains. `--block-at-psl` may block domain's you want to use, so use it with `whitelist`.
 
 **Features:**
-* **Persistent Configuration** see configure.
-* **Wildcard Blocking** --block-at-psl will block TLD's instead of individual subdomains (dnsmasq mode only).
+* **Persistent Configuration.** see `dnsgate configure --help`.
+* **Wildcard Blocking.** `--block-at-psl` will block TLD's instead of individual subdomains (dnsmasq mode only).
 * **System-wide.** All programs that use the local DNS resolver benefit.
-* **Blacklist Caching.** Optionally cache and re-use remote blacklists (see --no-cache and --cache-expire).
+* **Blacklist Caching.** Optionally cache and re-use remote blacklists (see `--no-cache` and `--cache-expire`).
 * **Non-interactive.** Can be run as a periodic cron job.
-* **Fully Configurable.** See ./dnsgate --help (TODO, add /etc/dnsgate/config file support)
-* **Custom Lists.** See /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
+* **Fully Configurable.** See `dnsgate --help`.
+* **Custom Lists.** See `dnsgate whitelist --help` and `dnsgate blacklist --help`.
 * **Return NXDOMAIN.** Rather than redirect the request to 127.0.0.1, NXDOMAIN is returned. (dnsmasq mode only).
-* **Return Custom IP.** --dest-ip allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode)
+* **Return Custom IP.** `--dest-ip` allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode).
 * **Installation Support.** see install-help
-* **Verbose Output.** see --verbose
-* **IDN Support.** What to block snowman? ./dnsgate blacklist ☃.net
+* **Verbose Output.** see `dnsgate --verbose generate`
+* **IDN Support.** What to block snowman? `dnsgate blacklist ☃.net`
+* **TLD Blocking.** Want to block Saudi Arabia? `dnsgate blacklist sa`
 * **Enable/Disable Support.** See enable and disable (dnsmasq mode only)
 
 **TODO:**
-* **Test on distros other than gentoo**
+* **Test on distros other than gentoo w/ [OpenRC](https://wiki.gentoo.org/wiki/Comparison_of_init_systems) && dnsmasq**
 * **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
-* **Use https://github.com/StevenBlack/hosts**
+* **Add optional bind rpz output.**
+* **Make enable/disable work in `--mode hosts`.
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
@@ -49,6 +51,8 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
  - [tldextract](https://github.com/john-kurkowski/tldextract)
 
 ```
+  
+$ ./dnsgate --help
 Usage: dnsgate [OPTIONS] COMMAND [ARGS]...
 
   dnsgate combines, deduplicates, and optionally modifies local and remote DNS blacklists. Use "dnsgate
@@ -68,6 +72,23 @@ Commands:
   generate      Create /etc/dnsgate/generated_blacklist
   install_help  Help configure dnsmasq or /etc/hosts
   whitelist     Add domain(s) to /etc/dnsgate/whitelist
+```
+```
+  
+$ ./dnsgate configure --help
+Usage: dnsgate configure [OPTIONS] [SOURCES]...
+
+  Write /etc/dnsgate/config
+
+Options:
+  --mode [dnsmasq|hosts]          [required]
+  --block-at-psl                  strips subdomains, for example: analytics.google.com -> google.com (must
+                                  manually whitelist inadvertently blocked domains)
+  --dest-ip TEXT                  IP to redirect blocked connections to (defaults to 127.0.0.1 in hosts
+                                  mode, specifying this in dnsmasq mode causes lookups to resolve rather
+                                  than return NXDOMAIN)
+  --dnsmasq-config-file FILENAME  dnsmasq config file (defaults to /etc/dnsmasq.conf)
+  --help                          Show this message and exit.
 ```
  
 **create dnsgate configuration file for --mode dnsmasq:**
@@ -98,14 +119,6 @@ Final blacklisted domain count: 23084
 Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  * Stopping dnsmasq ... [ ok ]
  * Starting dnsmasq ... [ ok ]
-``` 
-**dnsmasq install help:**
- 
-```  
-$ ./dnsgate install_help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1455256749.4148135
-    $ grep conf-dir=/etc/dnsmasq.d /etc/dnsmasq.conf|| { echo conf-dir=/etc/dnsmasq.d >> dnsmasq_config_file ; }
-    $ /etc/init.d/dnsmasq restart
 ``` 
 **create dnsgate configuration file for --mode hosts:**
  
@@ -152,7 +165,7 @@ $ ./dnsgate install_help
  - https://github.com/jdoss/dockerhole
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
- - https://github.com/StevenBlack/hosts (TODO, use this)
+ - https://github.com/StevenBlack/hosts
  - https://github.com/Mechazawa/FuckFuckAdblock
  - http://surf.suckless.org/files/adblock-hosts
 

@@ -29,26 +29,27 @@ Said another way, conventional `/etc/hosts` blocking can not use wildcards * and
 With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to their "Public Second Level Domain" which is the top public domain with any subdomain stripped, removing the need to manually specify/track specific subdomains. `--block-at-psl` may block domain's you want to use, so use it with `whitelist`.
 
 **Features:**
-* **Persistent Configuration** see configure.
-* **Wildcard Blocking** --block-at-psl will block TLD's instead of individual subdomains (dnsmasq mode only).
+* **Persistent Configuration.** see `dnsgate configure --help`.
+* **Wildcard Blocking.** `--block-at-psl` will block TLD's instead of individual subdomains (dnsmasq mode only).
 * **System-wide.** All programs that use the local DNS resolver benefit.
-* **Blacklist Caching.** Optionally cache and re-use remote blacklists (see --no-cache and --cache-expire).
+* **Blacklist Caching.** Optionally cache and re-use remote blacklists (see `--no-cache` and `--cache-expire`).
 * **Non-interactive.** Can be run as a periodic cron job.
-* **Fully Configurable.** See ./dnsgate --help (TODO, add /etc/dnsgate/config file support)
-* **Custom Lists.** See /etc/dnsgate/blacklist and /etc/dnsgate/whitelist.
+* **Fully Configurable.** See `dnsgate --help`.
+* **Custom Lists.** See `dnsgate whitelist --help` and `dnsgate blacklist --help`.
 * **Return NXDOMAIN.** Rather than redirect the request to 127.0.0.1, NXDOMAIN is returned. (dnsmasq mode only).
-* **Return Custom IP.** --dest-ip allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode)
+* **Return Custom IP.** `--dest-ip` allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode).
 * **Installation Support.** see install-help
-* **Verbose Output.** see --verbose
-* **IDN Support.** What to block snowman? ./dnsgate blacklist xn--n3h.net
+* **Verbose Output.** see `dnsgate --verbose generate`
+* **IDN Support.** What to block snowman? `dnsgate blacklist xn--n3h.net`
+* **TLD Blocking.** Want to block Saudi Arabia? `dnsgate blacklist sa`
 * **Enable/Disable Support.** See enable and disable (dnsmasq mode only)
 
 **TODO:**
 * **Test on distros other than gentoo w/ [OpenRC](https://wiki.gentoo.org/wiki/Comparison_of_init_systems) && dnsmasq**
 * **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
-* **Use https://github.com/StevenBlack/hosts**
-* **Generalize to strip/block/notify for JS/http keywords**
+* **Add optional bind rpz output.**
+* **Make enable/disable work in `--mode hosts`.
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
@@ -70,7 +71,7 @@ post='''
  - https://github.com/jdoss/dockerhole
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
- - https://github.com/StevenBlack/hosts (TODO, use this)
+ - https://github.com/StevenBlack/hosts
  - https://github.com/Mechazawa/FuckFuckAdblock
  - http://surf.suckless.org/files/adblock-hosts
 
@@ -103,8 +104,9 @@ def run_command(command_list, show=False):
 
 if __name__ == '__main__':
     dnsgate_help = [b'../dnsgate/dnsgate.py', b'--help']
+    dnsgate_configure_help = [b'../dnsgate/dnsgate.py', b'configure', b'--help']
     dnsgate_dnsmasq_configure = [b'../dnsgate/dnsgate.py', b'configure', b'--mode', b'dnsmasq']
-    dnsmasq_example_install_help = [b'../dnsgate/dnsgate.py', b'install_help']
+#   dnsmasq_example_install_help = [b'../dnsgate/dnsgate.py', b'install_help']
     dnsmasq_example = [b'../dnsgate/dnsgate.py', b'generate']
     dnsmasq_example_verbose = [b'../dnsgate/dnsgate.py', b'--verbose', b'generate']
 #   dnsmasq_example_verbose_block_at_tld = [b'../dnsgate/dnsgate.py', b'--verbose', b'--block-at-psl']
@@ -116,9 +118,12 @@ if __name__ == '__main__':
 
     print(preamble)
     print(code_sep)
-    run_command(dnsgate_help)
+    run_command(dnsgate_help, show=True)
     print(code_sep)
 
+    print(code_sep)
+    run_command(dnsgate_configure_help, show=True)
+    print(code_sep)
 
     print(' ')
     print("**create dnsgate configuration file for --mode dnsmasq:**")
@@ -142,12 +147,12 @@ if __name__ == '__main__':
 #    run_command(dnsmasq_example_verbose_block_at_tld, show=True)
 #    print(code_sep, end='')
 
-    print(' ')
-    print("**dnsmasq install help:**")
-    print(' ')
-    print(code_sep, end='')
-    run_command(dnsmasq_example_install_help, show=True)
-    print(code_sep, end='')
+#    print(' ')
+#    print("**dnsmasq install help:**")
+#    print(' ')
+#    print(code_sep, end='')
+#    run_command(dnsmasq_example_install_help, show=True)
+#    print(code_sep, end='')
 
     print(' ')
     print("**create dnsgate configuration file for --mode hosts:**")

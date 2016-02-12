@@ -18,6 +18,7 @@ import glob
 import hashlib
 import sys
 import os
+import ast
 import shutil
 import requests
 import tldextract
@@ -133,13 +134,15 @@ def contains_whitespace(s):
 
 class Dnsgate_Config():
     def __init__(self, mode=False, dnsmasq_config_file=None, backup=False,
-            no_restart_dnsmasq=False, block_at_psl=False, dest_ip=None):
+            no_restart_dnsmasq=False, block_at_psl=False, dest_ip=None,
+            sources=None):
         self.mode = mode
         self.no_restart_dnsmasq = no_restart_dnsmasq
         self.backup = backup
         self.dnsmasq_config_file = dnsmasq_config_file
         self.block_at_psl = block_at_psl
         self.dest_ip = dest_ip
+        self.sources = sources
 
 # todo, check return code, run disable() and try again if the service fails
 def restart_dnsmasq_service():
@@ -556,7 +559,7 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             mode = config['DEFAULT']['mode']
             block_at_psl = config['DEFAULT'].getboolean('block_at_psl')
             dest_ip = config['DEFAULT']['dest_ip'] # todo validate ip or False/None
-            sources = config['DEFAULT']['sources']
+            sources = ast.literal_eval(config['DEFAULT']['sources']) # because configparser has no .getlist()
             if mode == 'dnsmasq':
                 try:
                     dnsmasq_config_file = \
@@ -724,7 +727,7 @@ def generate(config, no_cache, cache_expire, output):
     eprint('Using output file: %s', output.name, level=LOG['INFO'])
     config_dict = {
         'mode': config.mode,
-        'sources': sources,
+        'sources': config.sources,
         'block_at_psl': config.block_at_psl,
         'no_cache': no_cache,
         'cache_expire': cache_expire,
@@ -755,8 +758,8 @@ def generate(config, no_cache, cache_expire, output):
                 CUSTOM_WHITELIST, level=LOG['WARNING'])
 
     domains_combined_orig = set()   # domains from all sources, combined
-    eprint("Reading remote blacklist(s):\n%s", str(sources), level=LOG['INFO'])
-    for item in sources:
+    eprint("Reading remote blacklist(s):\n%s", str(config.sources), level=LOG['INFO'])
+    for item in config.sources:
         if item.startswith('http'):
             try:
                 eprint("Trying http:// blacklist location: %s", item, level=LOG['DEBUG'])
