@@ -560,6 +560,8 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             mode = config['DEFAULT']['mode']
             block_at_psl = config['DEFAULT'].getboolean('block_at_psl')
             dest_ip = config['DEFAULT']['dest_ip'] # todo validate ip or False/None
+            if dest_ip == 'False':
+                dest_ip = None
             sources = ast.literal_eval(config['DEFAULT']['sources']) # because configparser has no .getlist()
             if mode == 'dnsmasq':
                 try:
@@ -579,12 +581,11 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
                     dnsmasq_config_file=dnsmasq_config_file, backup=backup,
                     sources=sources)
             else:
+                if not dest_ip:
+                    dest_ip = '0.0.0.0'
                 ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
                     dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
                     backup=backup, sources=sources)
-
-            if dest_ip == 'False':
-                dest_ip = None
 
             os.makedirs(CACHE_DIRECTORY, exist_ok=True)
 
