@@ -2,8 +2,8 @@
 # tab-width:4
 # pylint: disable=missing-docstring
 
-# PUBLIC DOMAIN
-# http://github.com/jkeogh/dnsgate
+# MIT License
+# https://github.com/jakeogh/dnsgate/blob/master/LICENSE
 #
 # "psl domain" is "Public Second Level Domain"
 # extracted using https://publicsuffix.org/
@@ -79,6 +79,7 @@ ALL_REMOTE_BLACKLISTS = [
     'https://raw.githubusercontent.com/StevenBlack/hosts/master/data/StevenBlack/hosts',
     'http://www.malwaredomainlist.com/hostslist/hosts.txt',
     'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts;showintro=0']
+    # http://hosts-file.net/?s=Download
 
 CACHE_EXPIRE = 3600 * 24 * 2 # 48 hours
 TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
@@ -523,7 +524,7 @@ BLACKLIST_HELP = 'Add domain(s) to ' + CUSTOM_BLACKLIST
 WHITELIST_HELP = 'Add domain(s) to ' + CUSTOM_WHITELIST
 DISABLE_HELP = 'Disable ' + DEFAULT_OUTPUT_FILE
 ENABLE_HELP = 'Enable ' + DEFAULT_OUTPUT_FILE
-CONFIGURE_HELP = 'Write ' + CONFIG_FILE
+CONFIGURE_HELP = 'Write ' + CONFIG_FILE + ' sources are the ' + SOURCES_HELP
 GENERATE_HELP = 'Create ' + DEFAULT_OUTPUT_FILE
 
 # https://github.com/mitsuhiko/click/issues/441

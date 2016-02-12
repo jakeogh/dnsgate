@@ -42,10 +42,11 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **Verbose Output.** see `dnsgate --verbose generate`
 * **IDN Support.** What to block snowman? `dnsgate blacklist xn--n3h.net`
 * **TLD Blocking.** Want to block Saudi Arabia? `dnsgate blacklist sa`
-* **Enable/Disable Support.** See enable and disable (dnsmasq mode only)
+* **Enable/Disable Support.** `dnsgate enable` and `dnsgate disable` (dnsmasq mode only)
 
 **TODO:**
 * **Test on distros other than gentoo w/ [OpenRC](https://wiki.gentoo.org/wiki/Comparison_of_init_systems) && dnsmasq**
+* **Pip install support**
 * **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
 * **Add optional bind rpz output.**
@@ -56,6 +57,12 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
  - python3 (tested on 3.4)
  - [click](https://github.com/mitsuhiko/click)
  - [tldextract](https://github.com/john-kurkowski/tldextract)
+
+**Install:**
+    $ git clone https://github.com/jakeogh/dnsgate.git
+    $ cd dnsgate
+    $ python3 setup.py install
+    $ dnsgate configure --help
 '''
 
 post='''

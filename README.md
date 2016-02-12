@@ -35,10 +35,11 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **Verbose Output.** see `dnsgate --verbose generate`
 * **IDN Support.** What to block snowman? `dnsgate blacklist ☃.net`
 * **TLD Blocking.** Want to block Saudi Arabia? `dnsgate blacklist sa`
-* **Enable/Disable Support.** See enable and disable (dnsmasq mode only)
+* **Enable/Disable Support.** `dnsgate enable` and `dnsgate disable` (dnsmasq mode only)
 
 **TODO:**
 * **Test on distros other than gentoo w/ [OpenRC](https://wiki.gentoo.org/wiki/Comparison_of_init_systems) && dnsmasq**
+* **Pip install support**
 * **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
 * **Add optional bind rpz output.**
@@ -49,6 +50,12 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
  - python3 (tested on 3.4)
  - [click](https://github.com/mitsuhiko/click)
  - [tldextract](https://github.com/john-kurkowski/tldextract)
+
+**Install:**
+    $ git clone https://github.com/jakeogh/dnsgate.git
+    $ cd dnsgate
+    $ python3 setup.py install
+    $ dnsgate configure --help
 
 ```
   
@@ -66,7 +73,7 @@ Options:
 
 Commands:
   blacklist     Add domain(s) to /etc/dnsgate/blacklist
-  configure     Write /etc/dnsgate/config
+  configure     Write /etc/dnsgate/config sources are the...
   disable       Disable /etc/dnsgate/generated_blacklist
   enable        Enable /etc/dnsgate/generated_blacklist
   generate      Create /etc/dnsgate/generated_blacklist
@@ -78,7 +85,8 @@ Commands:
 $ ./dnsgate configure --help
 Usage: dnsgate configure [OPTIONS] [SOURCES]...
 
-  Write /etc/dnsgate/config
+  Write /etc/dnsgate/config sources are the remote blacklist(s) to get rules from. Defaults to:
+  http://winhelp2002.mvps.org/hosts.txt http://someonewhocares.org/hosts/hosts
 
 Options:
   --mode [dnsmasq|hosts]          [required]
