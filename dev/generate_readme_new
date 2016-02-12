@@ -9,5 +9,6 @@ script -q -c ./generate_readme |\
     sed -e 's/dnsgate.py/dnsgate/g' |\
     sed '/^ \[ ok \]/ d' > README.md.new 2>&1
 ../dnsgate/dnsgate.py configure --mode dnsmasq --block-at-psl #restore my default config
+../dnsgate/dnsgate.py --verbose generate
 kdiff3 ../README.md README.md.new
 
