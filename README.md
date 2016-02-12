@@ -19,7 +19,7 @@ This instead returns NXDOMAIN on *.google.com. Returning NXDOMAIN instead of loc
 
 Said another way, conventional `/etc/hosts` blocking can not use wildcards * and therefore someone must keep track of each subdomain / domain combination that should be blocked. This is not necessarily a problem. Even if you don't use dnsmasq, other people [1] keep track of the subdomains for you and dnsgate automatically pulls from them. If you want to block a specific domain completely, you must use dnsmasq.
 
-With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to their "Public Second Level Domain" which is the top public domain with any subdomain stripped, removing the need to manually specify/track specific subdomains. `--block-at-psl` may block domain's you want to use, so use it with `--whitelist`.
+With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to their "Public Second Level Domain" which is the top public domain with any subdomain stripped, removing the need to manually specify/track specific subdomains. `--block-at-psl` may block domain's you want to use, so use it with `whitelist`.
 
 **Features:**
 * **Persistent Configuration** see configure.
@@ -102,7 +102,7 @@ Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate install_help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1455250459.2747982
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1455250678.246197
     $ grep conf-dir=/etc/dnsmasq.d /etc/dnsmasq.conf|| { echo conf-dir=/etc/dnsmasq.d >> dnsmasq_config_file ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
