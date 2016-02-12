@@ -44,10 +44,11 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **Enable/Disable Support.** See enable and disable (dnsmasq mode only)
 
 **TODO:**
-* **Test on distros other than gentoo**
+* **Test on distros other than gentoo w/ [OpenRC](https://wiki.gentoo.org/wiki/Comparison_of_init_systems) && dnsmasq**
 * **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
 * **Use https://github.com/StevenBlack/hosts**
+* **Generalize to strip/block/notify for JS/http keywords**
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)

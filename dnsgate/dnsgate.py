@@ -71,6 +71,14 @@ DNSMASQ_CONFIG_SYMLINK   = DNSMASQ_CONFIG_INCLUDE_DIRECTORY + '/' + \
 DEFAULT_REMOTE_BLACKLISTS = [
     'http://winhelp2002.mvps.org/hosts.txt',
     'http://someonewhocares.org/hosts/hosts']
+ALL_REMOTE_BLACKLISTS = [
+    'http://winhelp2002.mvps.org/hosts.txt',
+    'http://someonewhocares.org/hosts/hosts',
+    'https://adaway.org/hosts.txt',
+    'https://raw.githubusercontent.com/StevenBlack/hosts/master/data/StevenBlack/hosts',
+    'http://www.malwaredomainlist.com/hostslist/hosts.txt',
+    'http://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts;showintro=0']
+
 CACHE_EXPIRE = 3600 * 24 * 2 # 48 hours
 TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
 
@@ -548,6 +556,7 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             mode = config['DEFAULT']['mode']
             block_at_psl = config['DEFAULT'].getboolean('block_at_psl')
             dest_ip = config['DEFAULT']['dest_ip'] # todo validate ip or False/None
+            sources = config['DEFAULT']['sources']
             if mode == 'dnsmasq':
                 try:
                     dnsmasq_config_file = \
@@ -563,11 +572,12 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
 
                 ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
                     dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                    dnsmasq_config_file=dnsmasq_config_file, backup=backup)
+                    dnsmasq_config_file=dnsmasq_config_file, backup=backup,
+                    sources=sources)
             else:
                 ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
                     dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                    backup=backup)
+                    backup=backup, sources=sources)
 
             if dest_ip == 'False':
                 dest_ip = None
@@ -661,17 +671,21 @@ def disable(config):
         quit(1)
 
 @dnsgate.command(help=CONFIGURE_HELP)
+@click.argument('sources',      nargs=-1)
 @click.option('--mode',         is_flag=False,
     type=click.Choice(['dnsmasq', 'hosts']), required=True)
 @click.option('--block-at-psl', is_flag=True,  help=BLOCK_AT_PSL_HELP)
 @click.option('--dest-ip',      is_flag=False, help=DEST_IP_HELP, default=False)
 @click.option('--dnsmasq-config-file', is_flag=False, help=DNSMASQ_CONFIG_HELP,
     type=click.File(mode='w', atomic=True, lazy=True), default=DNSMASQ_CONFIG_FILE)
-def configure(mode, block_at_psl, dest_ip, dnsmasq_config_file):
+def configure(sources, mode, block_at_psl, dest_ip, dnsmasq_config_file):
     if contains_whitespace(dnsmasq_config_file.name):
         eprint("ERROR: --dnsmasq-config-file can not contain whitespace. Exiting.",
             level=LOG['ERROR'])
         quit(1)
+
+    if not sources:
+        sources = DEFAULT_REMOTE_BLACKLISTS
 
     os.makedirs(CONFIG_DIRECTORY, exist_ok=True)
     config = configparser.ConfigParser()
@@ -679,7 +693,8 @@ def configure(mode, block_at_psl, dest_ip, dnsmasq_config_file):
         {
         'mode': mode,
         'block_at_psl': block_at_psl,
-        'dest_ip': dest_ip
+        'dest_ip': dest_ip,
+        'sources': sources
         }
 
     if mode == 'dnsmasq':
@@ -698,17 +713,13 @@ def configure(mode, block_at_psl, dest_ip, dnsmasq_config_file):
             fh.write(make_custom_whitelist_header(CUSTOM_WHITELIST))
 
 @dnsgate.command(help=GENERATE_HELP)
-@click.argument('sources',      nargs=-1)
 @click.option('--no-cache',     is_flag=True,  help=NO_CACHE_HELP)
 @click.option('--cache-expire', is_flag=False, help=CACHE_EXPIRE_HELP,
     type=int, default=CACHE_EXPIRE)
 @click.option('--output',       is_flag=False, help=OUTPUT_FILE_HELP,
     type=click.File(mode='wb', atomic=True, lazy=True), default=DEFAULT_OUTPUT_FILE)
 @click.pass_obj
-def generate(config, sources, no_cache, cache_expire, output):
-
-    if not sources:
-        sources = DEFAULT_REMOTE_BLACKLISTS
+def generate(config, no_cache, cache_expire, output):
 
     eprint('Using output file: %s', output.name, level=LOG['INFO'])
     config_dict = {
