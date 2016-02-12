@@ -43,7 +43,7 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
 * **Add optional bind rpz output.**
-* **Make enable/disable work in `--mode hosts`.
+* **Make enable/disable work in `--mode hosts`.**
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
@@ -52,10 +52,12 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
  - [tldextract](https://github.com/john-kurkowski/tldextract)
 
 **Install:**
+```
     $ git clone https://github.com/jakeogh/dnsgate.git
     $ cd dnsgate
     $ python3 setup.py install
     $ dnsgate configure --help
+```
 
 ```
   

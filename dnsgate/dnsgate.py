@@ -524,7 +524,7 @@ BLACKLIST_HELP = 'Add domain(s) to ' + CUSTOM_BLACKLIST
 WHITELIST_HELP = 'Add domain(s) to ' + CUSTOM_WHITELIST
 DISABLE_HELP = 'Disable ' + DEFAULT_OUTPUT_FILE
 ENABLE_HELP = 'Enable ' + DEFAULT_OUTPUT_FILE
-CONFIGURE_HELP = 'Write ' + CONFIG_FILE + ' sources are the ' + SOURCES_HELP
+CONFIGURE_HELP = 'Write ' + CONFIG_FILE + '''\n sources are the ''' + SOURCES_HELP
 GENERATE_HELP = 'Create ' + DEFAULT_OUTPUT_FILE
 
 # https://github.com/mitsuhiko/click/issues/441
