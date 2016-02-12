@@ -549,9 +549,6 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             block_at_psl = config['DEFAULT'].getboolean('block_at_psl')
             dest_ip = config['DEFAULT']['dest_ip'] # todo validate ip or False/None
             if mode == 'dnsmasq':
-                ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
-                    dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                    dnsmasq_config_file=dnsmasq_config_file, backup=backup)
                 try:
                     dnsmasq_config_file = \
                         click.open_file(config['DEFAULT']['dnsmasq_config_file'], 'w',
@@ -563,6 +560,10 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
                         "run 'dnsmasq configure --help' to fix. Exiting.",
                         level=LOG['ERROR'])
                     quit(1)
+
+                ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
+                    dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
+                    dnsmasq_config_file=dnsmasq_config_file, backup=backup)
             else:
                 ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
                     dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
