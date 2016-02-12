@@ -71,12 +71,13 @@ post='''
  - https://github.com/longsleep/adblockrouter
  - https://github.com/StevenBlack/hosts (TODO, use this)
  - https://github.com/Mechazawa/FuckFuckAdblock
+ - http://surf.suckless.org/files/adblock-hosts
 
 **Simple Software:**
 
 If you find this useful you may appreciate:
 
- - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
+ - Disabling JS and making a keybinding to enable it ([surf](http://git.suckless.org/surf/log/?h=surf-webkit2)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
  - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
  - https://wiki.gentoo.org/wiki/Project:Hardened_musl/Bluedragon
 

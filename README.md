@@ -103,7 +103,7 @@ Writing output file: /etc/dnsgate/generated_blacklist in dnsmasq format
  
 ```  
 $ ./dnsgate install_help
-    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1455256057.902525
+    $ cp -vi /etc/dnsmasq.conf /etc/dnsmasq.conf.bak.1455256749.4148135
     $ grep conf-dir=/etc/dnsmasq.d /etc/dnsmasq.conf|| { echo conf-dir=/etc/dnsmasq.d >> dnsmasq_config_file ; }
     $ /etc/init.d/dnsmasq restart
 ``` 
@@ -154,12 +154,13 @@ $ ./dnsgate install_help
  - https://github.com/longsleep/adblockrouter
  - https://github.com/StevenBlack/hosts (TODO, use this)
  - https://github.com/Mechazawa/FuckFuckAdblock
+ - http://surf.suckless.org/files/adblock-hosts
 
 **Simple Software:**
 
 If you find this useful you may appreciate:
 
- - Disabling JS and making a keybinding to enable it ([surf](http://surf.suckless.org/)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
+ - Disabling JS and making a keybinding to enable it ([surf](http://git.suckless.org/surf/log/?h=surf-webkit2)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
  - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
  - https://wiki.gentoo.org/wiki/Project:Hardened_musl/Bluedragon
 
