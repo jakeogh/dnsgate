@@ -52,10 +52,12 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
  - [tldextract](https://github.com/john-kurkowski/tldextract)
 
 **Install:**
-```    $ git clone https://github.com/jakeogh/dnsgate.git
-    $ cd dnsgate
-    $ python3 setup.py install
-    $ dnsgate configure --help```
+```
+$ git clone https://github.com/jakeogh/dnsgate.git
+$ cd dnsgate
+# python3 setup.py install
+$ dnsgate configure --help
+```
 
 ```
   
