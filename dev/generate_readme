@@ -44,7 +44,9 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **Enable/Disable Support.** See enable and disable (dnsmasq mode only)
 
 **TODO:**
-* **Full Test Coverage.**
+* **Tests.**
+* **Add optional DNS filtering proxy to allow hierarchical rules.**
+* **Use https://github.com/StevenBlack/hosts**
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
