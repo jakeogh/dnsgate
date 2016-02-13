@@ -34,7 +34,6 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **System-wide.** All programs that use the local DNS resolver benefit.
 * **Blacklist Caching.** Optionally cache and re-use remote blacklists (see `--no-cache` and `--cache-expire`).
 * **Non-interactive.** Can be run as a periodic cron job.
-* **Fully Configurable.** See `dnsgate --help`.
 * **Custom Lists.** See `dnsgate whitelist --help` and `dnsgate blacklist --help`.
 * **Return NXDOMAIN.** Rather than redirect the request to 127.0.0.1, NXDOMAIN is returned. (dnsmasq mode only).
 * **Return Custom IP.** `--dest-ip` allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode).
@@ -59,10 +58,12 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
  - [tldextract](https://github.com/john-kurkowski/tldextract)
 
 **Install:**
-```    $ git clone https://github.com/jakeogh/dnsgate.git
-    $ cd dnsgate
-    $ python3 setup.py install
-    $ dnsgate configure --help```
+```
+$ git clone https://github.com/jakeogh/dnsgate.git
+$ cd dnsgate
+# python3 setup.py install
+$ dnsgate configure --help
+```
 '''
 
 post='''
@@ -75,10 +76,10 @@ post='''
 
 **Related Software:**
  - https://github.com/gaenserich/hostsblock (bash)
- - https://github.com/jdoss/dockerhole
+ - https://github.com/jdoss/dockerhole (bash)
  - http://pgl.yoyo.org/as/#unbound
  - https://github.com/longsleep/adblockrouter
- - https://github.com/StevenBlack/hosts
+ - https://github.com/StevenBlack/hosts (python)
  - https://github.com/Mechazawa/FuckFuckAdblock
  - http://surf.suckless.org/files/adblock-hosts
 
