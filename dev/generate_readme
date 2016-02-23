@@ -34,7 +34,7 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **System-wide.** All programs that use the local DNS resolver benefit.
 * **Blacklist Caching.** Optionally cache and re-use remote blacklists (see `--no-cache` and `--cache-expire`).
 * **Non-interactive.** Can be run as a periodic cron job.
-* **Custom Lists.** See `dnsgate whitelist --help` and `dnsgate blacklist --help`.
+* **Quickly modify your custom Lists.** Like `dnsgate whitelist projectwonderful.com` or `dnsgate blacklist cnn.com`.
 * **Return NXDOMAIN.** Rather than redirect the request to 127.0.0.1, NXDOMAIN is returned. (dnsmasq mode only).
 * **Return Custom IP.** `--dest-ip` allows redirection to specified IP (disables returning NXDOMAIN in dnsmasq mode).
 * **Installation Support.** see install-help
@@ -82,6 +82,7 @@ post='''
  - https://github.com/StevenBlack/hosts (python)
  - https://github.com/Mechazawa/FuckFuckAdblock
  - http://surf.suckless.org/files/adblock-hosts
+ - http://git.r-36.net/hosts-gen
 
 **Simple Software:**
 

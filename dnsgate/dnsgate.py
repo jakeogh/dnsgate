@@ -304,6 +304,30 @@ def backup_file_if_exists(file_to_backup):
     except FileNotFoundError:
         pass    # skip backup if file does not exist
 
+def valid_name(domain):
+    # RFC 952: https://tools.ietf.org/html/rfc952
+    # A "name" (Net, Host, Gateway, or Domain name) is a text string up
+    # to 24 characters drawn from the alphabet (A-Z), digits (0-9), minus
+    # sign (-), and period (.). Note that periods are only allowed when
+    # they serve to delimit components of "domain style names". (See
+    # RFC-921, "Domain Name System Implementation Schedule", for
+    # background). No blank or space characters are permitted as part of a
+    # name. No distinction is made between upper and lower case. The first
+    # character must be an alpha character. The last character must not be
+    # a minus sign or period.
+
+    # RFC 1123: https://tools.ietf.org/html/rfc1123#page-13
+    # The syntax of a legal Internet host name was specified in RFC-952
+    # [DNS:4]. One aspect of host name syntax is hereby changed: the
+    # restriction on the first character is relaxed to allow either a
+    # letter or a digit. Host software MUST support this more liberal
+    # syntax.
+
+    # Host software MUST handle host names of up to 63 characters and
+    # SHOULD handle host names of up to 255 characters.
+    pass
+
+
 def validate_domain_list(domains):
     eprint('Validating %d domains.', len(domains), level=LOG['DEBUG'])
     valid_domains = set([])
@@ -314,7 +338,7 @@ def validate_domain_list(domains):
             hostname = hostname.encode('idna').decode('ascii')
             valid_domains.add(hostname.encode('utf-8'))
         except Exception as e:
-            eprint("WARNING: %s is not a valud domain. Skipping", hostname,
+            eprint("WARNING: %s is not a valid domain. Skipping", hostname,
                 level=LOG['WARNING'])
     return valid_domains
 
@@ -573,7 +597,6 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             if dest_ip == 'False':
                 dest_ip = None
             sources = ast.literal_eval(config['DEFAULT']['sources']) # because configparser has no .getlist()
-            assert isinstance(sources, tuple)
             if mode == 'dnsmasq':
                 try:
                     dnsmasq_config_file = \
