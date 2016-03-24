@@ -49,7 +49,7 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
 * **Add tox tests**
 * **Add optional DNS filtering proxy to allow hierarchical rules.**
 * **Add optional bind rpz output.**
-* **Make enable/disable work in `--mode hosts`.**
+* **Make enable/disable work in `--mode hosts`**
 
 **Dependencies:**
  - [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) (optional)
@@ -74,7 +74,7 @@ post='''
  - https://news.ycombinator.com/item?id=10369516
  - https://news.ycombinator.com/item?id=11084968
 
-**Related Software:**
+**Related Stuff:**
  - https://github.com/gaenserich/hostsblock (bash)
  - https://github.com/jdoss/dockerhole (bash)
  - http://pgl.yoyo.org/as/#unbound
@@ -83,6 +83,10 @@ post='''
  - https://github.com/Mechazawa/FuckFuckAdblock
  - http://surf.suckless.org/files/adblock-hosts
  - http://git.r-36.net/hosts-gen
+ - https://github.com/vain/lariza
+ - https://github.com/fivefilters/block-ads/wiki/There-are-no-acceptable-ads
+ - https://github.com/entaopy/peerblock
+
 
 **Simple Software:**
 
