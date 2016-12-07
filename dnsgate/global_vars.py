@@ -19,8 +19,7 @@ DNSMASQ_CONFIG_SYMLINK   = DNSMASQ_CONFIG_INCLUDE_DIRECTORY + '/' + \
     OUTPUT_FILE_PATH_NAME
 DEFAULT_REMOTE_BLACKLISTS = [
     'http://winhelp2002.mvps.org/hosts.txt',
-    'http://someonewhocares.org/hosts/hosts',
-    'https://adaway.org/hosts.txt']
+    'http://someonewhocares.org/hosts/hosts']
 ALL_REMOTE_BLACKLISTS = [
     'http://winhelp2002.mvps.org/hosts.txt',
     'http://someonewhocares.org/hosts/hosts',

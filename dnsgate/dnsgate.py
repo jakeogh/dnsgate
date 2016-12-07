@@ -22,9 +22,9 @@ from kcl.printops import eprint
 from kcl.printops import LOG
 from kcl.printops import logger_quiet
 from kcl.printops import set_verbose
-from file_headers import *
-from global_vars import *
-from cache import *
+from .file_headers import *
+from .global_vars import *
+from .cache import *
 from kcl.stringops import contains_whitespace
 from kcl.stringops import hash_str
 from kcl.byteops import remove_comments_from_bytes
@@ -35,14 +35,15 @@ from kcl.fileops import write_unique_line_to_file
 from kcl.fileops import backup_file_if_exists
 from kcl.fileops import read_file_bytes
 from kcl.fileops import path_exists
+from kcl.fileops import file_exists
 from kcl.symlink import is_broken_symlink
 from kcl.symlink import is_unbroken_symlink
 from kcl.symlink import get_symlink_abs_target
 from kcl.symlink import is_unbroken_symlink_to_target
 from kcl.symlink import create_relative_symlink
 from kcl.domain import *
-from config import *
-from help import *
+from .config import *
+from .help import *
 
 # todo, check return code, run disable() and try again if the service fails
 def restart_dnsmasq_service():
@@ -168,6 +169,11 @@ def install_help(config):
 @click.pass_obj
 def enable(config):
     if config.mode == 'dnsmasq':
+        if not file_exists(OUTPUT_FILE_PATH):
+            eprint('ERROR: %s does not exist, ' +
+                'run "dnsgate generate" to fix. Exiting.',
+                OUTPUT_FILE_PATH, level=LOG['ERROR'])
+            quit(1)
         # verify generate() was last run in dnsmasq mode so dnsmasq does not
         # fail when the service is restarted
         with open(OUTPUT_FILE_PATH, 'r') as fh:
@@ -347,20 +353,20 @@ def generate(config, no_cache, cache_expire):
     eprint("Reading remote blacklist(s):\n%s", str(config.sources), level=LOG['INFO'])
     for item in config.sources:
         if item.startswith('http'):
-            try:
-                eprint("Trying http:// blacklist location: %s", item, level=LOG['DEBUG'])
-                domains = extract_domain_set_from_hosts_format_url_or_cached_copy(item,
-                    no_cache, cache_expire)
-                if domains:
-                    domains_combined_orig = domains_combined_orig | domains # union
-                    eprint("len(domains_combined_orig): %s",
-                        len(domains_combined_orig), level=LOG['DEBUG'])
-                else:
-                    eprint('ERROR: Failed to get ' + item + ', skipping.', level=LOG['ERROR'])
-                    continue
-            except Exception as e:
-                eprint("Exception on blacklist url: %s", item, level=LOG['ERROR'])
-                eprint(e, level=LOG['ERROR'])
+            #try:
+            eprint("Trying http:// blacklist location: %s", item, level=LOG['DEBUG'])
+            domains = extract_domain_set_from_hosts_format_url_or_cached_copy(item,
+                no_cache, cache_expire)
+            if domains:
+                domains_combined_orig = domains_combined_orig | domains # union
+                eprint("len(domains_combined_orig): %s",
+                    len(domains_combined_orig), level=LOG['DEBUG'])
+            else:
+                eprint('ERROR: Failed to get ' + item + ', skipping.', level=LOG['ERROR'])
+                continue
+            #except Exception as e:
+            #    eprint("Exception on blacklist url: %s", item, level=LOG['ERROR'])
+            #    eprint(e, level=LOG['ERROR'])
         else:
             eprint('ERROR: ' + item +
                 ' must start with http:// or https://, skipping.', level=LOG['ERROR'])

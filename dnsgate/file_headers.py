@@ -2,9 +2,9 @@
 # tab-width:4
 # pylint: disable=missing-docstring
 
-from global_vars import CUSTOM_BLACKLIST
-from global_vars import CUSTOM_WHITELIST
-from global_vars import CONFIG_FILE
+from .global_vars import CUSTOM_BLACKLIST
+from .global_vars import CUSTOM_WHITELIST
+from .global_vars import CONFIG_FILE
 
 
 def make_custom_blacklist_header(path):
