@@ -36,11 +36,11 @@ from kcl.fileops import backup_file_if_exists
 from kcl.fileops import read_file_bytes
 from kcl.fileops import path_exists
 from kcl.fileops import file_exists
-from kcl.symlink import is_broken_symlink
-from kcl.symlink import is_unbroken_symlink
-from kcl.symlink import get_symlink_abs_target
-from kcl.symlink import is_unbroken_symlink_to_target
-from kcl.symlink import create_relative_symlink
+from kcl.symlinkops import is_broken_symlink
+from kcl.symlinkops import is_unbroken_symlink
+from kcl.symlinkops import get_symlink_abs_target
+from kcl.symlinkops import is_unbroken_symlink_to_target
+from kcl.symlinkops import create_relative_symlink
 from kcl.domain import *
 from .config import *
 from .help import *

@@ -6,7 +6,6 @@ from .global_vars import CUSTOM_BLACKLIST
 from .global_vars import CUSTOM_WHITELIST
 from .global_vars import CONFIG_FILE
 
-
 def make_custom_blacklist_header(path):
     output_file_header = '#' * 64 + '''
 # dnsgate custom blacklist
