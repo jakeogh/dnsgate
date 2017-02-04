@@ -9,7 +9,7 @@ if not sys.version_info[0] == 3:
 import re
 from setuptools import find_packages, setup
 
-dependencies = ['click', 'requests', 'tldextract']
+dependencies = ['click', 'requests', 'tldextract', 'kcl']
 
 version = re.search(
     '^__version__\s*=\s*"(.*)"',
