@@ -41,7 +41,7 @@ from kcl.symlinkops import is_unbroken_symlink
 from kcl.symlinkops import get_symlink_abs_target
 from kcl.symlinkops import is_unbroken_symlink_to_target
 from kcl.symlinkops import create_relative_symlink
-from kcl.domain import *
+from kcl.domainops import *
 from .config import *
 from .help import *
 
