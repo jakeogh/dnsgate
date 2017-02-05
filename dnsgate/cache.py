@@ -13,8 +13,8 @@ from .file_headers import *
 from .global_vars import *
 from kcl.stringops import hash_str
 from kcl.fileops import read_file_bytes
-from kcl.domain import extract_domain_set_from_hosts_format_bytes
-from kcl.domain import extract_domain_set_from_hosts_format_url
+from kcl.domainops import extract_domain_set_from_hosts_format_bytes
+from kcl.domainops import extract_domain_set_from_hosts_format_url
 
 def extract_domain_set_from_hosts_format_url_or_cached_copy(url, no_cache=False,
         cache_expire=CACHE_EXPIRE):
