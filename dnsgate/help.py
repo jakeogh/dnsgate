@@ -2,15 +2,6 @@
 # tab-width:4
 # pylint: disable=missing-docstring
 
-# MIT License
-# https://github.com/jakeogh/dnsgate/blob/master/LICENSE
-#
-# "psl domain" is "Public Second Level domain"
-# extracted using https://publicsuffix.org/
-# essentially this is the first level at which
-# the public could register domains for a given TLD.
-__version__ = "0.0.1"
-
 import sys
 import os
 from .global_vars import *
