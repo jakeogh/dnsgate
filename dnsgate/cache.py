@@ -7,19 +7,15 @@ import os
 import time
 from kcl.printops import eprint
 from kcl.printops import LOG
-from kcl.printops import logger_quiet
-from kcl.printops import set_verbose
-from .file_headers import *
-from .global_vars import *
 from kcl.stringops import hash_str
 from kcl.fileops import read_file_bytes
 from kcl.domainops import extract_domain_set_from_hosts_format_bytes
 from kcl.domainops import extract_domain_set_from_hosts_format_url
+from .global_vars import CACHE_EXPIRE, CACHE_DIRECTORY
 
-def extract_domain_set_from_hosts_format_url_or_cached_copy(url, no_cache=False,
-        cache_expire=CACHE_EXPIRE):
-    unexpired_copy = get_newest_unexpired_cached_url_copy(url=url,
-        cache_expire=cache_expire)
+def get_domains_from_url(url, no_cache=False,
+                         cache_expire=CACHE_EXPIRE):
+    unexpired_copy = get_cached_url_copy(url=url, cache_expire=cache_expire)
     if unexpired_copy:
         eprint("Using cached copy: %s", unexpired_copy, level=LOG['INFO'])
         unexpired_copy_bytes = read_file_bytes(unexpired_copy)
@@ -33,7 +29,7 @@ def generate_cache_file_name(url):
     file_name = CACHE_DIRECTORY + '/' + url_hash + '_hosts'
     return file_name
 
-def get_newest_unexpired_cached_url_copy(url, cache_expire=CACHE_EXPIRE):
+def get_cached_url_copy(url, cache_expire=CACHE_EXPIRE):
     newest_copy = get_matching_cached_file(url)
     if newest_copy:
         newest_copy_timestamp = os.stat(newest_copy).st_mtime
@@ -52,4 +48,3 @@ def get_matching_cached_file(url):
         return matching_cached_file[0]
     else:
         return False
-

@@ -5,14 +5,14 @@
 import sys
 import os
 from .global_vars import *
-from .config import generate_dnsmasq_config_file_line
+from .config import dnsmasq_config_file_line
 
 def dnsmasq_install_help(dnsmasq_config_file, output_file=OUTPUT_FILE_PATH):
-    dnsmasq_config_file_line = generate_dnsmasq_config_file_line()
+    config_file_line = dnsmasq_config_file_line()
     print('    $ cp -vi ' + dnsmasq_config_file + ' ' + dnsmasq_config_file +
         '.bak.' + str(time.time()), file=sys.stderr)
-    print('    $ grep ' + dnsmasq_config_file_line + ' ' + dnsmasq_config_file +
-        '|| { echo ' + dnsmasq_config_file_line + ' >> dnsmasq_config_file ; }',
+    print('    $ grep ' + config_file_line + ' ' + dnsmasq_config_file +
+        '|| { echo ' + config_file_line + ' >> dnsmasq_config_file ; }',
         file=sys.stderr)
     print('    $ /etc/init.d/dnsmasq restart', file=sys.stderr)
 

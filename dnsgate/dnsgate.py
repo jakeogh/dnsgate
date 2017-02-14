@@ -11,39 +11,36 @@
 # the public could register domains for a given TLD.
 __version__ = "0.0.1"
 
-import click
 import copy
 import sys
 import os
 import ast
 import shutil
 import configparser
+import click
 from kcl.printops import eprint
 from kcl.printops import LOG
-from kcl.printops import logger_quiet
 from kcl.printops import set_verbose
-from .file_headers import *
-from .global_vars import *
-from .cache import *
 from kcl.stringops import contains_whitespace
-from kcl.stringops import hash_str
-from kcl.byteops import remove_comments_from_bytes
-from kcl.byteops import read_url_bytes
 from kcl.fileops import comment_out_line_in_file
 from kcl.fileops import uncomment_line_in_file
 from kcl.fileops import write_unique_line_to_file
 from kcl.fileops import backup_file_if_exists
-from kcl.fileops import read_file_bytes
-from kcl.fileops import path_exists
 from kcl.fileops import file_exists
 from kcl.symlinkops import is_broken_symlink
-from kcl.symlinkops import is_unbroken_symlink
-from kcl.symlinkops import get_symlink_abs_target
 from kcl.symlinkops import is_unbroken_symlink_to_target
 from kcl.symlinkops import create_relative_symlink
-from kcl.domainops import *
+from kcl.domainops import group_by_tld
+from kcl.domainops import extract_psl_domain
+from kcl.domainops import strip_to_psl
+from kcl.domainops import extract_domain_set_from_dnsgate_format_file
+from kcl.domainops import prune_redundant_rules
+from kcl.domainops import validate_domain_list
 from .config import *
 from .help import *
+from .file_headers import *
+from .global_vars import *
+from .cache import *
 
 # todo, check return code, run disable() and try again if the service fails
 def restart_dnsmasq_service():
@@ -61,8 +58,9 @@ def append_to_local_rule_file(rule_file, idn):
     write_unique_line_to_file(line, rule_file)
 
 # https://github.com/mitsuhiko/click/issues/441
-CONTEXT_SETTINGS = dict(help_option_names=['--help'],
-    terminal_width=shutil.get_terminal_size((80, 20)).columns)
+CONTEXT_SETTINGS = \
+    dict(help_option_names=['--help'],
+         terminal_width=shutil.get_terminal_size((80, 20)).columns)
 
 # pylint: disable=C0326
 # http://pylint-messages.wikidot.com/messages:c0326
@@ -70,7 +68,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['--help'],
 @click.option('--no-restart-dnsmasq', is_flag=True,  help=NO_RESTART_DNSMASQ_HELP)
 @click.option('--backup',             is_flag=True,  help=BACKUP_HELP)
 @click.option('--verbose',            is_flag=True,  help=VERBOSE_HELP,
-    callback=set_verbose, expose_value=False)
+              callback=set_verbose, expose_value=False)
 # pylint: enable=C0326
 @click.pass_context
 def dnsgate(ctx, no_restart_dnsmasq, backup):
@@ -87,7 +85,8 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
                     config.read_file(cf)
             except FileNotFoundError:
                 eprint("No configuration file found, run " +
-                    "\"dnsgate configure --help\". Exiting.", level=LOG['ERROR'])
+                       "\"dnsgate configure --help\". Exiting.",
+                       level=LOG['ERROR'])
                 quit(1)
 
             mode = config['DEFAULT']['mode']
@@ -96,15 +95,15 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
                 output_path = config['DEFAULT']['output']
             except KeyError:
                 eprint('ERROR: ' + CONFIG_FILE + ' has no "output" defined. ' +
-                    "run 'dnsgate configure --help' to fix. Exiting.",
-                    level=LOG['ERROR'])
+                       "run 'dnsgate configure --help' to fix. Exiting.",
+                       level=LOG['ERROR'])
                 quit(1)
             assert isinstance(output_path, str)
             if not os.path.exists(os.path.dirname(output_path)):
                 eprint("ERROR: dnsgate is configured for 'mode = dnsmasq' in " +
-                    CONFIG_FILE + " but dnsmasq_config_file is not set. " +
-                    "run 'dnsgate configure --help' to fix. Exiting.",
-                    level=LOG['ERROR'])
+                       CONFIG_FILE + " but dnsmasq_config_file is not set. " +
+                       "run 'dnsgate configure --help' to fix. Exiting.",
+                       level=LOG['ERROR'])
 
                 quit(1)
 
@@ -116,26 +115,27 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             if mode == 'dnsmasq':
                 try:
                     dnsmasq_config_file = \
-                        click.open_file(config['DEFAULT']['dnsmasq_config_file'], 'w',
-                            atomic=True, lazy=True)
+                                  click.open_file(config['DEFAULT']['dnsmasq_config_file'],
+                                                  'w', atomic=True, lazy=True)
                     dnsmasq_config_file.close() # it exists and is writeable
                 except KeyError:
                     eprint("ERROR: dnsgate is configured for 'mode = dnsmasq' in " +
-                        CONFIG_FILE + " but dnsmasq_config_file is not set. " +
-                        "run 'dnsgate configure --help' to fix. Exiting.",
-                        level=LOG['ERROR'])
+                           CONFIG_FILE + " but dnsmasq_config_file is not set. " +
+                           "run 'dnsgate configure --help' to fix. Exiting.",
+                           level=LOG['ERROR'])
                     quit(1)
 
-                ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
-                    dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                    dnsmasq_config_file=dnsmasq_config_file, backup=backup,
-                    sources=sources, output=output_path)
+                ctx.obj = DnsgateConfig(mode=mode, block_at_psl=block_at_psl,
+                                        dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
+                                        dnsmasq_config_file=dnsmasq_config_file, backup=backup,
+                                        sources=sources, output=output_path)
             else:
                 if not dest_ip:
                     dest_ip = '0.0.0.0'
-                ctx.obj = Dnsgate_Config(mode=mode, block_at_psl=block_at_psl,
-                    dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
-                    backup=backup, sources=sources, output=output_path)
+                ctx.obj = DnsgateConfig(mode=mode, block_at_psl=block_at_psl,
+                                        dest_ip=dest_ip, no_restart_dnsmasq=no_restart_dnsmasq,
+                                        backup=backup,
+                                        sources=sources, output=output_path)
 
             os.makedirs(CACHE_DIRECTORY, exist_ok=True)
 
@@ -171,8 +171,8 @@ def enable(config):
     if config.mode == 'dnsmasq':
         if not file_exists(OUTPUT_FILE_PATH):
             eprint('ERROR: %s does not exist, ' +
-                'run "dnsgate generate" to fix. Exiting.',
-                OUTPUT_FILE_PATH, level=LOG['ERROR'])
+                   'run "dnsgate generate" to fix. Exiting.',
+                   OUTPUT_FILE_PATH, level=LOG['ERROR'])
             quit(1)
         # verify generate() was last run in dnsmasq mode so dnsmasq does not
         # fail when the service is restarted
@@ -180,11 +180,11 @@ def enable(config):
             file_content = fh.read(550) #just check the header
             if 'mode: dnsmasq' not in file_content:
                 eprint('ERROR: %s was not generated in dnsmasq mode, ' +
-                    'run "dnsgate generate --help" to fix. Exiting.',
-                    OUTPUT_FILE_PATH, level=LOG['ERROR'])
+                       'run "dnsgate generate --help" to fix. Exiting.',
+                       OUTPUT_FILE_PATH, level=LOG['ERROR'])
                 quit(1)
 
-        dnsmasq_config_line = generate_dnsmasq_config_file_line()
+        dnsmasq_config_line = dnsmasq_config_file_line()
         if not uncomment_line_in_file(config.dnsmasq_config_file.name, dnsmasq_config_line):
             write_unique_line_to_file(dnsmasq_config_line, config.dnsmasq_config_file.name)
 
@@ -193,10 +193,10 @@ def enable(config):
         if not os.path.islink(symlink): # not a symlink
             if os.path.exists(symlink): # but exists
                 eprint("ERROR: " + symlink + " exists and is not a symlink. " +
-                    "You need to manually delete it. Exiting.", level=LOG['ERROR'])
+                       "You need to manually delete it. Exiting.", level=LOG['ERROR'])
                 quit(1)
         if is_broken_symlink(symlink): #hm, a broken symlink, ok, remove it
-            eprint("WARNING: removing broken symlink: %s", dnsmasq, level=LOG['WARNING'])
+            eprint("WARNING: removing broken symlink: %s", symlink, level=LOG['WARNING'])
             os.remove(symlink)
         if not is_unbroken_symlink_to_target(OUTPUT_FILE_PATH, symlink):
             try:
@@ -207,7 +207,7 @@ def enable(config):
         restart_dnsmasq_service()
     else:
         eprint("ERROR: enable is only available with --mode dnsmasq. Exiting.",
-            level=LOG['ERROR'])
+               level=LOG['ERROR'])
         quit(1)
 
 @dnsgate.command(help=DISABLE_HELP)
@@ -215,7 +215,7 @@ def enable(config):
 def disable(config):
     if config.mode == 'dnsmasq':
         comment_out_line_in_file(config.dnsmasq_config_file.name,
-            generate_dnsmasq_config_file_line())
+                                 dnsmasq_config_file_line())
         config.dnsmasq_config_file.close()
         symlink = DNSMASQ_CONFIG_SYMLINK
         if os.path.islink(symlink):
@@ -223,12 +223,12 @@ def disable(config):
         if not os.path.islink(symlink): # not a symlink
             if os.path.exists(symlink): # but exists
                 eprint("ERROR: " + symlink + " exists and is not a symlink. " +
-                    "You need to manually delete it. Exiting.", level=LOG['ERROR'])
+                       "You need to manually delete it. Exiting.", level=LOG['ERROR'])
                 quit(1)
         restart_dnsmasq_service()
     else:
         eprint("ERROR: disable is only available with --mode dnsmasq. Exiting.",
-            level=LOG['ERROR'])
+               level=LOG['ERROR'])
         quit(1)
 
 @dnsgate.command(help=BLOCKALL_HELP)
@@ -236,25 +236,28 @@ def disable(config):
 def blockall(config):
     if config.mode == 'dnsmasq':
         domains_combined = set(['.'])
-        write_output_file(domains_combined)
+        write_output_file(config, domains_combined)
     else:
         eprint("ERROR: blockall is only available with --mode dnsmasq. Exiting.",
-            level=LOG['ERROR'])
+               level=LOG['ERROR'])
         quit(1)
 
 @click.pass_obj
 def write_output_file(config, domains_combined):
-    config_dict = make_config_dict()
+    config_dict = make_config_dict(config)
 
-    eprint("Writing output file: %s in %s format", config.output, config.mode, level=LOG['INFO'])
+    eprint("Writing output file: %s in %s format", config.output, config.mode,
+           level=LOG['INFO'])
     with click.open_file(config.output, 'wb', atomic=True, lazy=True) as fh:
         fh.write(make_output_file_header(config_dict))
         for domain in domains_combined:
             if config.mode == 'dnsmasq':
                 if config.dest_ip:
-                    dnsmasq_line = 'address=/.' + domain.decode('utf8') + '/' + config.dest_ip + '\n'
+                    dnsmasq_line = 'address=/.' + domain.decode('utf8') + \
+                                   '/' + config.dest_ip + '\n'
                 else:
-                    dnsmasq_line = 'server=/.' + domain.decode('utf8') + '/' '\n'  # return NXDOMAIN
+                    dnsmasq_line = 'server=/.' + domain.decode('utf8') + \
+                                   '/' '\n'  # return NXDOMAIN
                 fh.write(dnsmasq_line.encode('utf8'))
             elif config.mode == 'hosts':
                 if config.dest_ip:
@@ -266,17 +269,17 @@ def write_output_file(config, domains_combined):
 @dnsgate.command(help=CONFIGURE_HELP, short_help='write /etc/dnsgate/config')
 @click.argument('sources',      nargs=-1)
 @click.option('--mode',         is_flag=False,
-    type=click.Choice(['dnsmasq', 'hosts']), required=True)
+              type=click.Choice(['dnsmasq', 'hosts']), required=True)
 @click.option('--block-at-psl', is_flag=True,  help=BLOCK_AT_PSL_HELP)
 @click.option('--dest-ip',      is_flag=False, help=DEST_IP_HELP, default=False)
 @click.option('--dnsmasq-config-file', is_flag=False, help=DNSMASQ_CONFIG_HELP,
-    type=click.File(mode='w', atomic=True, lazy=True), default=DNSMASQ_CONFIG_FILE)
+              type=click.File(mode='w', atomic=True, lazy=True), default=DNSMASQ_CONFIG_FILE)
 @click.option('--output',       is_flag=False, help=OUTPUT_FILE_HELP,
-    default=OUTPUT_FILE_PATH)
+              default=OUTPUT_FILE_PATH)
 def configure(sources, mode, block_at_psl, dest_ip, dnsmasq_config_file, output):
     if contains_whitespace(dnsmasq_config_file.name):
         eprint("ERROR: --dnsmasq-config-file can not contain whitespace. Exiting.",
-            level=LOG['ERROR'])
+               level=LOG['ERROR'])
         quit(1)
 
     if not sources:
@@ -286,11 +289,11 @@ def configure(sources, mode, block_at_psl, dest_ip, dnsmasq_config_file, output)
     config = configparser.ConfigParser()
     config['DEFAULT'] = \
         {
-        'mode': mode,
-        'block_at_psl': block_at_psl,
-        'dest_ip': dest_ip,
-        'sources': sources,
-        'output': output
+            'mode': mode,
+            'block_at_psl': block_at_psl,
+            'dest_ip': dest_ip,
+            'sources': sources,
+            'output': output
         }
 
     if mode == 'dnsmasq':
@@ -322,7 +325,7 @@ def make_config_dict(config): #todo, just cat the config file
 @dnsgate.command(help=GENERATE_HELP)
 @click.option('--no-cache',     is_flag=True,  help=NO_CACHE_HELP)
 @click.option('--cache-expire', is_flag=False, help=CACHE_EXPIRE_HELP,
-    type=int, default=CACHE_EXPIRE)
+              type=int, default=CACHE_EXPIRE)
 @click.pass_obj
 def generate(config, no_cache, cache_expire):
 
@@ -333,21 +336,21 @@ def generate(config, no_cache, cache_expire):
     except FileNotFoundError:
         domains_whitelist = set()
         eprint('WARNING: %s is missing, only the default remote sources will be used.' +
-            'Run "dnsgate configure --help" to fix.', CUSTOM_WHITELIST, level=LOG['WARNING'])
+               'Run "dnsgate configure --help" to fix.', CUSTOM_WHITELIST, level=LOG['WARNING'])
     else:
         if domains_whitelist:
             eprint("%d domains from %s", len(domains_whitelist),
-                CUSTOM_WHITELIST, level=LOG['DEBUG'])
+                   CUSTOM_WHITELIST, level=LOG['DEBUG'])
             domains_whitelist = validate_domain_list(domains_whitelist)
             eprint('%d validated whitelist domains.', len(domains_whitelist),
-                level=LOG['INFO'])
+                   level=LOG['INFO'])
 
     if not domains_whitelist:
         if config.block_at_psl:
             eprint('WARNING: block_at_psl is enabled in ' +
-                CONFIG_FILE + ' and 0 domains were obtained from %s. ' +
-                'If you get "Domain Not Found" errors, use "dnsgate whitelist --help"',
-                CUSTOM_WHITELIST, level=LOG['WARNING'])
+                   CONFIG_FILE + ' and 0 domains were obtained from %s. ' +
+                   'If you get "Domain Not Found" errors, use "dnsgate whitelist --help"',
+                   CUSTOM_WHITELIST, level=LOG['WARNING'])
 
     domains_combined_orig = set()   # domains from all sources, combined
     eprint("Reading remote blacklist(s):\n%s", str(config.sources), level=LOG['INFO'])
@@ -355,12 +358,11 @@ def generate(config, no_cache, cache_expire):
         if item.startswith('http'):
             #try:
             eprint("Trying http:// blacklist location: %s", item, level=LOG['DEBUG'])
-            domains = extract_domain_set_from_hosts_format_url_or_cached_copy(item,
-                no_cache, cache_expire)
+            domains = get_domains_from_url(item, no_cache, cache_expire)
             if domains:
                 domains_combined_orig = domains_combined_orig | domains # union
                 eprint("len(domains_combined_orig): %s",
-                    len(domains_combined_orig), level=LOG['DEBUG'])
+                       len(domains_combined_orig), level=LOG['DEBUG'])
             else:
                 eprint('ERROR: Failed to get ' + item + ', skipping.', level=LOG['ERROR'])
                 continue
@@ -369,36 +371,36 @@ def generate(config, no_cache, cache_expire):
             #    eprint(e, level=LOG['ERROR'])
         else:
             eprint('ERROR: ' + item +
-                ' must start with http:// or https://, skipping.', level=LOG['ERROR'])
+                   ' must start with http:// or https://, skipping.', level=LOG['ERROR'])
 
     eprint("%d domains from remote blacklist(s).",
-        len(domains_combined_orig), level=LOG['INFO'])
+           len(domains_combined_orig), level=LOG['INFO'])
 
     if len(domains_combined_orig) == 0:
         eprint("WARNING: 0 domains were retrieved from " +
-            "remote sources, only the local " + CUSTOM_BLACKLIST +
-            " will be used.", level=LOG['WARNING'])
+               "remote sources, only the local " + CUSTOM_BLACKLIST +
+               " will be used.", level=LOG['WARNING'])
 
     domains_combined_orig = validate_domain_list(domains_combined_orig)
     eprint('%d validated remote blacklisted domains.',
-        len(domains_combined_orig), level=LOG['INFO'])
+           len(domains_combined_orig), level=LOG['INFO'])
 
     domains_combined = copy.deepcopy(domains_combined_orig) # need to iterate through _orig later
 
     if config.block_at_psl and config.mode != 'hosts':
         domains_combined = strip_to_psl(domains_combined)
         eprint("%d blacklisted domains left after stripping to PSL domains.",
-            len(domains_combined), level=LOG['INFO'])
+               len(domains_combined), level=LOG['INFO'])
 
         if domains_whitelist:
             eprint("Subtracting %d whitelisted domains.",
-                len(domains_whitelist), level=LOG['INFO'])
+                   len(domains_whitelist), level=LOG['INFO'])
             domains_combined = domains_combined - domains_whitelist
             eprint("%d blacklisted domains left after subtracting the whitelist.",
-                len(domains_combined), level=LOG['INFO'])
+                   len(domains_combined), level=LOG['INFO'])
             eprint('Iterating through the original %d whitelisted domains and ' +
-                'making sure none are blocked by * rules.',
-                len(domains_whitelist), level=LOG['INFO'])
+                   'making sure none are blocked by * rules.',
+                   len(domains_whitelist), level=LOG['INFO'])
             for domain in domains_whitelist:
                 domain_psl = extract_psl_domain(domain)
                 if domain_psl in domains_combined:
@@ -406,7 +408,7 @@ def generate(config, no_cache, cache_expire):
 
         # this needs to happen even if len(whitelisted_domains) == 0
         eprint('Iterating through original %d blacklisted domains to re-add subdomains' +
-            ' that are not whitelisted', len(domains_combined_orig), level=LOG['INFO'])
+               ' that are not whitelisted', len(domains_combined_orig), level=LOG['INFO'])
         # re-add subdomains that are not explicitly whitelisted or already blocked
         for orig_domain in domains_combined_orig: # check every original full hostname
             if orig_domain not in domains_whitelist: # if it's not in the whitelist
@@ -420,17 +422,17 @@ def generate(config, no_cache, cache_expire):
                         domains_combined.add(orig_domain) # add the full hostname to the blacklist
 
         eprint('%d blacklisted domains after re-adding non-explicitly blacklisted subdomains',
-            len(domains_combined), level=LOG['INFO'])
+               len(domains_combined), level=LOG['INFO'])
 
     elif config.block_at_psl and config.mode == 'hosts':
         eprint("ERROR: --block-at-psl is not possible in hosts mode. Exiting.",
-            level=-LOG['ERROR'])
+               level=-LOG['ERROR'])
         quit(1)
 
     # apply whitelist before applying local blacklist
     domains_combined = domains_combined - domains_whitelist  # remove exact whitelist matches
     eprint("%d blacklisted domains after subtracting the %d whitelisted domains",
-        len(domains_combined), len(domains_whitelist), level=LOG['INFO'])
+           len(domains_combined), len(domains_whitelist), level=LOG['INFO'])
 
     # must happen after subdomain stripping and after whitelist subtraction
     blacklist_file = os.path.abspath(CUSTOM_BLACKLIST)
@@ -439,53 +441,49 @@ def generate(config, no_cache, cache_expire):
     except FileNotFoundError:
         domains_blacklist = set()
         eprint('WARNING: %s is missing, only the default remote sources ' +
-            'will be used. Run "dnsgate configure --help" to fix.',
-            CUSTOM_BLACKLIST, level=LOG['WARNING'])
+               'will be used. Run "dnsgate configure --help" to fix.',
+               CUSTOM_BLACKLIST, level=LOG['WARNING'])
     else:
         if domains_blacklist: # ignore empty blacklist
             eprint("Got %s domains from the CUSTOM_BLACKLIST: %s",
-                len(domains_blacklist), blacklist_file, level=LOG['DEBUG'])
+                   len(domains_blacklist), blacklist_file, level=LOG['DEBUG'])
             eprint("Re-adding %d domains in the local blacklist %s to override the whitelist.",
-                len(domains_blacklist), CUSTOM_BLACKLIST, level=LOG['INFO'])
+                   len(domains_blacklist), CUSTOM_BLACKLIST, level=LOG['INFO'])
             domains_combined = domains_combined | domains_blacklist # union
             eprint("%d blacklisted domains after re-adding the custom blacklist.",
-                len(domains_combined), level=LOG['INFO'])
+                   len(domains_combined), level=LOG['INFO'])
 
     eprint("Validating final domain blacklist.", level=LOG['DEBUG'])
     domains_combined = validate_domain_list(domains_combined)
-    eprint('%d validated blacklisted domains.', len(domains_combined),
-        level=LOG['DEBUG'])
+    eprint('%d validated blacklisted domains.', len(domains_combined), level=LOG['DEBUG'])
 
     prune_redundant_rules(domains_combined)
     eprint('%d blacklisted domains after removing redundant rules.', len(domains_combined),
-        level=LOG['INFO'])
+           level=LOG['INFO'])
 
     domains_combined = group_by_tld(domains_combined) # do last, returns sorted list
-    eprint('Final blacklisted domain count: %d', len(domains_combined),
-        level=LOG['INFO'])
+    eprint('Final blacklisted domain count: %d', len(domains_combined), level=LOG['INFO'])
 
     if config.backup: # todo: unit test
         backup_file_if_exists(config.output)
 
     if not domains_combined:
         eprint("The list of domains to block is empty, nothing to do, exiting.",
-            level=LOG['INFO'])
+               level=LOG['INFO'])
         quit(1)
 
     for domain in domains_whitelist:
         domain_tld = extract_psl_domain(domain)
         if domain_tld in domains_combined:
             eprint('WARNING: %s is listed in both %s and %s, '
-                'the local blacklist always takes precedence.', domain.decode('UTF8'),
-                CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG['WARNING'])
+                   'the local blacklist always takes precedence.', domain.decode('UTF8'),
+                   CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG['WARNING'])
 
-    write_output_file(domains_combined)
+    write_output_file(config, domains_combined)
 
     if not config.no_restart_dnsmasq:
         if config.mode != 'hosts':
             restart_dnsmasq_service()
-
-
 
 if __name__ == '__main__':
     # pylint: disable=no-value-for-parameter
