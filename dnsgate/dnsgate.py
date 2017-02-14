@@ -356,7 +356,6 @@ def generate(config, no_cache, cache_expire):
     eprint("Reading remote blacklist(s):\n%s", str(config.sources), level=LOG['INFO'])
     for item in config.sources:
         if item.startswith('http'):
-            #try:
             eprint("Trying http:// blacklist location: %s", item, level=LOG['DEBUG'])
             domains = get_domains_from_url(item, no_cache, cache_expire)
             if domains:
@@ -366,9 +365,6 @@ def generate(config, no_cache, cache_expire):
             else:
                 eprint('ERROR: Failed to get ' + item + ', skipping.', level=LOG['ERROR'])
                 continue
-            #except Exception as e:
-            #    eprint("Exception on blacklist url: %s", item, level=LOG['ERROR'])
-            #    eprint(e, level=LOG['ERROR'])
         else:
             eprint('ERROR: ' + item +
                    ' must start with http:// or https://, skipping.', level=LOG['ERROR'])
@@ -405,6 +401,7 @@ def generate(config, no_cache, cache_expire):
                 domain_psl = extract_psl_domain(domain)
                 if domain_psl in domains_combined:
                     domains_combined.remove(domain_psl)
+                    print("removed domain_psl:", domain_psl)
 
         # this needs to happen even if len(whitelisted_domains) == 0
         eprint('Iterating through original %d blacklisted domains to re-add subdomains' +
