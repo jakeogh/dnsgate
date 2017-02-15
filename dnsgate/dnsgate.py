@@ -401,7 +401,7 @@ def generate(config, no_cache, cache_expire):
                 domain_psl = extract_psl_domain(domain)
                 if domain_psl in domains_combined:
                     domains_combined.remove(domain_psl)
-                    print("removed domain_psl:", domain_psl)
+                    print("TODO: removed domain_psl:", domain_psl)
 
         # this needs to happen even if len(whitelisted_domains) == 0
         eprint('Iterating through original %d blacklisted domains to re-add subdomains' +
@@ -475,6 +475,9 @@ def generate(config, no_cache, cache_expire):
             eprint('WARNING: %s is listed in both %s and %s, '
                    'the local blacklist always takes precedence.', domain.decode('UTF8'),
                    CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG['WARNING'])
+
+    print("type(domains_combined):", domains_combined)
+    print("type(config):", config)
 
     write_output_file(config, domains_combined)
 
