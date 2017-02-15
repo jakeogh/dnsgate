@@ -236,14 +236,14 @@ def disable(config):
 def blockall(config):
     if config.mode == 'dnsmasq':
         domains_combined = set(['.'])
-        write_output_file(config, domains_combined)
+        write_output_file(domains_combined)
     else:
         eprint("ERROR: blockall is only available with --mode dnsmasq. Exiting.",
                level=LOG['ERROR'])
         quit(1)
 
 @click.pass_obj
-def write_output_file(config, domains_combined):
+def write_output_file(domains_combined):
     config_dict = make_config_dict(config)
 
     eprint("Writing output file: %s in %s format", config.output, config.mode,
@@ -476,10 +476,10 @@ def generate(config, no_cache, cache_expire):
                    'the local blacklist always takes precedence.', domain.decode('UTF8'),
                    CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG['WARNING'])
 
-    print("type(domains_combined):", domains_combined)
-    print("type(config):", config)
+    print("type(domains_combined):", type(domains_combined))
+    print("type(config):", type(config))
 
-    write_output_file(config, domains_combined)
+    write_output_file(domains_combined)
 
     if not config.no_restart_dnsmasq:
         if config.mode != 'hosts':
