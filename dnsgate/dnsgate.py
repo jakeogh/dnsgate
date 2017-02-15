@@ -476,9 +476,6 @@ def generate(config, no_cache, cache_expire):
                    'the local blacklist always takes precedence.', domain.decode('UTF8'),
                    CUSTOM_BLACKLIST, CUSTOM_WHITELIST, level=LOG['WARNING'])
 
-    print("type(domains_combined):", type(domains_combined))
-    print("type(config):", type(config))
-
     write_output_file(domains_combined)
 
     if not config.no_restart_dnsmasq:
