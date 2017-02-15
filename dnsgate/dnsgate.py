@@ -244,7 +244,7 @@ def blockall(config):
 
 @click.pass_obj
 def write_output_file(config, domains_combined):
-    config_dict = make_config_dict(config)
+    config_dict = make_config_dict()
 
     eprint("Writing output file: %s in %s format", config.output, config.mode,
            level=LOG['INFO'])
