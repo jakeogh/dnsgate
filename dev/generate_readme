@@ -96,6 +96,7 @@ If you find this useful you may appreciate:
  - Disabling JS and making a keybinding to enable it ([surf](http://git.suckless.org/surf/log/?h=surf-webkit2)+[tabbed](http://tools.suckless.org/tabbed/) makes this easy)
  - [musl](http://wiki.musl-libc.org/wiki/Functional_differences_from_glibc#Name_Resolver_.2F_DNS)
  - https://wiki.gentoo.org/wiki/Project:Hardened_musl/Bluedragon
+ - https://github.com/lonetwin/pythonrc
 
 [1]: http://winhelp2002.mvps.org/hosts.txt http://someonewhocares.org/hosts/hosts
 
