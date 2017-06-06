@@ -19,8 +19,8 @@ import shutil
 import configparser
 import click
 from kcl.printops import eprint
-from kcl.printops import LOG
-from kcl.printops import set_verbose
+from kcl.logops import LOG
+from kcl.logops import set_verbose
 from kcl.stringops import contains_whitespace
 from kcl.fileops import comment_out_line_in_file
 from kcl.fileops import uncomment_line_in_file
