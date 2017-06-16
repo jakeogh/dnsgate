@@ -5,7 +5,7 @@
 import glob
 import os
 import time
-from kcl.logops import eprint
+from kcl.logops import leprint
 from kcl.logops import LOG
 from kcl.stringops import hash_str
 from kcl.fileops import read_file_bytes
@@ -16,7 +16,7 @@ from .global_vars import CACHE_EXPIRE, CACHE_DIRECTORY
 def get_domains_from_url(url, no_cache=False, cache_expire=CACHE_EXPIRE):
     unexpired_copy = get_cached_url_copy(url=url, cache_expire=cache_expire)
     if unexpired_copy:
-        eprint("Using cached copy: %s", unexpired_copy, level=LOG['INFO'])
+        leprint("Using cached copy: %s", unexpired_copy, level=LOG['INFO'])
         unexpired_copy_bytes = read_file_bytes(unexpired_copy)
         assert isinstance(unexpired_copy_bytes, bytes)
         return extract_domain_set_from_hosts_format_bytes(unexpired_copy_bytes)
