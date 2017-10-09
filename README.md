@@ -49,6 +49,7 @@ With `--mode dnsmasq` (which is default) `--block-at-psl` strips domains to thei
  - python3 (tested on 3.4)
  - [click](https://github.com/mitsuhiko/click)
  - [tldextract](https://github.com/john-kurkowski/tldextract)
+ - [kcl](https://github.com/jakeogh/kcl)
 
 **Install:**
 ```
@@ -199,5 +200,4 @@ If you find this useful you may appreciate:
  - https://wiki.gentoo.org/wiki/Project:Hardened_musl/Bluedragon
 
 [1]: http://winhelp2002.mvps.org/hosts.txt http://someonewhocares.org/hosts/hosts
-
 
