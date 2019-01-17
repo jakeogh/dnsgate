@@ -11,13 +11,14 @@
 # the public could register domains for a given TLD.
 __version__ = "0.0.1"
 
+import click
 import copy
 import sys
 import os
 import ast
 import shutil
 import configparser
-import click
+import time
 from kcl.logops import leprint
 from kcl.logops import LOG
 from kcl.logops import set_verbose
@@ -57,6 +58,7 @@ def append_to_local_rule_file(rule_file, idn):
     line = hostname + '\n'
     write_unique_line_to_file(line, rule_file)
 
+
 # https://github.com/mitsuhiko/click/issues/441
 CONTEXT_SETTINGS = \
     dict(help_option_names=['--help'],
@@ -65,9 +67,9 @@ CONTEXT_SETTINGS = \
 # pylint: disable=C0326
 # http://pylint-messages.wikidot.com/messages:c0326
 @click.group(context_settings=CONTEXT_SETTINGS)
-@click.option('--no-restart-dnsmasq', is_flag=True,  help=NO_RESTART_DNSMASQ_HELP)
-@click.option('--backup',             is_flag=True,  help=BACKUP_HELP)
-@click.option('--verbose',            is_flag=True,  help=VERBOSE_HELP,
+@click.option('--no-restart-dnsmasq', is_flag=True, help=NO_RESTART_DNSMASQ_HELP)
+@click.option('--backup', is_flag=True, help=BACKUP_HELP)
+@click.option('--verbose', is_flag=True, help=VERBOSE_HELP,
               callback=set_verbose, expose_value=False)
 # pylint: enable=C0326
 @click.pass_context
@@ -115,8 +117,8 @@ def dnsgate(ctx, no_restart_dnsmasq, backup):
             if mode == 'dnsmasq':
                 try:
                     dnsmasq_config_file = \
-                                  click.open_file(config['DEFAULT']['dnsmasq_config_file'],
-                                                  'w', atomic=True, lazy=True)
+                        click.open_file(config['DEFAULT']['dnsmasq_config_file'],
+                        'w', atomic=True, lazy=True)
                     dnsmasq_config_file.close() # it exists and is writeable
                 except KeyError:
                     leprint("ERROR: dnsgate is configured for 'mode = dnsmasq' in " +
@@ -211,8 +213,11 @@ def enable(config):
         quit(1)
 
 @dnsgate.command(help=DISABLE_HELP)
-@click.pass_obj
-def disable(config):
+@click.argument('timeout', required=False, type=int)
+@click.pass_context
+def disable(ctx, timeout):
+    '''TIMEOUT: re-enable after n seconds'''
+    config = ctx.obj
     if config.mode == 'dnsmasq':
         comment_out_line_in_file(config.dnsmasq_config_file.name,
                                  dnsmasq_config_file_line())
@@ -226,6 +231,9 @@ def disable(config):
                        "You need to manually delete it. Exiting.", level=LOG['ERROR'])
                 quit(1)
         restart_dnsmasq_service()
+        leprint("Sleepin %ss:", timeout)
+        time.sleep(timeout)
+        ctx.invoke(enable)
     else:
         leprint("ERROR: disable is only available with --mode dnsmasq. Exiting.",
                level=LOG['ERROR'])
@@ -267,14 +275,14 @@ def write_output_file(config, domains_combined):
                 fh.write(hosts_line.encode('utf8'))
 
 @dnsgate.command(help=CONFIGURE_HELP, short_help='write /etc/dnsgate/config')
-@click.argument('sources',      nargs=-1)
-@click.option('--mode',         is_flag=False,
+@click.argument('sources', nargs=-1)
+@click.option('--mode', is_flag=False,
               type=click.Choice(['dnsmasq', 'hosts']), required=True)
-@click.option('--block-at-psl', is_flag=True,  help=BLOCK_AT_PSL_HELP)
-@click.option('--dest-ip',      is_flag=False, help=DEST_IP_HELP, default=False)
+@click.option('--block-at-psl', is_flag=True, help=BLOCK_AT_PSL_HELP)
+@click.option('--dest-ip', is_flag=False, help=DEST_IP_HELP, default=False)
 @click.option('--dnsmasq-config-file', is_flag=False, help=DNSMASQ_CONFIG_HELP,
               type=click.File(mode='w', atomic=True, lazy=True), default=DNSMASQ_CONFIG_FILE)
-@click.option('--output',       is_flag=False, help=OUTPUT_FILE_HELP,
+@click.option('--output', is_flag=False, help=OUTPUT_FILE_HELP,
               default=OUTPUT_FILE_PATH)
 def configure(sources, mode, block_at_psl, dest_ip, dnsmasq_config_file, output):
     if contains_whitespace(dnsmasq_config_file.name):
@@ -323,7 +331,7 @@ def make_config_dict(config): #todo, just cat the config file
     return config_dict
 
 @dnsgate.command(help=GENERATE_HELP)
-@click.option('--no-cache',     is_flag=True,  help=NO_CACHE_HELP)
+@click.option('--no-cache', is_flag=True, help=NO_CACHE_HELP)
 @click.option('--cache-expire', is_flag=False, help=CACHE_EXPIRE_HELP,
               type=int, default=CACHE_EXPIRE)
 @click.pass_obj
@@ -482,7 +490,9 @@ def generate(config, no_cache, cache_expire):
         if config.mode != 'hosts':
             restart_dnsmasq_service()
 
+
 if __name__ == '__main__':
+
     # pylint: disable=no-value-for-parameter
     dnsgate()
     # pylint: enable=no-value-for-parameter

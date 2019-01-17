@@ -32,4 +32,3 @@ ALL_REMOTE_BLACKLISTS = [
 
 CACHE_EXPIRE = 3600*24*2 # 48 hours
 TLD_EXTRACT = tldextract.TLDExtract(cache_file=TLDEXTRACT_CACHE)
-
