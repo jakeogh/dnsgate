@@ -189,6 +189,7 @@ $ ./dnsgate install_help
  - https://github.com/vain/lariza
  - https://github.com/fivefilters/block-ads/wiki/There-are-no-acceptable-ads
  - https://github.com/entaopy/peerblock
+ - https://surf.suckless.org/files/adblock-hosts/
 
 
 **Simple Software:**
