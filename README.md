@@ -201,6 +201,7 @@ If you find this useful you may appreciate:
  - https://wiki.gentoo.org/wiki/Project:Hardened_musl/Bluedragon
  - https://github.com/andmarti1424/sc-im
  - https://news.ycombinator.com/item?id=17770972
+ - https://git.2f30.org/
 
 [1]: http://winhelp2002.mvps.org/hosts.txt http://someonewhocares.org/hosts/hosts
 
