@@ -190,7 +190,7 @@ $ ./dnsgate install_help
  - https://github.com/fivefilters/block-ads/wiki/There-are-no-acceptable-ads
  - https://github.com/entaopy/peerblock
  - https://surf.suckless.org/files/adblock-hosts/
-
+ - https://github.com/anned20/begoneads
 
 **Simple Software:**
 
