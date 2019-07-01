@@ -191,6 +191,8 @@ $ ./dnsgate install_help
  - https://github.com/entaopy/peerblock
  - https://surf.suckless.org/files/adblock-hosts/
  - https://github.com/anned20/begoneads
+ - https://news.ycombinator.com/item?id=20314036
+ - https://github.com/nickspaargaren/pihole-google
 
 **Simple Software:**
 
