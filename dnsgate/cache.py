@@ -8,7 +8,7 @@ import time
 from kcl.logops import leprint
 from kcl.logops import LOG
 from kcl.stringops import hash_str
-from kcl.fileops import read_file_bytes
+from pathtool import read_file_bytes
 from kcl.domainops import extract_domain_set_from_hosts_format_bytes
 from kcl.domainops import extract_domain_set_from_hosts_format_url
 from .global_vars import CACHE_EXPIRE, CACHE_DIRECTORY

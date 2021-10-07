@@ -11,37 +11,40 @@
 # the public could register domains for a given TLD.
 __version__ = "0.0.1"
 
-import click
-import copy
-import sys
-import os
 import ast
-import shutil
 import configparser
+import copy
+import os
+import shutil
+import sys
 import time
-from kcl.logops import leprint
+
+import click
+from kcl.domainops import extract_domain_set_from_dnsgate_format_file
+from kcl.domainops import extract_psl_domain
+from kcl.domainops import group_by_tld
+from kcl.domainops import prune_redundant_rules
+from kcl.domainops import strip_to_psl
+from kcl.domainops import validate_domain_list
 from kcl.logops import LOG
+from kcl.logops import leprint
 from kcl.logops import set_verbose
 from kcl.stringops import contains_whitespace
-from kcl.fileops import comment_out_line_in_file
-from kcl.fileops import uncomment_line_in_file
-from kcl.fileops import write_unique_line_to_file
-from kcl.fileops import backup_file_if_exists
-from kcl.fileops import file_exists
-from kcl.symlinkops import is_broken_symlink
-from kcl.symlinkops import is_unbroken_symlink_to_target
-from kcl.symlinkops import create_relative_symlink
-from kcl.domainops import group_by_tld
-from kcl.domainops import extract_psl_domain
-from kcl.domainops import strip_to_psl
-from kcl.domainops import extract_domain_set_from_dnsgate_format_file
-from kcl.domainops import prune_redundant_rules
-from kcl.domainops import validate_domain_list
+from pathtool import backup_file_if_exists
+from pathtool import comment_out_line_in_file
+from pathtool import create_relative_symlink
+from pathtool import file_exists_nonzero
+from pathtool import is_broken_symlink
+from pathtool import is_unbroken_symlink
+from pathtool import uncomment_line_in_file
+from pathtool import write_line_to_file
+
+from .cache import *
 from .config import *
-from .help import *
 from .file_headers import *
 from .global_vars import *
-from .cache import *
+from .help import *
+
 
 # todo, check return code, run disable() and try again if the service fails
 def restart_dnsmasq_service():
@@ -51,18 +54,20 @@ def restart_dnsmasq_service():
         os.system('systemctl restart dnsmasq 1>&2')  # untested
     return True
 
+
 def append_to_local_rule_file(rule_file, idn):
     leprint("attempting to append %s to %s", idn, rule_file, level=LOG['INFO'])
     hostname = idn.encode('idna').decode('ascii')
     leprint("appending hostname: %s to %s", hostname, rule_file, level=LOG['DEBUG'])
     line = hostname + '\n'
-    write_unique_line_to_file(line, rule_file)
+    write_line_to_file(line, rule_file)
 
 
 # https://github.com/mitsuhiko/click/issues/441
 CONTEXT_SETTINGS = \
     dict(help_option_names=['--help'],
          terminal_width=shutil.get_terminal_size((80, 20)).columns)
+
 
 # pylint: disable=C0326
 # http://pylint-messages.wikidot.com/messages:c0326
@@ -171,7 +176,7 @@ def install_help(config):
 @click.pass_obj
 def enable(config):
     if config.mode == 'dnsmasq':
-        if not file_exists(OUTPUT_FILE_PATH):
+        if not file_exists_nonzero(OUTPUT_FILE_PATH):
             leprint('ERROR: %s does not exist, ' +
                    'run "dnsgate generate" to fix. Exiting.',
                    OUTPUT_FILE_PATH, level=LOG['ERROR'])
@@ -200,7 +205,7 @@ def enable(config):
         if is_broken_symlink(symlink): #hm, a broken symlink, ok, remove it
             leprint("WARNING: removing broken symlink: %s", symlink, level=LOG['WARNING'])
             os.remove(symlink)
-        if not is_unbroken_symlink_to_target(OUTPUT_FILE_PATH, symlink):
+        if not is_unbroken_symlink(OUTPUT_FILE_PATH, symlink):
             try:
                 os.remove(symlink) # maybe it was symlink to somewhere else
             except FileNotFoundError:
