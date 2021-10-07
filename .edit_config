@@ -1,0 +1,8 @@
+#!/bin/sh
+short_package="dnsgate"
+group="net-dns"
+package="${group}/${short_package}"
+remote="https://github.com/jakeogh/dnsgate.git"
+test_command_arg="--test"
+pre_lint_command=""
+dont_unmerge=''
