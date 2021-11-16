@@ -5,8 +5,10 @@
 from .global_vars import CUSTOM_BLACKLIST
 from .global_vars import CUSTOM_WHITELIST
 from .global_vars import CONFIG_FILE
+from pathlib import Path
 
-def make_custom_blacklist_header(path):
+
+def make_custom_blacklist_header(path: Path):
     output_file_header = '#' * 64 + '''
 # dnsgate custom blacklist
 # User-defined blacklisted domains go here.
@@ -17,7 +19,8 @@ def make_custom_blacklist_header(path):
 # biz           # blocks the TLD biz completely (*.biz)'''
     return output_file_header
 
-def make_custom_whitelist_header(path):
+
+def make_custom_whitelist_header(path: Path):
     output_file_header = '#' * 64 + '''
 # dnsgate custom whitelist
 # User-defined whitelisted domains go here.
@@ -33,7 +36,8 @@ def make_custom_whitelist_header(path):
 #                           as above, explicitely blacklisted subdomains are blocked'''
     return output_file_header
 
-def make_output_file_header(config_dict):
+
+def make_output_file_header(config_dict: dict):
     configuration_string = '\n'.join(['#    ' + str(key) + ': ' +
         str(config_dict[key]) for key in sorted(config_dict.keys())])
     output_file_header = '#' * 64 + '''\n#
@@ -44,5 +48,3 @@ def make_output_file_header(config_dict):
         '\n#' + '\n# Configuration:\n' + configuration_string + \
         '\n#\n' + '#' * 64 + '\n\n'
     return output_file_header.encode('utf8')
-
-
